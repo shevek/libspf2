@@ -1,0 +1,190 @@
+
+TODO items (somewhat in priority order)
+
+* need to add better credits:
+  * manu <at> netbsd.org (Emmanuel Dreyfus)
+  * 
+
+* SPF_dns_thread( lookup_layer, cache_layer )
+  * read locking/write locking
+  * spf layer function:  add_cache  (add to lowest cache or highest cache?)
+
+* testing
+  * domain name tests
+    * sexy7/9.borg  (can this be a real problem?)
+    * foo.com. (trailing dot in MX, PTR, etc.)
+  * duplicate spf records
+  * add checks to test for correct herrno handling
+  * TXT w/ multiple strings
+    * "v=spf1" "mx" "-all"
+    * "v=spf1" " mx" " -all"
+    * "v=spf1 " "mx " "-all "
+    * "v=spf1 " "m" "x" " -all"
+  * TXT w/ >512 bytes
+  * DoS testing
+  * "\"v=spf1 -all\""
+  * -guess checks
+  * break up test databases into smaller chunks
+  * checks for nasty source routing and such for env-from
+  * IPv6 tests
+    * loopback
+    * IPv4-mapped IPv6
+    * a:/mx:
+    * exists:
+    * copy stuff from infradead.org
+  * %{vr-}
+  * envelope-from tests
+    * multiple @
+    * source routing
+    * >63 char w/o dots in DNS lookups
+  * ptr:foo.com should not match badfoo.com
+  * add "extend example" tests from the spec
+
+
+* spf_dns_zone:  option to read from file
+
+* I don't think the stuff override/fallback sources are identified yet...
+
+* IPv6 support
+  * exists: IN6_IS_ADDR_V4MAPPED
+  * rfc3596.txt says:
+    * use AAAA records
+    * use IP6.ARPA
+  * rfc3513.txt  ::FFFF:d.d.d.d format
+  * rfc3493.txt.gz discusses the ipv6 socket API
+
+* do I implement best_guess correctly?
+
+* add a string to SPF_compile_local_policy to change the "local
+  policy" notation.  Use for DNSBL/RHSBL checks and such.  use a
+  reason-text= modifier?
+
+* spfquery -ip=192.0.2.200 -sender=50.spf1-test.mailzone.com -helo=50.spf1-test.mailzone.com
+  * problem=Required option for mechanism missing near "" in "                                    -all";
+
+* the get_spf and get_exp layers don't call the sublayers.
+
+* investigate perlxs
+
+* libspf API conversion layer  (what IS the libspf API??)
+
+* document API
+
+* improve debug output
+
+* create release script
+
+  * update Changelog
+
+  * update version number in configure.ac
+    AC_INIT(libspf_alt, 0.3.6, wayne@midwestcs.com)
+
+  * update share library revisions in /lib/spf_alt/Makefile.am
+    libspf_alt_la_LDFLAGS	= -version-info 0:0:0
+
+  * write new announcement in doc
+
+  * install new copy on backbone:/var/www/spf/libspf-alt/
+
+  * save copy in /usr/local/src/spf/libspf-alt/
+
+  * cd devel; make clean; make maintainer-clean; cd ..;
+    tar czf libspf-alt.devel.0.3.tgz devel;
+    scp libspf-alt.devel.0.3.tgz backbone:/home/wayne
+
+* start using CVS
+
+* implement a DNS timeout feature  (how?)
+
+* implement a max time to eval feature
+
+* SPF_dns_should_cache( mech )   if only str, %d, %r, %v used, return true
+
+* code cleanup
+  * many functions are way to long and need to be broken up
+  * duplicate code
+  * comments?  We don't need no stinkin' comments!
+  * some files contain too many functions (e.g. spf_result.c)
+
+* spfd
+  * add logging
+  * multi-threaded dns lookups  (how to cache?)
+  * EOL string (currently uses \n, should it use \r\n?)
+  * support for more commands?
+  * spfquery.spfd
+  * quote and escape characters
+
+* SPF_verify()
+
+* fix all FIXME's
+
+* convert int -> SPF_err_t
+* convert int -> ns_type
+* convert int -> SPF_dns_stat_t
+* convert SPF_err_t, ns_type and SPF_dns_stat_t to enums
+
+* document internals
+
+* allow extentions to be turned on and off
+  * redirect:
+  * %{r}
+  * %{c}
+  * non-alpha chars in mech/mod
+  * preserve case of localpart (new var?  use a delim?  overload URL encoding?)
+  * exp-text= ?
+  * support '@' as a delimeter?
+  * document non-compliance
+  * v=spf0, v=spf1-include or include-only=yes for use by includes
+    and explanation?  
+
+* need to make the system  more OS/compiler portable  (Windows, non-gcc)
+
+* allow a sanatizer() function a-la M:S:Q?
+
+* improve error messages from the compiler.
+  * Sometimes the token is null, when it shouldn't be
+  * Sometimes it is way too long.
+    * 99txt.spf1-test.mailzone.com
+
+* spf_dns_cid2spf
+
+* add BEGIN_C_DECLS (autoconf book)  or __BEGIN_DECLS (in linux includes)
+
+* use res_findzonecut to look for SPF records at the zone cut
+
+
+* When the result of macro expansion is used in a domain name query, if
+  the expanded domain name exceeds 255 characters (the maximum length
+  of a domain name), the left side is truncated to fit, by removing
+  successive subdomains until the total length falls below 255
+  characters.
+
+* it appears that the bits in the byte-compiled format are not laid
+  out right.  I'm not sure that fields can cross byte boundaries
+
+  bits/endian.h says: /* i386 is little-endian.  */
+
+  /usr/include/arpa/nameser_compat.h
+  ~/mail_rfcs/RFC/standard/rfc1035.txt.gz
+
+  /usr/include/netinet/ip.h
+ 
+
+* spfwhy.c utility to generate a web page
+  * show all compile/lint errors
+  * show results of evaluation
+  * explain the SPF record
+
+  * cgi script to use for an explanation
+  * cgi script to parse and explain an SPF record (and give disgnostics)
+
+* It would be better if all info about valid mechanisms was
+  centeralized instead of being hard coded everywhere.
+
+* spf_id2str needs to be broken up into smaller functions so that you
+  can easily print a single mechanism, macro string, modifier, etc.
+
+* make distcheck doesn't work
+
+* make sure that macro-vars don't expand with trailing dots  (See spf-dev
+  <7382FCA44E27D411BD4A00508BD68F950AE3102F@pigeon.tumbleweed.com>)

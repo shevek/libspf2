@@ -1,0 +1,98 @@
+
+The Libspf-alt Application Programming Interface
+
+This file is the start of the documentation on the libspf-alt API.  It
+is not complete, but it should give you a start.  Corrections and/or
+suggests are welcome.
+
+
+
+Application programs usually include:
+	spf.h
+
+Application programs often include one or more of:
+	spf_dns_cache.h
+	spf_dns_resolv.h
+	spf_dns_null.h
+
+Applications programs may (but usually don't) include:
+	spf_dns.h
+
+
+Only programs that are in the library should include spf_internal.h or
+spf_dns_internal.h.  
+
+
+Details on the actual routines are documented in the above include
+files, this document just gives a general overview.  The SPF spec
+gives a more detailed explanation of the entire SPF system and should
+probably be read by anyone using SPF.  See: 
+http://www.ietf.org/internet-drafts/draft-mengwong-spf-00.txt
+or doc/draft-mengwong-spf-00.txt
+
+
+
+The libspf-alt library creates several opaque "objects", which the
+application program receive "ids" to identify them by.  These objects
+are the configuration object, the SPF record object and the DNS layer
+object.  These objects can all be mixed and matched.  You can evaluate
+the same SPF record using different configurations, and/or different
+DNS layers.
+
+All of these objects have similar create/reset/dup/destroy functions.
+
+
+In addition, there are several typedef'ed structures that are used by
+libspf-alt.  Libspf-alt expects all pointers in these structures to be
+malloc'ed.
+
+All of these typedef'ed structures have init/free functions.
+
+
+The "configuration object"
+
+This object holds the configuration of the environment.  It includes
+things llke the IP address of the SMTP client, the envelope-from email
+address, default explanation text, whitelists, etc.  There are a bunch
+of functions that can change the configureation (SPF_set_*()) and
+others that can read the configuration (SPF_get_*())
+
+
+The "SPF record object"
+
+This object contains the SPF record in byte-compiled form.
+
+
+The "DNS object"
+
+This object contains information about how DNS lookups should be
+done. 
+
+
+Objects are created with the SPF_create_<object-name>() function or by
+duplicating an existing object using the SPF_dup_<object-name>() function.
+
+Every object created must be destroyed with the
+SPF_destroy_<object-name>() function.
+
+Objects can be reset to their initial condition by calling then
+SPF_reset_<object-name>() function.
+
+
+
+The results from the SPF byte-compiler are returned in a SPF_c_results_t
+variable.  The application is responsible for freeing the memory
+associated with this structure by calling SPF_free_c_results().
+
+
+The output from an SPF evaluation are returned in a SPF_output_t
+variable.  The application is responsible for freeing memory
+associated with this structure by calling SPF_free_output().
+
+
+
+There is a very simple example program available called spf_example.c
+in the bin directory.  The spfquery.c and spftest.c programs provide a
+little more sophisitcated usage of libspf-alt.
+
+-wayne

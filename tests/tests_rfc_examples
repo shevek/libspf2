@@ -1,0 +1,42 @@
+#!/bin/sh
+
+if [ "$1" = "-val" ]
+then
+    shift
+    [ ! -d .valgrind ] && mkdir .valgrind
+    rm -f .valgrind/log*
+    PROG=./run_vallog
+elif [ "$1" = "-tdns" ]
+then
+    shift
+    PROG=./run_tdns
+else
+    PROG=../src/spfquery/spfquery_static
+fi
+
+echo
+echo "Doing regression tests for RFC examples (one at a time)...."
+echo "Prog = $PROG"
+
+perl test.pl -impl libspf-alt -program $PROG -data test_rfc_examples.txt 2>&1 \
+	    | grep -v "^ok [0-9][0-9]*" | tee tests_single.out
+
+num_errors=`grep "^# Test [0-9][0-9]* got:" tests_single.out | grep -v "\*TODO\*)" | wc -l`
+num_errors=`expr $num_errors + 0`
+
+if [ $num_errors -ne 0 ]
+then
+    echo "Error:  $num_errors tests failed"
+else
+    echo "All regression tests passed"
+fi
+
+if [ "$1" = "-val" ]
+then
+    sleep 1
+    grep -n "== ERROR SUMMARY: " .valgrind/log* | grep -v "0 errors from 0 contexts" | head
+fi
+
+[ $num_errors -ne 0 ] && exit 1
+
+exit 0

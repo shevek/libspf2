@@ -1,0 +1,112 @@
+
+               Plan to throw one away, you will anyway.
+                    -Brooks  _Mythical_Man_Month_
+
+
+I am please to announce the release of an alternate C implementation
+of the SPF system.  This is a complete, ground-up rewritten "second
+generation" implementation.  I started my first C implementation back
+in December, but it was ugly and I didn't get very far.  Using what I
+learned from writing my first SPF implementation, plus what I learned
+by studying the perl and libspf implementations, I decided to try
+writing a new one, and it all just kind of fell in place nicely.
+
+
+This implementation of SPF has two distinct features which I don't
+think any other SPF implementation has:
+
+
+First, SPF records are byte-compiled into a very compact binary form
+that is easy for programs to parse.
+
+Second, all DNS access are done via configurable modules/layers.
+
+
+
+                          Where Is the Code?
+
+
+Copies of the libspf-alt implementation are available at:
+
+http://www.midwestcs.com/spf/libspf-alt/
+
+Note that this is still beta quality code, and there are certainly
+bugs.  The documentation is currently almost non-existant.  The code
+has not been audited.  Many of the less commonly used API functions
+have not been written (for example, the "result2" code).  There is
+still a *lot* of work to do before this is a solid system.
+
+Still, it passes almost all of the SPF regression tests.  (The vast
+majority of the tests that libspf-alt fails on are due to not having
+result2 support.)
+
+
+
+              Why Are These Two New Features Important?
+
+
+The compiled SPF records and DNS layer features have a lot of nice
+interactions.
+
+For example, there is a caching DNS layer that saves the compiled SPF
+records for future use.  While it takes a small amount of time to
+compile the AOL SPF record, you will more than make up for it by not
+having to parse the record every time you get a message from AOL.
+
+If you wanted to, you can even run the SPF system without using real
+DNS lookups at all.  For testing, I used a DNS layer that contained a
+built-in zone file.  This idea could easily be extended to being able
+to read the zone file from disk, or to use a database to access
+information.
+
+One example of what you could do with such a zone file would be to
+create your own SPF records for the many free-email providers.
+Depending on whether you layer this local zone file before or after
+the real DNS lookups, you can either override published SPF records,
+or you can provide defaults until SPF records are published.
+
+
+The byte-compiled SPF records can save more than just execution time.
+
+First, it would be quite possible for these compiled SPF records to be
+transmitted over the net instead of the text versions.  The AOL SPF
+record, for example, shrinks from 209 bytes to 74 bytes.  Most records
+will shrink by at least a factor of 1.5, and a factor of 2 is pretty
+common.
+
+Since the compiled SPF records are easy for machines to parse, you can
+easily do various optimizations.  For example, you can convert all a:
+and mx: mechanisms into their equivalent ip4: mechanisms on the fly,
+thus reducing the number of future DNS lookups.
+
+These optimizations can be done on the domain owner's systems in their
+name server, or they can be done by the receiving MTA, or both.
+Patches for a name server could be created that send either compiled
+and optimized binary SPF records, or "decompiled" text records that
+are still optimized.
+
+So, the zone file could have simple SPF records like "v=spf1 a mx
+-all", and the actual SPF records sent across the net would be
+entirely converted to ip4: mechanisms.  This gives all the
+ease-of-creation and maintainability of SPF, but adds the reduced DNS
+lookups of the RMX and MS Caller-ID proposals.
+
+
+For a more complete example, consider a very large ISP that feels that
+they cannot afford to do even a single DNS lookup during the SMTP
+session.  Such an ISP could use a separate machine to gather up DNS
+records, byte-compile them, optimize them, and do any regression tests
+that they want to do.  They could make a database of only those SPF
+records that don't require DNS lookups, and then roll these databases
+out to their real MTAs a couple of times per day.  The ISP could then
+have very fast SPF checks using the optimized byte-compiled code with
+no DNS lookups at all.  Sure, the ISP wouldn't be able to deal with
+all SPF records, but it is far better than nothing.
+
+
+
+Please let me know what you think.  Bug reports are very welcome.  The
+code is still under rapid development, so expect problems to crop up.
+
+
+-wayne

@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# just to make gdb<->bash easier
+
+PROG=../src/spfquery/spftest_static
+
+rm -f ./mtrace.out
+
+export MALLOC_TRACE=./mtrace.out 
+export MALLOC_CHECK_=2
+
+out=`$PROG "$@"`
+in_rec=`echo "$out" | grep "^SPF record in:" | sed 's/^SPF record in:  //'`
+out_rec=`echo "$out" | grep "^SPF record:" | sed 's/^SPF record:  //'`
+
+if [ "$out_rec" = "$in_rec" ]
+then
+    echo "Pass: $in_rec"
+else
+    echo
+#    echo "in:   $in_rec"
+    echo "$out"
+    echo "Different"
+    echo
+fi
+
+mout=`mtrace $PROG mtrace.out`
+
+[ "$mout" != "No memory leaks." ] && echo "$mout"

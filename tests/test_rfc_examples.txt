@@ -1,0 +1,103 @@
+
+#
+# These are some of the examples out of the SPF RFC draft.
+#
+# It would be better to use the -override option to spfquery instead
+# of the libspf-alt "test" dns layer, but that option doesn't work
+# yet.
+#
+
+default -sanitize=1 -dns=test
+
+spfquery -default-explanation="%{s}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ strong-bad@email.example.com
+
+spfquery -default-explanation="%{o}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ email.example.com
+
+spfquery -default-explanation="%{d}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ email.example.com
+
+spfquery -default-explanation="%{d4}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ email.example.com
+
+spfquery -default-explanation="%{d3}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ email.example.com
+
+spfquery -default-explanation="%{d2}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ example.com
+
+spfquery -default-explanation="%{d1}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ com
+
+spfquery -default-explanation="%{p}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ mx.example.org
+
+spfquery -default-explanation="%{p2}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ example.org
+
+spfquery -default-explanation="%{dr}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ com.example.email
+
+spfquery -default-explanation="%{d2r}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ example.email
+
+spfquery -default-explanation="%{l}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ strong-bad
+
+spfquery -default-explanation="%{l-}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ strong.bad
+
+spfquery -default-explanation="%{lr}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ strong-bad
+
+spfquery -default-explanation="%{lr-}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ bad.strong
+
+spfquery -default-explanation="%{l}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ strong-bad
+
+spfquery -default-explanation="%{l1r-}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ strong
+
+spfquery -default-explanation="%{ir}.%{v}._spf.%{d2}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ 3.2.0.192.in-addr._spf.example.com
+
+spfquery -default-explanation="%{lr-}.lp._spf.%{d2}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ bad.strong.lp._spf.example.com
+
+spfquery -default-explanation="%{lr-}.lp.%{ir}.%{v}._spf.%{d2}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ bad.strong.lp.3.2.0.192.in-addr._spf.example.com
+
+spfquery -default-explanation="%{ir}.%{v}.%{l1r-}.lp._spf.%{d2}" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ 3.2.0.192.in-addr.strong.lp._spf.example.com
+
+spfquery -default-explanation="%{p2}.trusted-domains.example.net" -ip=192.0.2.3 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ example.org.trusted-domains.example.net
+
+spfquery -default-explanation="%{ir}.example.org" -ip=5f05:2000:80ad:5800::1 -sender=strong-bad@email.example.com -helo example.com
+result          /.*/ fail
+smtp-comment    /.*/ 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.5.d.a.0.8.0.0.0.2.5.0.f.5.example.org
+

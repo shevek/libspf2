@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if type -t autoreconf >/dev/null
+then
+    autoreconf -v
+else
+    set -e
+    set -x
+
+    aclocal -I config
+    autoheader
+    automake --gnu --add-missing 
+    autoconf
+fi

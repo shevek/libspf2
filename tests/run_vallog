@@ -1,0 +1,5 @@
+#!/bin/sh
+
+PROG=../src/spfquery/spfquery_static
+
+valgrind --logfile=.valgrind/log --leak-check=yes --show-reachable=yes --num-callers=8 $PROG "$@"

@@ -1,0 +1,785 @@
+
+spftest spf "\"v=spf1 a mx a:smtp.example.net a:poseidon.example.net -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 a mx include:example.net -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 a mx ip4:68.249.34.2 ip4:216.136.1.32/28 ip4:68.249.34.3 ip4:68.249.34.4 -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 a mx ptr -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 a mx ptr ip4:216.97.52.1/27 ip4:216.97.52.129/27 ip4:66.169.179.2/32 -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 a ptr -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 a:trivial.example.com include:example.com -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 ip4:153.90.199.255/24 ptr ptr:example.org mx/24 mx:example.org/16 -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 ip4:204.108.64.0/18 ptr ptr:example.net include:example.net  ?all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 ip4:204.108.64.0/18 ptr ptr:lausd.k12.ca.us include:lausd.k12.ca.us  ?all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 ip4:213.191.39.150 ip4:130.149.193.154 ~all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx a:emmaus.example.com a:olivet.thedomaingroup.com\""
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx a:tmrelay01.example.net a:tmrelay02.example.net -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx a:www a:secure include:example.com include:example.net -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx include:example.com -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx include:outbound.example.net ~all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx ip4:64.132.71.8 ip4:64.132.71.9 -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx mx:example.net mx:example.com -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx ptr ip4:196.25.240.0/24 -all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx ptr mx:po.example.net mx:lr.example.com ip4:209.249.124.0/24 include:example.net ?all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx ptr ~all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "\"v=spf1 mx ~all\""
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "" in ""v=spf1"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1	a mx ptr -all"
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "v=spf1" in "v=spf1?a"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1	mx include:example.com ~all"
+err-msg         php  
+err-msg         /.*/ Could not find a valid SPF record near "v=spf1" in "v=spf1?mx"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1                                             default=deny   "
+err-msg         php  Warnings: Unknown extension 'default' found in rule part 2 (default=deny)<br />Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 -all
+
+spftest spf "v=spf1 +a:rollerball.example.com +mx report=postmaster@example.com"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:rollerball.example.com mx report=postmaster@example.com
+
+spftest spf "v=spf1 +habeas +mx +a -all"
+err-msg         php  Warnings: Unknown extension 'habeas' found in rule part 2 (+habeas)
+err-msg         /.*/ Unknown mechanism found near "habeas" in "+habeas"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 +ptr +a:194.120.234.83 +a:194.120.234.254 +ptr:example.com +exists:%{l}.lp._spf.%{d2} ~all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (+a:194.120.234.83)<br />ip address in place of domain name in 'a' declaration in rule part 4 (+a:194.120.234.254)<br />Notes: Can't yet validate EXISTS macros
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out         /.*/ SPF record:  v=spf1 ptr a:194.120.234.83 a:194.120.234.254 ptr:example.com exists:%{l}.lp._spf.%{d2} ~all
+
+spftest spf "v=spf1 -ip:131.220.8.9/32 +ip4:131.220.8.0/27 ~all"
+err-msg         php  Warnings: Unknown extension 'ip' found in rule part 2 (-ip:131.220.8.9/32)
+err-msg         /.*/ Unknown mechanism found near "ip" in "-ip:131.220.8.9/32"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 A MX include:relay.example.com include:webmail.example.com ~all"
+err-msg         php  Warnings: Unknown extension 'A' found in rule part 2 (A)<br />Unknown extension 'MX' found in rule part 3 (MX)
+err-msg         /.*/ Unknown mechanism found in "A".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 MX report -all"
+err-msg         php  Warnings: Unknown extension 'MX' found in rule part 2 (MX)
+err-msg         /.*/ Unknown mechanism found in "MX".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a a:199.184.128.0/24 a:199.284.129.0/24 a:192.203.17.0/24 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:199.184.128.0/24)<br />ip address in place of domain name in 'a' declaration in rule part 5 (a:192.203.17.0/24)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a a:69.10.128.133/27 mx:mail.example.com/28  ~all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:69.10.128.133/27)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out         /.*/ SPF record:  v=spf1 a a:69.10.128.133/27 mx:mail.example.com/28 ~all
+
+spftest spf "v=spf1 a a:example.net ?all exists:%{l}.%{i}._spf.example.com"
+err-msg         php  Errors: Declaration 'exists' found after terminal declaration 'all' in rule part 5 (exists:%{l}.%{i}._spf.jamus.com)<br />Notes: Can't yet validate EXISTS macros
+err-msg         /.*/ Warning: Mechanisms found after the "all:" mechanism will be ignored
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a a:example.org a:192.109.197.0/24 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 4 (a:192.109.197.0/24)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a a:linux.example.com a:194.100.28.130 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:194.100.28.130)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a a:macri01 a:macri01.macri.example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a a:metolius.example.net a:rdbk-st1.loowit.colton.com, a:mail.example.net include:example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a ip4:213.239.58.158, ip4:24.193.192.167 -all"
+err-msg         php  Errors: Malformed or truncated ip address '213.239.58.158,' in 'ip4' declaration in rule part 3 (ip4:213.239.58.158,)
+err-msg         /.*/ Invalid IPv4 address literal near ":213.239.58.158," in "ip4:213.239.58.158,"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a mx a:202.145.63.202 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:202.145.63.202)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx a:61.222.198.66 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:61.222.198.66)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx a:62.199.240.10 a:62.199.243.216 ip4:192.168.1.0/24 include:example.net include:example.net -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:62.199.240.10)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx a:65.37.109.200/29 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 4 (a:65.37.109.200/29)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx a:example.com a:example.com a:example.org a:example.com mx:example.com mx:example.com mx:example.org mx:example.com include:example.net ~all"
+err-msg         php  
+err-msg         /.*/ Mechanisms used too many DNS lookups near "example.net" in "include:example.net"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a mx a:mx1.example.net a:mx2.example.net a:mx4.example.net a:mx5.example.net a:mail1.example.net a:mail2.example.net a:mail3.example.net a:mail4.example.net a:mail5.example.net -all"
+err-msg         php  
+err-msg         /.*/ Mechanisms used too many DNS lookups near "mail5.example.net" in "a:mail5.example.net"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a mx a:server-3.example.net a:example.net mx:example.net ip4:63.246.201.26 ip4:207.158.198.115 include:example.com include:example.net ?all."
+err-msg         php  
+err-msg         /.*/ Invalid character found near "all" in "?all."
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a a"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx a:mail.example.net a:mail2.example.net a:mail.example.info a:smtp.hispeed.ch a:smtp.swissonline.ch"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx a:www.example.org a:hyperion.example.org"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx a:www2 a:www a:outbound a:mkt1 a:mkt2 a:mkt3 a:mkt4 a:mkt5 a:mkt6 a:mkt7 a:mkt8 a:mkt9 a:mkt10 a:mkt11 a:mkt12 a:mk"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ Mechanisms used too many DNS lookups near "mkt6" in "a:mkt6"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a mx include:example.net; include:example.net ~all"
+err-msg         php  Errors: Malformed or truncated domain 'example.net;' in 'include' declaration in rule part 3 (include:example.net;)
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ip4:217.24.223/24 ip4:212.202.246.232/29 +exists:CL.%{i}.FR.%{s}.HE.%{h}.null.spf.example.com ?all"
+err-msg         php  Errors: Malformed or truncated ip address '217.24.223' in 'ip4' declaration in rule part 4 (ip4:217.24.223/24)<br />Notes: Can't yet validate EXISTS macros
+err-msg         /.*/ Invalid IPv4 address literal near ":217.24.223/24" in "ip4:217.24.223/24"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a mx ip4:63.236.30.60 ip4:208.46.128.37 ip4:208.46.128.36 ip4:208.46.128.39 ip4:208.46.128.41 ip4:213.206.133.38 ip4:63."
+err-msg         php  Errors: Malformed or truncated ip address '63.' in 'ip4' declaration in rule part 10 (ip4:63.)<br />Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ Invalid IPv4 address literal near ":63." in "ip4:63."
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a mx ptr -all ip4:198.64.189.122 ip4:198.64.189.110"
+err-msg         php  Errors: Declaration 'ip4' found after terminal declaration 'all' in rule part 6 (ip4:198.64.189.122)<br />Declaration 'ip4' found after terminal declaration 'all' in rule part 7 (ip4:198.64.189.110)
+err-msg         /.*/ Warning: Mechanisms found after the "all:" mechanism will be ignored
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ip4:142.176.168.115/32 ip4:24.138.31.78/32"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a mx ip4:142.176.168.115 ip4:24.138.31.78
+
+spftest spf "v=spf1 a mx ip4:62.245.220.0/23"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx mx:example.org"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx mx:mail.sanctum.ca ip4:65.39.134.36"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:dave.example.com a:dan.example.com a:jcs.example.com"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:www.example.com a:beta.example.com a:1u.example.com a:2u.example.com mx:mail.rockclimbing"
+err-msg         php  Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:216.201.160.245 a:213.187.184.166 mx:mail.shadow-realm.org. ip4:216.201.160.245 ip4:213.187.184.166 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 5 (a:216.201.160.245)<br />ip address in place of domain name in 'a' declaration in rule part 6 (a:213.187.184.166)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:elch.nu a:jan.net, a:example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:example.org a:example.org a:example.net a:example.com a:example.com a:example.com a:example.org a:example.org a:example.net a:example.com a:example.org a:example.org ip4:66.163.18.192/28 -all"
+err-msg         php  
+err-msg         /.*/ Mechanisms used too many DNS lookups near "example.org" in "a:example.org"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a mx ptr a:jan.net, a:example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:jan.net, a:exkursion.net, a:example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:jan.net, a:josepha.net, a:example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:neptune.example.com mx:216.68.227.2 mx:216.68.227.3 ip4:216.68.227.0/24 -all"
+err-msg         php  Errors: ip address in place of domain name in 'mx' declaration in rule part 6 (mx:216.68.227.2)<br />ip address in place of domain name in 'mx' declaration in rule part 7 (mx:216.68.227.3)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:portia mx:mail -all"
+err-msg         php  Errors: Malformed or truncated domain 'mail' in 'mx' declaration in rule part 6 (mx:mail)
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:post.example.com, a:smtp.example.com ?all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:reply ip4:216.39.115.0/24 ~all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:reply ip4:216.39.116.0/24 ~all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:smtp.paradise.example.net a:nitro.bafonline.example.net a:lancre.dis.example.net mx:paradise.example.net mx:jnawk.example.net mx:bafonline.example.net mx:electric.example.net ip4:202.0.32.0/24 include:paradise.example.net ?all"
+err-msg         php  
+err-msg         /.*/ Mechanisms used too many DNS lookups near "paradise.example.net" in "include:paradise.example.net"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a mx ptr a:titan a:star a:prey a:imac -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:tmdns01 -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:zivi.net, a:jan.net, a:example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr include:ethz.ch, include:example.org ?all"
+err-msg         php  Errors: Malformed or truncated domain 'ethz.ch,' in 'include' declaration in rule part 5 (include:ethz.ch,)
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr ip4:10/8 -all"
+err-msg         php  Errors: Malformed or truncated ip address '10' in 'ip4' declaration in rule part 5 (ip4:10/8)
+err-msg         /.*/ Invalid IPv4 address literal near ":10/8" in "ip4:10/8"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a prt -all"
+err-msg         php  Warnings: Unknown extension 'prt' found in rule part 3 (prt)
+err-msg         /.*/ Unknown mechanism found in "prt".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a ptr a:www mx:example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a ptr mx/24 ptr ?all:600"
+err-msg         php  Errors: Mechansism 'all' cannot take a :specification in rule part 6 (?all:600)
+err-msg         /.*/ Invalid option found near "" in "?all:600"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a:204.213.197.10/32 ptr mx -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 1 (a:204.213.197.10/32)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out         /.*/ SPF record:  v=spf1 a:204.213.197.10 ptr mx -all
+
+spftest spf "v=spf1 a:210.7.79.44 a:a.mx.example.net -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 2 (a:210.7.79.44)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:62.97.242.6 a:62.97.243.66 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 2 (a:62.97.242.6)<br />ip address in place of domain name in 'a' declaration in rule part 3 (a:62.97.243.66)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:admin include:example.com ?all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 exists:%{l}.%{i}._spf.example.net"
+err-msg         php  Warnings: Terminal declaration 'all' not found<br />Notes: Can't yet validate EXISTS macros
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 include:smtp.example.net default=softdeny"
+err-msg         php  Warnings: Unknown extension 'default' found in rule part 3 (default=softdeny)<br />Terminal declaration 'all' not found
+err-msg         /.*/ Invalid option found in "default=softdeny".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ip4:166.84/16 ip4:198.7.7/24 ?all"
+err-msg         php  Errors: Malformed or truncated ip address '166.84' in 'ip4' declaration in rule part 2 (ip4:166.84/16)<br />Malformed or truncated ip address '198.7.7' in 'ip4' declaration in rule part 3 (ip4:198.7.7/24)
+err-msg         /.*/ Invalid IPv4 address literal near ":166.84/16" in "ip4:166.84/16"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ip4:194.92.3.77 ip4:195.117.106.77 ip4:194.92.3.7 ip4:1945.117.106.7 -all"
+err-msg         php  Errors: Malformed or truncated ip address '1945.117.106.7' in 'ip4' declaration in rule part 4 (ip4:1945.117.106.7)
+err-msg         /.*/ Invalid IPv4 address literal near ":1945.117.106.7" in "ip4:1945.117.106.7"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ip4:208.219.207.0/24 ip4:199.165.143.0/24 ip4: 207.70.162.58 -all"
+err-msg         php  Errors: Malformed or truncated ip address '' in 'ip4' declaration in rule part 3 (ip4:)
+err-msg         /.*/ Invalid IPv4 address literal near ":" in "ip4:"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ip4:69.56.134.30 ip4:203.134.152.42 a a:69.56.134.30 ptr mx:iprimus.com.au mx:example.net ~all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 5 (a:69.56.134.30)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4=158.125.0.0/16 ip4=131.231.0.0/16 ip4=194.66.220.0/24 ip4=213.106.251.0/26 ip4=213.106.253.0/26 ?all"
+err-msg         php  Errors: Declaration 'ip4' found with '=' in place of ':' in rule part 2 (ip4=158.125.0.0/16)<br />Declaration 'ip4' found with '=' in place of ':' in rule part 3 (ip4=131.231.0.0/16)<br />Declaration 'ip4' found with '=' in place of ':' in rule part 4 (ip4=194.66.220.0/24)<br />Declaration 'ip4' found with '=' in place of ':' in rule part 5 (ip4=213.106.251.0/26)<br />Declaration 'ip4' found with '=' in place of ':' in rule part 6 (ip4=213.106.253.0/26)
+err-msg         /.*/ Invalid character found near "ip" in "ip4=158.125.0.0/16"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ipv4:68.165.108.160/27 a mx include:example.com ?all"
+err-msg         php  Warnings: Unknown extension 'ipv4' found in rule part 2 (ipv4:68.165.108.160/27)
+err-msg         /.*/ Invalid character found near "ipv" in "ipv4:68.165.108.160/27"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx -al"
+err-msg         php  Warnings: Unknown extension 'al' found in rule part 3 (-al)<br />Terminal declaration 'all' not found
+err-msg         /.*/ Unknown mechanism found near "al" in "-al"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx -all."
+err-msg         php  
+err-msg         /.*/ Invalid character found near "all" in "-all."
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx a:193.136.74.0/24 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:193.136.74.0/24)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx a:204.238.179.4 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:204.238.179.4)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx a:212.80.76.43 ~all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:212.80.76.43)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx a:66.134.148.242 a:64.91.37.5 mx:mail mx:ns3 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:66.134.148.242)<br />ip address in place of domain name in 'a' declaration in rule part 4 (a:64.91.37.5)<br />Malformed or truncated domain 'mail' in 'mx' declaration in rule part 5 (mx:mail)<br />Malformed or truncated domain 'ns3' in 'mx' declaration in rule part 6 (mx:ns3)
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx a:draco ip4:203.94.135.25 -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx a:gatem.example.com a:gatel.example.com ip4:195.39.227.0/255 ip4:195.39.226.0/255 -all"
+err-msg         php  Errors: Malformed cidr '/255' in 'ip4' declaration in rule part 5 (ip4:195.39.227.0/255)<br />Malformed cidr '/255' in 'ip4' declaration in rule part 6 (ip4:195.39.226.0/255)
+err-msg         /.*/ Invalid CIDR length near "/255" in "ip4:195.39.227.0/255"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx a:spam ?all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx default=deny"
+err-msg         php  Warnings: Unknown extension 'default' found in rule part 3 (default=deny)<br />Terminal declaration 'all' not found
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 mx -all
+
+spftest spf "v=spf1 mx incude:a.mx.yarross.net.pl include:pa135.debno.sdi.tpnet.pl -all"
+err-msg         php  
+err-msg         /.*/ Unknown mechanism found near "incude" in "incude:a.mx.yarross.net.pl"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx ip4:212.60.1.0/27 ip4:212.60.1.128/27 ipv4:212.60.5.122/32 -all"
+err-msg         php  Warnings: Unknown extension 'ipv4' found in rule part 5 (ipv4:212.60.5.122/32)
+err-msg         /.*/ Invalid character found near "ipv" in "ipv4:212.60.5.122/32"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx ip4:212.60.1.0/27 ip4:212.60.1.128/27 ipv4:212.60.5.143 -all"
+err-msg         php  Warnings: Unknown extension 'ipv4' found in rule part 5 (ipv4:212.60.5.143)
+err-msg         /.*/ Invalid character found near "ipv" in "ipv4:212.60.5.143"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx ip4:212.60.1.0/27 ip4:212.60.1.128/27 ipv4:212.60.6.144/29 ipv4:212.60.5.69/32 ipv4:212.60.1.133/32 -all"
+err-msg         php  Warnings: Unknown extension 'ipv4' found in rule part 5 (ipv4:212.60.6.144/29)<br />Unknown extension 'ipv4' found in rule part 6 (ipv4:212.60.5.69/32)<br />Unknown extension 'ipv4' found in rule part 7 (ipv4:212.60.1.133/32)
+err-msg         /.*/ Invalid character found near "ipv" in "ipv4:212.60.6.144/29"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx ip4:216.242.79.0/24 ip4:208.62.3.33.0/24 ip4:191.0.0.0/16 -all"
+err-msg         php  Errors: Malformed or truncated ip address '208.62.3.33.0' in 'ip4' declaration in rule part 4 (ip4:208.62.3.33.0/24)
+err-msg         /.*/ Invalid IPv4 address literal near ":208.62.3.33.0/24" in "ip4:208.62.3.33.0/24"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx ptr a:64.202.9.194 include:example.net include:example.net include:example.com ~all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 4 (a:64.202.9.194)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx ptr a:64.94.19.0/24 a:64.94.26.0/24 a:69.25.30.0/24 a:212.118.250.0/24 include:example.com include:example.com include:example.com include:example.com include:example.com ?all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 4 (a:64.94.19.0/24)<br />ip address in place of domain name in 'a' declaration in rule part 5 (a:64.94.26.0/24)<br />ip address in place of domain name in 'a' declaration in rule part 6 (a:69.25.30.0/24)<br />ip address in place of domain name in 'a' declaration in rule part 7 (a:212.118.250.0/24)
+err-msg         /.*/ Mechanisms used too many DNS lookups near "example.com" in "include:example.com"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx ptr a:alanke.lnk.example.net ip4:203.38.148/27 ip4:139.130.140.14 include:example.net -all"
+err-msg         php  Errors: Malformed or truncated ip address '203.38.148' in 'ip4' declaration in rule part 5 (ip4:203.38.148/27)
+err-msg         /.*/ Invalid IPv4 address literal near ":203.38.148/27" in "ip4:203.38.148/27"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx ptr a:mail a:mailsender ip4:12.161.223.0/24 include:example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx ptr a:mail.example.com mx:204.50.152.9 ip4:204.50.152.0/24 -all"
+err-msg         php  Errors: ip address in place of domain name in 'mx' declaration in rule part 5 (mx:204.50.152.9)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx ptr include:em.nytimes.com, include:nytimes.com, include:prvt.example.com -all"
+err-msg         php  Errors: Malformed or truncated domain 'em.nytimes.com,' in 'include' declaration in rule part 3 (include:em.nytimes.com,)
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx ptr ip4:198.49.180.128/255.255.255.192 ip4:199.165.223.128/255.255.255.192 ip4:128.251.9.64/255.255.255.192 -all"
+err-msg         php  Errors: Malformed cidr '/255.255.255.192' in 'ip4' declaration in rule part 4 (ip4:198.49.180.128/255.255.255.192)<br />Malformed cidr '/255.255.255.192' in 'ip4' declaration in rule part 5 (ip4:199.165.223.128/255.255.255.192)<br />Malformed cidr '/255.255.255.192' in 'ip4' declaration in rule part 6 (ip4:128.251.9.64/255.255.255.192)
+err-msg         /.*/ Invalid IPv4 address literal near ":198.49.180.128/255.255.255.192" in "ip4:198.49.180.128/255.255.255.192"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx ptr mx:example.com ip4:64.239.129.96/27 ip4:208.179.200.0/27 ip4:208.179.207.32/27 ip4:12.35.200.64/27 ip4:63.212.16"
+err-msg         php  Errors: Malformed or truncated ip address '63.212.16' in 'ip4' declaration in rule part 9 (ip4:63.212.16)<br />Warnings: Terminal declaration 'all' not found
+err-msg         /.*/ Invalid IPv4 address literal near ":63.212.16" in "ip4:63.212.16"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx ptr report:spf-failures@example.org -all"
+err-msg         php  Errors: Modifier 'report' found with ':' (should be '=') in rule part 4 (report:spf-failures@keneli.org)
+err-msg         /.*/ Unknown mechanism found near "report" in "report:spf-failures@example.org"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx report ?all"
+err-msg         php  
+err-msg         /.*/ Unknown mechanism found in "report".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx:MX mx:mail.example.com -all"
+err-msg         php  Errors: Malformed or truncated domain 'MX,' in 'mx' declaration in rule part 1 (mx:MX)
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ptr ip6:2001:7a8:29d4:/48 -all exp=explain._spf.%{d}"
+err-msg         php  
+err-msg         /.*/ Invalid IPv6 address literal near ":2001:7a8:29d4:/48" in "ip6:2001:7a8:29d4:/48"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 redirect=example.com -all"
+err-msg         php  
+err-msg         /.*/ Warning: Mechanisms found after the "all:" mechanism will be ignored
+rec-out         /.*/ SPF record:  v=spf1 redirect:example.com -all
+
+spftest spf "v=spf1 +mx/24 ?all"
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 mx/24 ?all
+
+spftest spf "v=spf1 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a ip4:64.62.161.45 ip4:64.62.161.46 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a ip4:66.250.128.129 ip4:66.250.128.131 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx a:mail.example.com ip4:151.204.180.96/27 ip4:205.179.105.45 ip4:205.179.105.46 include:example.com ?all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx a:mailgate.example.com a:newmail.example.com ip4:81.92.6.64/27 ip4:82.139.203.96/29 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ip4:209.68.1.20 include:webmail.example.com ~all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ip4:216.182.1.0/24 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx mx:tvc.example.net -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:216.201.160.245 a:213.187.184.166 mx:mail.shadow-realm.org. ip4:216.201.160.245 ip4:213.187.184.166 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 5 (a:216.201.160.245)<br />ip address in place of domain name in 'a' declaration in rule part 6 (a:213.187.184.166)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr a:tmdns01 -all"
+err-msg         php  
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr ip4:206.124.128.0/19 ?all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr ip4:62.146.97.0/24 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a mx ptr mx:example.org include:example.org -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a ptr a:mail.ulm.example.org mx:ulm.example.org -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a ptr:example.org mx:example.com ~all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:eclectic.example.net ?all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:lucite.example.net -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:mikala.example.net ip4:80.65.224.163 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:www.example.com mx:www.example.com ?all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:128.7.3.5 ~all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:193.97.170.0/24 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:202.83.72.196/32 -all"
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 ip4:202.83.72.196 -all
+
+spftest spf "v=spf1 ip4:209.157.132.16/29 ip4:205.217.154.120/29 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:216.126.227.84 ip4:209.210.176.2 ip4:216.126.204.144 ip4:65.121.72.14 ip4:208.44.169.14 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:62.80.26.128/29 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:65.222.222.35 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:80.198.171.100 ip4:80.198.171.101 ip4:80.198.171.102 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx a:193.136.74.0/24 -all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 3 (a:193.136.74.0/24)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx a:mx1.example.org -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx a:webmail2.example.org a:galileo.example.org -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx include:mail.example.net -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx ip4:199.247.51.20 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx ip4:66.11.173.170 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx ptr a:64.202.9.194 include:example.net include:example.net include:example.com ~all"
+err-msg         php  Errors: ip address in place of domain name in 'a' declaration in rule part 4 (a:64.202.9.194)
+err-msg         /.*/ Warning: Invalid hostname (possibly an IP address?)
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx ptr include:ns1.example.com -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx ptr ip4:64.94.19.0/24 ip4:64.94.26.0/24 ip4:69.25.30.0/24 ip4:212.118.250.0/24 include:example.com include:example.com include:example.com include:example.com include:example.com ?all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx:a.mx.example.com -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ptr ip4:193.252.114.25 ip4:193.252.114.226 ip4:194.2.86.7 -all"
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 redirect=_spf.example.org"
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 redirect:_spf.example.org
+

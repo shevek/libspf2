@@ -1,0 +1,23 @@
+
+The functions in this directory are replacements in case the OS does
+not have native libraries that contain (working) copies.
+
+
+The original file names have been changed in order to match the
+AC_REPLACE_FUNC() names in configure.ac.
+
+
+GNU getopt
+
+getopt_long_only.c was originally called getopt.c
+
+
+BIND nameserv functions
+
+These functions were snarfed out of the bind9.2.3 distribution
+
+__ns_initparse.c was originally called ns_parse.c
+__ns_name_uncompress.c was originally called ns_name.c
+port_after.h and port_before.h have not been renamed
+arpa_nameser.h was originally arpa/nameser.h
+

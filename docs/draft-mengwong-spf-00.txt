@@ -1,0 +1,1945 @@
+
+
+Internet Draft
+Category: Experimental                                   Mark Lentczner
+draft-mengwong-spf-00.txt                     Meng Weng Wong, pobox.com
+Expires: July 2004                                        February 2003
+
+                     Sender Policy Framework (SPF)
+     A Convention to Describe Hosts Authorized to Send SMTP Traffic
+
+Status of this Memo
+
+   This document is an Internet-Draft and is subject to all provisions
+   of Section 10 of RFC2026 except that the right to produce derivative
+   works is not granted.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as
+   Internet-Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six
+   months and may be updated, replaced, or obsoleted by other
+   documents at any time.  It is inappropriate to use Internet-
+   Drafts as reference material or to cite them other than as
+   "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/1id-abstracts.html
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html
+
+   This Internet-Draft will expire in July 2004.
+
+Abstract
+
+   Email address forgery is a problem on the Internet today.  Domain
+   owners want to control the use of their names in email, but are
+   helpless because they lack the means.  This document introduces a
+   language for domains to make email-related declarations in DNS.  It
+   defines in detail one possible sender authentication scheme for
+   domains to describe the hosts from which they send mail.  SMTP
+   receivers can use this scheme to detect sender forgery.
+
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 01]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+
+
+Table of Contents
+
+
+   1. Introduction
+      1.1 Terminology
+      1.2 Designated Senders
+   2. SPF Records
+      2.1 Publishing
+      2.2 Interpretation
+         2.2.1 Terms
+         2.2.2 Lookup
+   3. SPF Record Evaluation
+      3.1 Matching Version
+      3.2 SPF Directive Evaluation
+      3.3 Default result
+   4. Mechanism Definitions
+      4.1 'all'
+      4.2 'include'
+      4.3 Introducing Designated Sender Mechanisms
+      4.4 'a'
+      4.5 'mx'
+      4.6 'ptr'
+      4.7 'ip4' and 'ip6'
+      4.8 'exists'
+   5. Modifiers
+      5.1 redirect: Redirected Query
+      5.2 exp: Explanation
+   6. Miscellaneous
+      6.1 Unrecognized Mechanisms and Modifiers
+      6.2 Processing Limits
+      6.3 The Received-SPF header
+   7. Macros
+      7.1 Macro definitions
+      7.2 Expansion Examples
+   8. Conformance Definitions
+      8.1 Introduction
+      8.2 Conformance with regard to sender domains
+      8.3 Conformance with regard to sending e-mail systems
+      8.4 Conformance with regard to receiving e-mail systems
+      8.5 Conformance with regard to a particular SMTP transaction
+      8.6 Conformance with regard to an email-sending user
+      8.7 Rejection of non-SPF conformant email
+      8.8 Rejection of SPF conformant email
+      8.9 Recommendations
+      8.10 Changes to Existing Semantics
+         8.10.1 The Return-Path is now also a Responsible Sender
+
+
+Wong & Lentczner                                               [Page 02]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   9. Applicability Statement
+      9.1 Adoption by disreputable domains
+      9.2 Limitations
+      9.3 Phased Rollout
+      9.4 Verbatim Forwarding
+      9.5 Per-user exemptions
+   10. Security Considerations
+   11. IANA Considerations
+   12 Contributors and Acknowledgements
+   Appendix A. Collected ABNF for SPF records
+   Appendix B: Extended Examples
+   Appendix B.1 Simple Example
+   Appendix B.2 Multiple Domain Examples
+   Appendix B.3 RBL Style Example
+   Normative References
+   Informative References
+   Authors
+
+
+
+1. Introduction
+
+   The intended audience for this document includes administrators of
+   the Domain Name System and developers of Mail Transfer Agents (MTAs),
+   Mail Delivery Agents (MDAs), and Mail User Agents (MUAs).  They are
+   assumed to be familiar with the workings of SMTP and DNS.  See
+   RFC2821 and RFC1034.
+
+   Forgery of domain names is a problem.  Malicious entities often
+   falsify envelope and header addresses to make it harder to identify
+   the source of a message.  When those addresses correspond to real
+   people and organizations, the victims of forgery suffer a cost in
+   bounce messages, tarnished reputations, and misdirected abuse
+   reports.
+
+   SPF is designed to fight email address forgery.  It does this by
+   establishing a policy framework and an authentication scheme.
+
+   SPF defines a simple language.  Domains can use that language to
+   describe the mail they send.  SMTP receivers can use these
+   descriptions to evaluate messages.
+
+   SPF can implement a sender authentication scheme.  In a sender
+   authentication scheme, a domain owner asserts that legitimate
+   messages from that domain must meet a certain description.  Messages
+   which do not meet that description are not legitimate.  These
+   assertions are made in machine-readable form.
+
+
+
+Wong & Lentczner                                               [Page 03]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   SPF defines a specific sender authentication scheme based on the
+   designated sender model.  A domain identifies certain hosts as
+   designated senders.  Mail from those hosts is considered legitimate.
+   Mail from other hosts is not.
+
+   SPF publishes policy data in the DNS.  DNS resolvers can cache SPF
+   data.  Caching reduces lookup traffic.  Sender domains do not have to
+   run new servers to advertise SPF information.
+
+   SPF is extensible.  Multiple mechanisms can be defined.  While other
+   sender authentication schemes can be expressed in SPF, the rest of
+   this document defines a designated sender scheme in detail.
+
+1.1 Terminology
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and "OPTIONAL" in
+   this document are to be interpreted as described in RFC2119.
+
+   An SMTP client sends mail to an SMTP server.  The SMTP server and
+   downstream systems comprise the SMTP receiver.  The SMTP receiver
+   acts as an SPF client to an SPF publisher domain.
+
+   SPF processing may occur as early as the MAIL FROM stage of an SMTP
+   transaction or as late as the display stage in a Mail-User Agent.
+   For convenience, SMTP servers which accept, classify, discard, or
+   reject mail on the basis of SPF tests may be said to be speaking
+   "SMTP+SPF".
+
+1.2 Designated Senders
+
+   Designated sender schemes are weaker than cryptographic schemes but
+   provide more assurance than the current SMTP model.
+
+   SPF defines a set of mechanisms which add up to a designated sender
+   scheme.  First, domain owners designate legitimate outbound mail
+   servers in a compact, symbolic notation.  SMTP receivers may query
+   sender domains using these mechanisms and decide the validity of a
+   given SMTP transaction while that transaction is ongoing, even before
+   any message data is passed.  Alternatively, SPF tests can be
+   performed after SMTP time by an MDA or MUA.  MTAs, MDAs, and MUAs may
+   choose to accept, classify, discard, or reject messages based on the
+   result of an SPF test.
+
+   SPF can be used to verify the sender of a message based on envelope
+   information available at SMTP time or according to the headers after
+   an SMTP transaction has completed.
+
+
+
+Wong & Lentczner                                               [Page 04]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+2. SPF Records
+
+   Domains declare verifiable attributes that describe the mail they
+   send.
+
+   A domain's declarations are presented in an SPF record.  The record
+   is a single string of text:
+   
+       SPF-record  = version *( 1*SP ( directive | modifier ) )
+
+   An example SPF Record is:
+   
+        v=spf1 +mx +a:colo.example.com/28 -all
+    
+   This record has a version of "v=spf1" and three directives:
+   "+mx", "+a:colo.example.com/28", and "-all".
+   
+2.1 Publishing
+
+   The SPF record is published in the DNS.  The record is of type TXT.
+   The record is placed in the DNS tree at the level of the domain.
+
+   The TXT type was chosen for pragmatic reasons.
+   
+   SPF clients ignore records which do not carry a recognized version
+   string.  This document specifies the version string "v=spf1".
+
+   A domain MUST NOT return multiple records that begin with the word
+   "v=spf1".  If more than one "v=spf1" record is returned, this
+   constitutes a syntax error and the result is "unknown".
+
+   An example SPF record is:
+   
+      v=spf1 +mx +a:colo.example.com/28 -all
+   
+   This might be published easily via this line in a domain file:
+   
+     example.com. IN TXT "v=spf1 +mx +a:colo.example.com/28 -all"
+      
+   In unusual situations, directives may require additional DNS
+   records.  It is RECOMMENDED that these additional records be
+   published under the "_spf" subdomain.  See Appendix B for examples.
+
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 05]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+2.2 Interpretation
+
+   SPF clients are applications that parse and interpret the SPF record
+   for a domain.  Clients MUST correctly interpret the SPF record
+   according to the algorithm defined here.
+
+2.2.1 Terms
+
+   This section defines important terms.  They can be thought of as
+   variables in an SPF client.  It is crucial that they be interpreted
+   correctly.
+
+   It is RECOMMENDED that the <responsible-sender> be drawn from the
+   envelope using this algorithm:
+
+     The <responsible-sender> comes from the domain name of the "MAIL
+     FROM" envelope sender.  When the envelope sender has no domain, a
+     client MUST use the HELO domain instead.  If the HELO argument does
+     not provide an FQDN, SPF processing terminates with "unknown".
+
+     If SPF processing occurs after SMTP time, the envelope sender may
+     be obtained from the Return-Path header.  If the Return-Path header
+     has no domain, a client MAY try to extract the HELO domain from the
+     Received headers.  If the headers do not yield useful envelope
+     information, SPF processing terminates with "unknown".
+
+   However, the <responsible-sender> address MAY be drawn from an
+   alternative source.  For example, an MUA may find it more convenient
+   to extract the <responsible-sender> from the Return-Path header or
+   from the Sender: header.
+
+   The <current-domain> is initially drawn from the
+   <responsible-sender>.  If the <responsible-sender> has no localpart,
+   clients MUST substitute the string "postmaster" for the localpart.
+
+   Recursive mechanisms such as Include and Redirect replace the initial
+   <current-domain> with another domain.  However, they do not change
+   the value of the <responsible-sender>.  See sections 4.2, 3.3, and
+   8.4.
+
+2.2.2 Lookup
+
+   SPF clients perform a TXT type query in search of an SPF record.
+
+   Any number of records may be returned.  Only the record which begins
+   with "v=spf1", followed by whitespace, is relevant to this document.
+   CNAME responses are followed as usual.
+
+
+
+Wong & Lentczner                                               [Page 06]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   If no matching records are returned, an SPF client MUST assume that
+   the domain makes no SPF declarations.  SPF processing MUST abort
+   and return "none".
+
+   If the domain does not exist (NXDOMAIN) an SPF client MAY return
+   either "fail" or "none".
+    
+   Clients are NOT REQUIRED to fall back to parent domains.  If a domain
+   has no SPF record, clients MUST NOT, on their own initiative,
+   substitute SPF data from a parent domain.  For example, if no SPF
+   record is found for "workstation.example.com", clients MUST NOT
+   proceed automatically to query "example.com".
+
+
+3. SPF Record Evaluation
+
+   An SPF client evaluates an SPF record and produces one of seven
+   results:
+
+     None: The domain does not publish SPF data.
+
+     Neutral (?): The SPF client MUST proceed as if a domain did not
+     publish SPF data.  This result occurs if the domain explicitly
+     specifies a "?" value, or if processing "falls off the end" of
+     the SPF record.
+
+     Pass (+): the message meets the publishing domain's definition of
+     legitimacy.  MTAs proceed to apply local policy and MAY accept or
+     reject the message accordingly.
+
+     Fail (-): the message does not meet a domain's definition of
+     legitimacy.  MTAs MAY reject the message using a permanent
+     failure reply code.  (Code 550 is RECOMMENDED.  See RFC2821
+     section 7.1.)
+
+     Softfail (~): the message does not meet a domain's strict
+     definition of legitimacy, but the domain cannot confidently state
+     that the message is a forgery.  MTAs SHOULD accept the message
+     but MAY subject it to a higher transaction cost, deeper scrutiny,
+     or an unfavourable score.
+
+   There are two error conditions, one temporary and one permanent.
+
+     Error: indicates an error during lookup; an MTA MAY reject the
+     message using a transient failure code, such as 450.
+
+     Unknown: indicates incomplete processing: an MTA MUST proceed as
+     if a domain did not publish SPF data.
+
+
+Wong & Lentczner                                               [Page 07]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+
+   When SPF-aware SMTP receivers accept a message, they SHOULD prepend a
+   Received-SPF header.  See section 6.
+
+   SPF clients MUST use the algorithm described in this section
+   or its functional equivalent.
+   
+   If an SPF client encounters a syntax error in an
+   SPF record, it must terminate processing and return a result
+   of "unknown".
+
+3.1 Matching Version
+
+   An SPF record begins with a version section:
+    
+        version = 'v=spf' version-number
+        version-number = non-zero-digit [ '.' ] *DIGIT
+
+   SPF clients MUST use only the records of the highest understood
+   version published by a domain and ignore all lower versions, unless
+   that version explicitly recognizes lower versioned responses.
+   
+   For example, if an SPF client understands versions 1, 2 and 3, and
+   the DNS query results in records of version 1, 2 and 4, then only
+   the record with version 2 is used.
+   
+   This specification describes version 1.  If multiple "v=spf1" records
+   are returned, the SPF client MUST reject them all and act as if no
+   version 1 records were returned.
+
+   Minor version numbers are permitted, eg. "1.1".
+
+   SPF-like records of the form "v=spf1+ext" are not described by this
+   document.
+   
+3.2 SPF Directive Evaluation
+
+   There are two types of directives: mechanisms and modifiers.  A given
+   mechanism type may always appear multiple times in a record.
+   Modifiers may be constrained to appear at most once per record,
+   depending on the definition of the modifier.  Unknown mechanisms
+   cause processing to abort with the result "unknown".  Unknown
+   modifiers are ignored by clients.
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 08]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   An SPF record contains an ordered list of mechanisms and modifiers:
+   
+     SPF-record  = version *( 1*SP ( [prefix] mechanism | modifier ) )
+
+       prefix      = "+" / "-" / "~" / "?"
+       mechanism   = 1*ALPHA [ ':' *VCHAR ] *[ '/' *DIGIT ]
+       modifier    = 1*ALPHA '=' *VCHAR
+
+   Modifiers always contain an equals ('=') character.
+
+   Mechanisms usually contain ':' or '/' characters.
+
+   Directives that do not contain any of '=', ':', or '/' are
+   mechanisms.
+
+   Each directive is considered in turn from left to right.
+
+   When a mechanism is evaluated, one of three things can happen: it
+   can match, it can not match, or it can throw an exception.
+
+   If it matches, processing ends and the prefix value is returned as
+   the result of that record.  (The default prefix value is "+".)
+
+   If it does not match, processing continues with the next
+   directive.  If no directives remain, the default value is "-".
+
+   If it throws an exception, processing ends and the exception value is
+   returned (either "error" indicating a temporary failure, usually
+   DNS-related, or "unknown" indicating a syntax error or other
+   permanent failure resulting in incomplete processing.)
+
+   Mechanisms are described in Section 4 and 5.
+
+   A missing prefix in a directive is the same as a prefix of "+".
+   
+   The possible prefixes are:
+       +   pass
+       -   fail
+       ~   softfail
+       ?   neutral
+
+
+3.3 Default result
+
+   If none of the mechanisms match and there is no redirect modifier,
+   then the result of the SPF query is "neutral".  If there is a
+   redirect modifier, the SPF client proceeds as defined in section 5.1.
+   
+
+
+Wong & Lentczner                                               [Page 09]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   Note that SPF records SHOULD always either use a redirect modifier or
+   an "all" mechanism to explicitly terminate processing.
+   
+   For example:
+
+      v=spf1 +mx -all
+
+      v=spf1 +mx redirect=_spf.example.com
+        
+
+4. Mechanism Definitions
+
+   This section defines two types of mechanisms.
+
+   Basic mechanisms contribute to the SPF language framework.  They
+   do not specify a particular type of authentication scheme.
+
+     - all
+     - include
+
+   Designated sender mechanisms return a result based on the
+   relationship of the client IP address to the <responsible-sender>.
+
+     - a            - ip4
+     - mx           - ip6
+     - ptr          - exists
+
+   Mechanisms either match, do not match, or throw an exception.
+   If they match, their prefix value is returned.
+
+   Several of these mechanisms take an optional <domain-spec> argument.
+   If the <domain-spec> is present, then it is macro expanded (see
+   Section 7) and becomes the <target-name>.  If the domain-spec is not
+   provided, the <current-domain> is used as the <target-name>.
+   
+   CNAME responses are followed in the usual way.
+   
+4.1 'all'
+
+        all = 'all'
+
+   The 'all' mechanism is a test that always matches.  It is used as the
+   rightmost mechanism in an SPF record to indicate the default result.
+   
+   For example:
+        v=spf1 +mx +a -all
+
+   Mechanisms after "all" will never be tested.
+
+
+Wong & Lentczner                                               [Page 10]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+
+4.2 'include'
+
+    include = 'include' ':' domain-spec
+
+   The 'include' mechanism triggers a recursive SPF query.  The
+   domain-spec is expanded as per section 7.  Then a new query is
+   launched using the resulting string as the <current-domain>.  The
+   <responsible-sender> stays the same.
+   
+   "Include" makes it possible for one domain to designate multiple
+   administratively independent domains.
+
+   For example, a vanity domain "example.net" might send mail using the
+   servers of administratively independent domains example.com and
+   example.org.
+
+   Example.net could say
+
+      "v=spf1 include:example.com include:example.org -all".
+
+   That would direct an SPF client to, in effect, search the SPF records
+   for example.com and example.org for a "pass" result.  Only if the
+   message were not permitted for either of those domains would the
+   result be "fail".
+
+   This mechanism matches when the new query result returns a pass, and
+   doesn't match when the result is fail.  However, if the new query
+   returns none, unknown, or error, then processing of the entire SPF
+   query stops immediately and returns the unknown or error result.
+
+      pass     => match,    return the prefix value for "include"
+      fail     => no match, continue processing
+      softfail => no match, continue processing
+      neutral  => no match, continue processing
+      error    => error,    abort
+      unknown  => unknown,  abort
+      none     => unknown,  abort   # see below
+
+   If the parent domain includes another domain, and that domain one day
+   loses its SPF record, it is better for the query to abort with
+   "unknown" than to continue on to a potential "-all".
+
+   The Include mechanism is intended for crossing administrative
+   boundaries.  While it is possible to use Includes to consolidate
+   multiple domains that share the same set of designated hosts, domains
+   are encouraged to use Redirects where possible, and to minimize the
+   number of <Includes> within a single administrative domain.
+
+
+Wong & Lentczner                                               [Page 11]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   For example, if example.com and example.org were managed by the same
+   entity, and if the canonical set of designated mailers for both
+   domains were "mx:example.com", it would be possible for example.org
+   to specify "include:example.com", but it would be preferable to
+   specify "redirect=example.com" or even "mx:example.com".
+   
+4.3 Introducing Designated Sender Mechanisms
+
+   Designated sender schemes allow SMTP receivers to make policy
+   decisions on the basis of domain name rather than IP address.
+
+   These mechanisms allow a domain to declare that certain hosts send
+   mail from that domain.  When an SPF client processes these
+   mechanisms, it tests to see if the <sending-host> matches.
+   
+   Usually, the <sending-host> is the IP address of an SMTP client.  The
+   SMTP receiver is the SPF client.  The SPF lookup may also operate
+   after the SMTP transaction has terminated.  In these cases the
+   <sending-host> may have to be extracted from the Received header or
+   some other meta-data about the message.  Received headers can be
+   forged.  Accurate analysis is possible.  Still, be careful.
+   
+   If mail is transferred between mail systems internal to an
+   organization, and that organization chooses to process SPF after such
+   transfers, then the <sending-host> should be the external host that
+   first transferred the mail into the organization's mail system.
+      
+   When the <sending-host> is localhost, Designated Sender mechanisms
+   are not meaningful.  Therefore, an SPF client immediately returns
+   "pass" without evaluating mechanisms.
+      
+   The <sending-host> is required for these mechanisms.  If it cannot
+   be determined, then these mechanisms cannot be tested, and "unknown"
+   is returned.
+
+   The following conventions apply to designated sender mechanisms:
+
+      If the optional <CIDR-length> is given, then only the upper
+      <CIDR-length> bits of each IP are compared to the <sending-host>.
+
+      If the SMTP connection is IPv6, read "AAAA lookup" for "A lookup",
+      except where "A" lookups are explicitly specified.
+
+
+
+
+
+   
+
+
+Wong & Lentczner                                               [Page 12]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+4.4 'a'
+
+   This mechanism matches if the <sending-host> is one of the
+   <target-name>'s IP addresses.
+   
+        A = 'a' [ ':' domain-spec ] [ dual-cidr-length ]
+
+   The <sending-host> is compared to the IP address(es) of the
+   <target-name>.  If any address matches, the mechanism matches.
+
+4.5 'mx'
+
+   This mechanism matches if the <sending-host> is one of the MX hosts
+   for a domain name.
+   
+        MX = 'mx' [ ':' domain-spec ] [ dual-cidr-length ]
+    
+   SPF clients first perform an MX lookup on the <target-name>.  SPF
+   clients then perform an A lookup on each MX name returned, in order
+   of MX priority.  The <sending-host> is compared to each returned IP
+   address.  If any address matches, the mechanism matches.
+
+   Note Regarding Implicit MXes: If the <target-name> has no MX records,
+   SPF clients MUST NOT pretend the target is its single MX, and MUST
+   NOT default to an A lookup on the <target-name> directly.  This
+   behaviour breaks with the legacy "implicit MX" rule.  See RFC2821
+   Section 5.  If such behaviour is desired, the publisher should
+   specify an "a" directive.
+
+4.6 'ptr'
+
+   This mechanism tests if the <sending-host>'s name is within a
+   particular domain.
+   
+        PTR = 'ptr' [ ':' domain-spec ]
+
+   First the <sending-host>'s name is looked up using this procedure:
+   perform a PTR lookup against the <sending-host>'s IP.  For each
+   record returned, validate the host name by looking up its IP address.
+   If the <sending-host>'s IP is among the returned IP addresses, then
+   that host name is validated.  In pseudocode:
+
+     sending-host_names := ptr_lookup(sending-host_IP);
+     for each name in (sending-host_names) {
+       IP_addresses := a_lookup(name);
+       if the sending-host_IP is one of the IP_addresses {
+         validated_sending-host_names += name;
+     } }
+
+
+Wong & Lentczner                                               [Page 13]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   Check all validated hostnames to see if they end in the <target-name>
+   domain.  If any do, this mechanism matches.  If no validated hostname
+   can be found, or if none of the validated hostnames end in the
+   <target-name>, this mechanism fails to match.
+
+   Pseudocode:
+     for each name in (validated_sending-host_names) {
+       if name ends in <domain-spec>, return match.
+       if name is <domain-spec>, return match.
+     }
+     return no-match.
+
+   This mechanism matches if the <target-name> is an ancestor of the
+   <sending-host>, or if the <target-name> and the <sending-host> are
+   the same.  For example: "mail.example.com" is within the domain
+   "example.com", but "mail.bad-example.com" is not.  If a validated
+   hostname is the <target-name>, a match results.
+
+4.7 'ip4' and 'ip6'
+
+   These mechanisms test if the <sending-host> falls into a given IP
+   network.
+   
+    IP4             = 'ip4' ':' ip4-network [ ip4-cidr-length ]
+    IP6             = 'ip6' ':' ip6-network [ ip6-cidr-length ]
+    ip4-cidr-length = [ '/' 1*DIGIT ]
+    ip6-cidr-length = [ '/' 1*DIGIT ]
+
+    ip4-network    = dotted-quad notation
+    ip6-network    = conventional IPv6 notation
+
+   The <sending-host> is compared to the given network.  If they match,
+   the mechanism matches.
+
+   If the cidr-length is omitted, the ip4-cidr-length is taken to be
+   "/32" and the ip6-cidr-length is taken to be "/128".
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 14]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+4.8 'exists'
+
+   This mechanism is used to construct an arbitrary host name that is
+   used for a DNS A record query.  It allows for complicated schemes
+   involving arbitrary parts of the mail envelope to determine what is
+   legal.
+   
+        exists = 'exists' ':' domain-spec
+
+   The domain-spec is expanded as per Section 7.  The resulting domain
+   name is used for a DNS A lookup.  If any A record is returned, this
+   mechanism matches.  The lookup type is 'A' even when the connection
+   type is IPv6.
+
+   SPF publishers can use this mechanism to specify arbitrarily complex
+   queries.  For example, suppose example.com publishes the SPF record:
+   
+     v=spf1 exists:%{ir}.%{l1r+-}._spf.%{d} -all
+   
+   The target-name might expand to
+   "1.2.0.192.someuser._spf.example.com".  This makes fine-grained
+   decisions possible at the level of the user and client IP address.
+
+
+5. Modifiers
+
+   Only two standard modifiers are defined: Redirect and Exp.  SPF
+   clients MUST support them both.
+
+   Modifiers are not mechanisms: they do not return match or no-match.
+
+   Instead they provide additional information or change the course of
+   SPF processing.
+
+   While unrecognized mechanisms cause an immediate "unknown" abort,
+   unrecognized modifiers are simply ignored.
+
+   Modifiers therefore provide an easy way to extend the SPF protocol.
+
+
+
+
+
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 15]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+5.1 redirect: Redirected Query
+
+   If all mechanisms fail to match, and a redirect modifier is present,
+   then processing proceeds as follows.
+
+      redirect = 'redirect' '=' domain-spec
+
+   The domain-spec portion of the redirect section is expanded
+   as per the macro rules in section 7.  The resulting string
+   is a new domain that is now queried:  The <current-domain>
+   is set to this new domain, and the new domain's SPF record
+   is fetched and processed.  Note that <responsible-sender> does not
+   change.
+
+   The result of this new query is then considered the result of
+   original query.
+   
+   Note that the newly queried domain may itself specify redirect
+   processing.
+   
+   This facility is intended for use by organizations that wish to apply
+   the same SPF record to multiple domains.  For example:
+   
+          la.example.com. TXT "v=spf1 redirect=_spf.example.com"
+          ny.example.com. TXT "v=spf1 redirect=_spf.example.com"
+          sf.example.com. TXT "v=spf1 redirect=_spf.example.com"
+        _spf.example.com. TXT "v=spf1 mx:example.com -all"
+   
+   In this example, mail from any of the three domains is described by
+   the same SPF record.  This can be an administrative advantage.
+
+   Note: in general, a domain A cannot reliably use a redirect to
+   another domain B not under the same administrative control.  Since
+   the <responsible-sender> stays the same, there is no guarantee that
+   the SPF directives at domain B will correctly work for addresses in
+   domain A, especially if domain B uses mechanisms involving
+   localparts.  An "Include" directive may be more appropriate.
+
+   Only one redirect modifier may appear per SPF record.  The modifier
+   does not have to appear at the end; it MAY appear anywhere in the
+   record.  However, for clarity it is RECOMMENDED that redirect
+   modifiers appear after mechanisms.
+
+
+
+
+
+   
+
+
+Wong & Lentczner                                               [Page 16]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+5.2 exp: Explanation
+
+   The argument to the explanation modifier is a domain-spec to be TXT
+   queried.  The result of the TXT query is a macro-string that is
+   macro-expanded.  If SPF processing results in a rejection, the
+   expanded result can be shown to the sender in the SMTP reject
+   message.  This string allows the publishing domain to communicate
+   further information via the SMTP receiver to legitimate senders in
+   the form of a short message or URL.
+
+   Only one exp modifier may appear per SPF record.
+   
+       explanation = 'exp' '=' domain-spec
+
+   When an SPF client performs a query, and the result is anything other
+   than pass, then the explanation string, if present, SHOULD be
+   presented to the SMTP client after macro expansion.  See section 7.
+   
+   Suppose example.com has this SPF record
+
+      v=spf1 mx -all exp=explain._spf.%{d}
+
+   Here are some examples of the explanation TXT record at
+   explain._spf.example.com:
+   
+      Example.com mail should only be sent by its own servers.
+         -- a simple, constant message
+            
+      %{i} is not one of %{d}'s designated mail servers.
+         -- a message with a little more info, including the
+         -- SMTP sender's IP address
+            
+      See http://%{d}/why.html?s=%{S}&i=%{I}&h=%{H}
+         -- a complicated example that constructs a URL with
+         -- most of the parameters of the failed message so that
+         -- a web page can be generated with instructions
+
+   If multiple explanation TXT records are returned, they are
+   concatenated in the order they were received.  Use of multiple TXT
+   records is discouraged as DNS does not guarantee order.
+   
+   Note: during recursion into an Include mechanism, explanations do not
+   propagate out.  But during execution of a Redirect modifier, the
+   explanation string from the target of the redirect is used.
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 17]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+6. Miscellaneous
+
+6.1 Unrecognized Mechanisms and Modifiers
+
+   Future extensions to this standard may introduce new mechanisms and
+   modifiers.
+
+   Unrecognized mechanisms cause processing to abort: if, during
+   evaluation of an SPF record, an SPF client encounters a mechanism
+   which it does not understand or which it cannot properly evaluate
+   (due perhaps to insufficient information about the message at
+   evaluation time), then it terminates processing and returns
+   "unknown", without evaluating any further mechanisms.  Mechanisms
+   listed before the unknown mechanism MUST, however, be evaluated.
+
+   For example, given the record
+
+      v=spf1 a mx ptr domainkeys:_dk.%{d} -all
+
+   messages that match the "a", "mx", or "ptr" mechanisms would return a
+   "pass" result.  An SPF client that did not recognize the mechanism
+   "domainkeys" would return "unknown".  An SPF client that was
+   domainkeys-aware would be able to perform extended evaluation.  If
+   the message matched the domainkeys test, it would pass; if it did
+   not, evaluation would proceed to "-all" and return "fail".
+
+   "domainkeys" is an example of an unknown extension mechanism that
+   could be defined in future versions of this standard.  It is NOT
+   defined by this proposal.
+
+   Unrecognized modifiers are ignored: if an SPF client encounters
+   modifiers which it does not recognize, it MUST ignore them and
+   continue processing.  Modifiers always contain an "=" sign.
+
+   Unrecognized mechanisms are preserved in the Received-SPF header.
+   See section 6.3.
+
+6.2 Processing Limits
+   
+   During processing, an SPF client may perform additional SPF
+   subqueries due to the Include mechanism and the Redirect modifier.
+
+   SPF clients must be prepared to handle records that are set up
+   incorrectly or maliciously.  SPF clients MUST perform loop detection,
+   limit SPF recursion, or both.  If an SPF client chooses to limit
+   recursion depth, then at least a total of 20 redirects and includes
+   SHOULD be supported.  (This number should be enough for even the most
+   complicated configurations.)
+
+
+Wong & Lentczner                                               [Page 18]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   
+   If a loop is detected, or if more than 20 subqueries are triggered,
+   an SPF client MAY abort the lookup and return the result "unknown".
+
+   Regular non-recursive lookups due to mechanisms like "a" and "mx" or
+   due to modifiers like "exp" do not count toward this total.
+   
+6.3 The Received-SPF header
+
+   It is RECOMMENDED that SMTP receivers record the result of SPF
+   processing in the message headers.  If an SMTP receiver chooses to do
+   so, it MUST use the "Received-SPF" header defined here.  This
+   information is intended for the recipient.  (Information intended for
+   the sender of the e-mail is described in Section 5.2, Explanation.)
+   
+   The header SHOULD be prepended to existing headers.  It MUST appear
+   above any other Received-SPF headers in the message.  The header has
+   the format:
+   
+        header = 'Received-SPF:' 1*SP result [ 1*SP '(' comment ')' ]
+                 *( 1*SP key-value-pair )
+
+        result = 'pass' / 'fail' / 'error' / 'softfail' / 'neutral' /
+                 'none' / 'unknown' / unknown-mechanisms
+
+        unknown-mechanisms = 'unknown' *( 1*SP [prefix] mechanism )
+
+        key-value-pair = 1*VCHAR '=' *(WSP / VCHAR) ';'
+
+        comment = [ smtp-receiver-hostname ': ' comment-string ]
+
+   The comment-string should convey supporting information for the
+   result (such as <responsible-sender> and <current-domain>).
+
+   If processing was aborted due to unrecognized mechanisms, the
+   Received-SPF header SHOULD show the unrecognized mechanisms after
+   the "unknown" word.
+   
+   Example headers generated by mybox.example.org:
+   
+       Received-SPF: pass (mybox.example.org: domain of
+                           myname@example.com designates 192.0.2.1 as
+                           permitted sender)
+                           receiver=mybox.example.org;
+                           client-ip=192.0.2.1;
+                           envelope-from=<myname@example.com>;
+                           helo=foo.example.com;
+       
+
+
+Wong & Lentczner                                               [Page 19]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+       Received-SPF: fail (mybox.example.org: domain of
+                           myname@example.com does not designate
+                           192.0.2.1 as permitted sender)
+                           receiver=mybox.example.org;
+                           client-ip=192.0.2.1;
+                           envelope-from=<myname@example.com>;
+                           helo=foo.example.com;
+            
+       Received-SPF: softfail (mybox.example.org: domain of
+                               transitioning myname@example.com does not
+                               designate 192.0.2.1 as permitted sender)
+            
+       Received-SPF: neutral (mybox.example.org: 192.0.2.1 is neither
+                              permitted nor denied by domain of
+                              myname@example.com)
+            
+       Received-SPF: none (mybox.example.org: myname@example.com does
+                           not designated permitted sender hosts)
+            
+       Received-SPF: unknown -extension:foo (mybox.example.org: domain
+                                             of myname@example.com uses
+                                             mechanism not recognized by
+                                             this client)
+            
+       Received-SPF: error (mybox.example.org: error in processing
+                            during lookup of myname@example.com: DNS
+                            timeout)
+
+   SPF clients may append zero or more of the following key-value-pairs
+   at their discretion:
+
+      receiver       the hostname of the SPF client
+      client-ip      the IP address of the SMTP client
+      envelope-from  the envelope sender address
+      helo           the hostname given in the HELO or EHLO command
+      mechanism      the mechanism that matched (if no mechanisms
+                     matched, substitute the word "default".)
+      problem        if an error was returned, details about the error
+
+   Other key-value pairs may be defined by SPF clients.  Until a new key
+   name becomes widely accepted, new key names should start with "x-".
+
+
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 20]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+7. Macros
+
+7.1 Macro definitions
+
+   Certain directives perform macro interpolation on their arguments.
+
+     macro-string = *( macro-char / VCHAR )
+     macro-char   = ( '%{' ALPHA *DIGIT [ 'r' ] *delim '}' )
+                    / '%%'
+                    / '%_'
+                    / '%-'
+
+   A literal '%' is expressed by '%%'.
+   %_ expands to a single " " space.
+   %- expands to a URL-encoded space, viz. "%20".
+
+   The following macro letters are expanded:
+
+      l = local-part of responsible-sender
+      s = responsible-sender
+      o = responsible-domain
+      d = current-domain
+      i = SMTP client IP
+      t = current timestamp in UTC epoch seconds notation
+      p = SMTP client domain name
+      v = client IP version string: "in-addr" for ipv4 or "ip6" for ipv6
+      h = HELO/EHLO domain
+
+   The uppercase versions of those macros are URL-encoded as well.
+
+   A '%' character not followed by a '{', '%', '-', or '_' character
+   MUST be interpreted as a literal.  SPF publishers SHOULD NOT rely on
+   this feature; they MUST escape % literals.  For example, an
+   explanation TXT record
+      Your spam volume has increased by 581%
+   is incorrect.  Instead, say
+      Your spam volume has increased by 581%%
+
+   Legal modifiers are
+
+        *DIGIT ; one or more digits
+        'r'    ; reverse value, splitting on dots by default
+
+   The DIGIT modifier indicates the number of right-hand parts to use
+   after optional reversal.  The modifier MUST be nonzero.  If DIGIT
+   specifies more parts than are available, all the available parts are
+   used.  If the DIGIT was 5, and only 3 parts were available, the macro
+   interpreter would pretend the DIGIT was 3.
+
+
+Wong & Lentczner                                               [Page 21]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+
+   The 'r' modifier indicates a reversal operation: if the client IP
+   address were 192.0.2.1, the macro %{i} would expand to "192.0.2.1"
+   and the macro %{ir} would expand to "1.2.0.192".
+
+   The DIGIT and the 'r' modifiers split a string into parts.  By
+   default, strings are split on "." dots.  Modifiers may be followed by
+   one or more splitting characters which are used instead of the ".".
+   Splitting characters MUST be non-alphanumeric.  Parts are always
+   rejoined using "." and not the original splitting characters.
+
+   For the "l" and "s" macros: when the local-part has no length, the
+   string "postmaster" is substituted.
+
+   The "p" macro expands to the validated domain name of the SMTP
+   client.  The validation procedure is described in section 5.4.  If
+   there are no validated domain names, the word "unknown" is
+   substituted.  If multiple validated domain names exist, the first one
+   returned in the PTR result is chosen.
+
+   The "s" macro expands to the sender email address: a localpart, an @
+   sign, and a domain.  The "o" macro is the domain part of the "s".
+   They remain the same during a recursive "include" or "redirect"
+   subquery.
+
+   When the result of macro expansion is used in a domain name query, if
+   the expanded domain name exceeds 255 characters (the maximum length
+   of a domain name), the left side is truncated to fit, by removing
+   successive subdomains until the total length falls below 255
+   characters.
+
+   Uppercased macros are URL escaped.
+
+   URL encoding is described in RFC2396.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 22]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+7.2 Expansion Examples
+
+   The <responsible-sender> is strong-bad@email.example.com.
+   The IPv4 SMTP client IP is 192.0.2.3.
+   The IPv6 SMTP client IP is 5f05:2000:80ad:5800::1.
+   The PTR domain name of the client IP is mx.example.org.
+
+   macro                 expansion
+   -------------------------------
+   %{s}     strong-bad@email.example.com
+   %{o}                email.example.com
+   %{d}                email.example.com
+   %{d4}               email.example.com
+   %{d3}               email.example.com
+   %{d2}                     example.com
+   %{d1}                             com
+   %{p}                   mx.example.org
+   %{p2}                     example.org
+   %{dr}               com.example.email
+   %{d2r}                  example.email
+   %{l}                       strong-bad
+   %{l-}                      strong.bad
+   %{lr}                      strong-bad
+   %{lr-}                     bad.strong
+   %{l1r-}                        strong
+
+   macro-string                                   expansion
+   ---------------------------------------------------------------------
+   %{ir}.%{v}._spf.%{d2}              3.2.0.192.in-addr._spf.example.com
+   %{lr-}.lp._spf.%{d2}                   bad.strong.lp._spf.example.com
+
+   %{lr-}.lp.%{ir}.%{v}._spf.%{d2}
+                        bad.strong.lp.3.2.0.192.in-addr._spf.example.com
+
+   %{ir}.%{v}.%{l1r-}.lp._spf.%{d2}
+                            3.2.0.192.in-addr.strong.lp._spf.example.com
+
+   %{p2}.trusted-domains.example.net
+                                 example.org.trusted-domains.example.net
+
+   IPv6:
+   %{ir}.example.org              1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.
+                                   5.d.a.0.8.0.0.0.2.5.0.f.5.example.org
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 23]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+8. Conformance Definitions
+
+   The following sections define SPF conformance applied to various
+   entities.
+
+8.1 Introduction
+
+   In an SMTP+SPF transaction, there are three primary entites:
+     - the envelope sender domain
+     - the sending host (the SMTP client)
+     - the SMTP receiver
+
+   The conformance status of each entity has implications for the
+   transaction as a whole.
+
+8.2 Conformance with regard to sender domains
+
+   For a domain to be considered SPF-conformant, its authoritative DNS
+   servers are REQUIRED to publish an SPF record for that domain.
+   Domains which do not publish SPF data SHALL NOT be deemed
+   SPF-conformant.
+
+   If foo.example.com claims SPF compliance, it must have a record of
+   the form:
+
+      foo.example.com IN TXT "v=spf1 ..."
+
+   A domain also SHOULD publish policy records for each of its
+   designated servers to accommodate the MAIL FROM: <>.
+
+
+8.3 Conformance with regard to sending e-mail systems
+
+   To be considered SPF-conformant, an SMTP sending host MUST resolve a
+   "pass" for all the SPF-conformant domains for which it sends mail.
+
+   When an SMTP host sends a message delivery status notification
+   message, it MAY use the null envelope sender:
+     MAIL FROM: <>
+
+   The sender host's HELO/EHLO command string MUST include the Fully
+   Qualified Domain Name of the sender host, and an SPF record MUST
+   exist for that FQDN for the host to be considered SPF-conformant.
+
+   For example: in a transaction with
+
+      HELO mx01.example.com
+      MAIL FROM: <>
+
+
+Wong & Lentczner                                               [Page 24]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+
+   an SMTP+SPF receiver will perform an SPF query of the form
+
+      mx01.example.com TXT
+
+   and expect a result such as
+
+      "v=spf1 ptr:example.com -all"
+   or
+      "v=spf1 a -all"
+
+
+8.4 Conformance with regard to receiving e-mail systems
+
+   To describe itself as SPF-conformant, an SMTP receiver MUST perform
+   SPF tests.
+
+   SPF tests need not be performed while an SMTP transaction is ongoing:
+   if the MDA performs the test, that is sufficient.  A server need not
+   reject a message; but if it does not, it SHOULD add a Received-SPF
+   header.  If a server rejects a message, it SHOULD include any
+   <explanation> provided by the SPF publisher.
+
+   If a receiver system has a choice of testing the envelope sender (as
+   recorded in the Return-Path header) versus the message headers (as
+   recorded in Sender or From), the envelope is recommended.
+
+   Receiver systems SHOULD exclude special recipients such as
+   postmaster@ and abuse@ from SPF processing.  See RFC2142.
+
+   SPF is only one component in a policy engine.  An SPF-conformant SMTP
+   receiver is NOT REQUIRED to perform SPF tests on messages whose
+   dispositions have already been decided on the basis of other policy.
+
+     Example 1: if an SMTP receiver requires that sender domains must
+     possess MX or A records, and rejects transactions where they do
+     not, then SPF tests are moot.
+
+     Example 2: if an SMTP receiver expects messages from a trusted
+     client, such as a secondary MX for its own domain, then SPF tests
+     are not needed.
+
+     Example 3: if an SMTP receiver is considering a transaction which
+     does not yield a fully-qualified domain name in either the MAIL
+     FROM sender or the HELO command, SPF tests are not appropriate, and
+     the disposition of the message should be decided on the basis of
+     other policy.
+
+
+
+Wong & Lentczner                                               [Page 25]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+8.5 Conformance with regard to a particular SMTP transaction
+
+   An email message during delivery is conformant if SPF evaluation
+   results in a "pass", "neutral", or "softfail".
+
+8.6 Conformance with regard to an email-sending user
+
+   An email-sending user is conformant if all of her outbound mail is
+   sent through a designated mailer for her sender domain.
+
+8.7 Rejection of non-SPF conformant email
+
+   Mail from a domain SHOULD NOT be automatically treated as suspect
+   just because the domain doesn't publish SPF records.
+
+8.8 Rejection of SPF conformant email
+
+   An SPF email system MAY choose to reject or discard email on the
+   basis of local policy.  SPF is one component in an overall
+   email-policy engine.  SPF merely makes it possible for policy
+   decisions to be made with confidence at the sender-domain level.  The
+   actual policy decisions are outside the scope of this document.
+
+8.9 Recommendations
+
+   If a domain contains subdomains or hostnames that have A or MX
+   records, those subdomains and hostnames SHOULD publish SPF records as
+   well.  If they do not, they remain at risk of forgery.
+
+   Domain names used in a legitimate envelope sender SHOULD possess MX
+   records.
+
+   This proposal recommends the deprecation of the legacy "implicit MX"
+   rule defined in RFC2821 section 5.  Domains that want to receive mail
+   SHOULD always define explicit MX records.
+
+8.10 Changes to Existing Semantics
+
+8.10.1 The Return-Path is now also a Responsible Sender
+
+   From RFC2821:
+
+      The <reverse-path> portion of the first or only argument contains
+      the source mailbox (between "<" and ">" brackets), which can be
+      used to report errors (see section 4.2 for a discussion of error
+      reporting).
+
+
+
+
+Wong & Lentczner                                               [Page 26]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   When SPF is used to authenticate the return-path, the domain in the
+   source mailbox is now also the party responsible for sending the
+   message.
+
+   This semantic change is justified by the desire to control joe-jobs.
+   Joe jobs are a distributed denial of service attack against a given
+   address executed by forging messages using a victim sender address
+   and sending them to thousands of recipients.  Inevitably, some of
+   those delivery attempts fail, and bounce messages are generated to
+   the victim sender address.  These unwanted bounce messages can end up
+   crippling the victim mailbox.  SPF gives these potential victims a
+   way to protect their mailboxes.  With SPF, senders can now control
+   the use of their address in the return-path.
+
+
+9. Applicability Statement
+
+   This section discusses deployment considerations.
+
+9.1 Adoption by disreputable domains
+
+   It is trivial for a domain to publish "+all" to allow all.  A
+   disreputable domain could then send unwanted email from any host.
+   This is a common objection to SPF.
+
+   SPF provides a value-neutral framework for sender authentication and
+   accreditation.  Senders use that framework to make assertions
+   regarding the quality of messages.
+
+   It is the responsibility of the SMTP receiver to evaluate those
+   assertions.  First the SMTP receiver discards obvious forgeries.
+   Then it evaluates the remaining messages according to the reputation
+   of the sender and any accompanying accreditation assertions.
+
+   Whether a given domain is reputable or not is a decision that belongs
+   to an SMTP receiver.  Policy decisions regarding particular messages
+   are outside the scope of SPF.
+
+9.2 Limitations
+
+   In an SPF-conformant environment, envelope sender forgery is limited
+   to the local domain.  Unless per-user macros are used, it is possible
+   for one user to forge another user's address within that domain.
+   However, the organization responsible for the domain presumably has
+   the wherewithal to follow an audit trail.
+
+
+
+
+
+Wong & Lentczner                                               [Page 27]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+9.3 Phased Rollout
+
+   At an adopting domain, adoption of SPF could occur in phases.  A
+   domain might move through these phases by changing its default
+   response type from "neutral" to "softfail" to "fail".
+
+   The phases are characterized by different levels of awareness
+   among the domain's userbase, and different levels of strictness on
+   the part of SPF-conformant receivers.
+
+   When a sufficient majority of its users are SPF-conformant, a
+   domain SHOULD change its default to "fail".  That sends a signal to
+   SPF-conformant mail receivers that non-conformant messages SHOULD
+   be rejected.  Setting "-all" protects the users from account fraud
+   and joe-jobbing.
+
+   Messages that explicitly fail SPF with a "fail" SHOULD be rejected.
+
+9.4 Verbatim Forwarding
+
+   SPF changes the model of email from a store-and-forward system to an
+   end-to-end ystem.  Verbatim email forwarding suffers accordingly.
+
+   In verbatim forwarding, an intermediate forwarding host rewrites the
+   envelope recipient, but leaves the envelope sender untouched.
+
+   Forwarding hosts will need to rewrite the envelope sender as well to
+   maintain SPF conformance.
+
+   The rewritten envelope sender can take a variety of forms, depending
+   on whether bounces should be forwarded back to the original sender.
+   If bounces are unimportant, the rewritten sender could be as simple
+   as <nobody@example.com>.  If bounces are important, forwarders can
+   use envelope encapsulation with a MAC nonce, or rewrite the address
+   into a database-backed cookie.
+
+   A DNS whitelist (or its domain-name equivalent, a Right-Hand-Side
+   Whitelist (RHSWL)) of well-known trusted forwarders can help ease the
+   transition.
+
+9.5 Per-user exemptions
+
+   The "exists" mechanism can be used to exempt certain users from the
+   SPF requirements that apply to the rest of the domain.
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 28]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+10. Security Considerations
+
+   SPF depends on DNS.  A malicious attacker could poison a target's DNS
+   cache with spoofed DNS data.
+
+   SPF assumes the client IP address is true.  A malicious attacker
+   could spoof TCP sequences to make mail appear to come from a
+   designated host.  If this happens, an "echo" command could be
+   introduced to ESMTP to require a simple challenge/response
+   confirmation.
+
+   SPF clients need to limit themselves to 20 includes and redirects to
+   avoid attacks.
+
+11. IANA Considerations
+
+   The registry of standard mechanism and modifier names may be turned
+   over to IANA for management.
+
+12 Contributors and Acknowledgements
+
+  SPF is the child of RMX, by Hadmut Danisch, and DMP, by Gordon Fecyk.
+  It traces its ancestry farther back through "Repudiating Mail-From" by
+  Paul Vixie to a suggestion by Jim Miller in 1998.
+
+  Philip Gladstone contributed macros to the specification, multiplying
+  the expressiveness of the language and making per-user and per-IP
+  lookups possible.
+
+  The authors would like to thank the following individuals who
+  contributed to, critically reviewed, or otherwise furthered the
+  development of this specification.  The authors wish to apologize in
+  advance for any omissions.
+
+   Alain Knaff, Alain Nakache, Alan DeKok, Alan Hodgson, Alex Rosen,
+   Alex Van Den Bogaerdt, Andreas Kreuzinger, Andrew Boling, Andrew
+   Rose, Andrew Sweger, Andy Bakun, Andy Lester, Andy Smith, Anne
+   Mitchell, Anthony Campbell, Anthony Howe, Aredridel, Arik Baratz,
+   Arlie Davis, Ask Bjoern Hansen, B. Gingery, B. Johannessen, Benjamin
+   Franz, Bill Cole, Bill Landry, Bill Rockefeller, Bob Atkinson, Bob
+   Greene, Bob Miller, Bob Proulx, Bob Tanner, Brad Templeton, Bradley
+   Cloete, Brian Coloney, Brian Hatch, Brian Nelson, Bryan Campbell,
+   Bryce Jasmer, Carl Hutzler, Carsten Kuckuk, Catherine Hampton, Chris
+   Drake, Christophe Saout, Christopher Chan, Chuck Wolber, Clifford
+   Hammerschmidt, Colin Whittaker, Cyrus Mehta, Dan Boresjo, Dan Nadir,
+   Dan Willett Sr., Daniel Mack, Daniel Roethlisberger, Dave Lugo, David
+   A. Wheeler, David Brodbeck, David Saez, Dennis Carr, der Mouse, Derek
+   J. Balling, Dirk Van Mieghem, Don Andrews, Don Koch, Dr. Ernst
+
+
+Wong & Lentczner                                               [Page 29]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+   Molitor, Dustin Trammell, Edward Ned Harvey, Eric Allman, Eric
+   Helfgott, Eric S. Raymond, Erik Corry, Ernesto Baschny, Fridrik
+   Skulason, G. Roderick Singleton, George Mitchell, George
+   Schlossnagle, George Webb, Gerald Oskoboiny, Graham Barr, Graham
+   Murray, Greg Connor, Greg Wooledge, Guillaume Filion, Gustav Foseid,
+   Hadmut Danisch, Hans Dieter Pearcey, Harry Katz, Harry Palmer, Henrik
+   Edlund, Howard Lee Harkness, Izzy Kindred, Jameel Akari, James
+   Couzens, Jan Wildeboer, Jason Buchanan, Jasper Wallace, Jeremy Doupe,
+   Jeremy Pullicino, Jesus Duarte, Jim Lyon, Jim Popovitch, Jim Ramsay,
+   Joe Zasada, John A. Martin, John Capo, John Payne, John R Levine,
+   John Warren, Jon Bertrand, Jon Loeliger, Jonathan Steinert, Jordan
+   Pollack, Julian Mehnle, Justin Mason, Justo Alonso, Karl J. Smith,
+   Kelson Vibber, Kenn Humborg, Kenneth Porter, Kevin Reed, Kitt
+   Diebold, Klaus Alexander Seistrup, Larry Smith, Lee Carver, Lee
+   Maguire, Loic Prylli, Marc Alaia, Marc Hudson, Mark Anderson, Mark
+   Delany, Mark Farver, Mark Foster, Mark Jason Dominus, Mark Jeftovic,
+   Mark Shewmaker, Mark Tranchant, Mark, system administrator at
+   Asarian-host.org, Marrandy, Martin H. Sluka, Marty Lyons, Matt Perry,
+   Matt Sergeant, Matthew Barr, Matthew Mucker, Matthew Walker, Mike
+   Batchelor, Neil Schwartzman, Nick Phillips, Nicolas Bougues, Nils
+   Puhlmann, Odhiambo Washington, Oliver Gerler, Paul Blair, Paul Vixie,
+   Paul Wouters, Peter Baumann, Peter Viertel, Peter Westlake, Phil
+   Howard, Phil Karn, Phil White, Philip Hazel, Philip Tucker, Philipp
+   Morger, Phillip Hallam-Baker, R. Scott Perry, Rahul Tongia, Ray
+   Everett-Church, Raymond S Brand, Rich Puhek, Richard George, Richard
+   Hansen, Richard Kay, Richard Pitt, Rick Stewart, Rik Van Riel, Rob
+   Kaper, Robert Spier, Rolf E. Sonneveld, Ronald F. Guilmette, Roy
+   Badami, Russell Kroll, Sam Horrocks, Sam Norris, Sanford Whiteman,
+   Scott Nelson, Scott Savarese, Sean Comeau, Seth Breidbart, Seth
+   Goodman, Seun Osewa, Shevek, Steven Bellovin, Steven G. Willis,
+   Steven W. Orr, Stuart Schneider, Suresh Ramasubramanian, Ted Cabeen,
+   Terence Way, Theo Van Dinter, Thomas Harold, Thomas R. Stephenson,
+   Thor Kooda, Tim Freeman, Tim Gladding, Tim Wilde, Tom Allison, Tracy
+   Martin, Tugrul Galatali, Ty Lammy, Vidar Holen, Viktor Duchovni,
+   Vivien M., Walt Mankowski, Wayne Schlitt, Wechsler, Weldon Whipple,
+   Will Lowe, Will Senn, William Astle, Yakov Shafranovich, Zan Hecht,
+   and Zolta'N Za'Mbori.
+
+   The folks on the SPAM-L mailing list
+   The folks on the ASRG mailing list and in the IETF.
+   The folks on the spf-discuss mailing list.
+   The folks on the mailing list that shall not be named.
+   The folks on #perl.
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 30]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+Appendix A. Collected ABNF for SPF records
+   
+   See RFC2234 for ABNF notation.
+   
+    SPF-record  = version *( 1*SP ( [prefix] mechanism | modifier ) )
+
+    version     = 'v=spf' 1*digit
+    
+    prefix      = ( "+" / "-" / "?" / "~" )
+    
+    modifier    = redirect / explanation / unknown-modifier
+    redirect    = 'redirect' '=' domain-spec
+    explanation = 'exp' '=' domain-spec
+    
+    unknown-modifier = 1*ALPHA '=' *VCHAR
+    
+    mechanism   = ( all / include
+                   / A / MX / PTR / IP4 / IP6 / exists
+                   / extension )
+
+    all          = 'all'
+    include      = 'include'  ':' domain-spec
+    A            = 'a'      [ ':' domain-spec ] [ dual-cidr-length ]
+    MX           = 'mx'     [ ':' domain-spec ] [ dual-cidr-length ]
+    PTR          = 'ptr'    [ ':' domain-spec ]
+    IP4          = 'ip4'      ':' ip4-network   [ ip4-cidr-length ]
+    IP6          = 'ip6'      ':' ip6-network   [ ip6-cidr-length ]
+    exists       = 'exists'   ':' macro-string
+
+    extension    = *alphanum [ ':' *VCHAR ]
+
+    ip4-network  = as in RFC2373 [15], e.g. 192.0.2.0
+    ip6-network  = as in RFC2373 [15], e.g. 12AB:0:0:CD30
+
+    domain-spec  = domain-name / macro-string
+    domain-name  = domain-part *( '.' domain-part ) [ '.' ]
+    domain-part  = as defined in RFC1034
+   
+    dual-cidr-length = [ ip4-cidr-length ] [ '/' ip6-cidr-length ]
+    ip4-cidr-length  = [ '/' 1*DIGIT ]
+    ip6-cidr-length  = [ '/' 1*DIGIT ]
+
+    macro-string = *( macro-char / VCHAR )
+    macro-char   = ( '%{' alpha *digit [ 'r' ] *delim '}' )
+                   / '%%' / '%_' / '%-'
+
+    alphanum    = alpha | digit
+    delim       = '.' | '-' | '+' | ',' | '|' | '_' | '='
+
+
+Wong & Lentczner                                               [Page 31]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+    
+Appendix B: Extended Examples
+
+   These examples are based on the following DNS set up:
+
+    ; A domain with two mail servers, two hosts
+    ; and two servers at the domain name 
+    
+    $ORIGIN example.com.
+    @           MX  10 mail-a
+                MX  20 mail-b
+                A   192.168.1.10
+                A   192.168.1.11
+    amy         A   192.168.1.65
+    bob         A   192.168.1.66
+    mail-a      A   192.168.1.129
+    mail-b      A   192.168.1.130
+    www         CNAME example.com.
+    
+    ; The reverse IP for that domain
+    
+    $ORIGIN 1.168.192.in-addr.arpa.
+    10          PTR example.com.
+    11          PTR example.com.
+    65          PTR amy.example.com.
+    66          PTR bob.example.com.
+    129         PTR mail-a.example.com.
+    130         PTR mail-b.example.com.
+    
+    ; A related domain
+    
+    $ORIGIN example.org
+    @           MX  10 mail-c
+    mail-c      A   192.168.2.140
+ 
+    ; The reverse IP for that domain
+    
+    $ORIGIN 2.168.192.in-addr.arpa.
+    140        PTR mail-c.example.org.
+   
+    ; A rogue reverse IP domain that claims to be
+    ; something it's not
+    
+    $ORIGIN 0.0.10.in-addr.arpa.
+    4           PTR bob.example.com.
+    
+
+
+
+
+Wong & Lentczner                                               [Page 32]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+Appendix B.1 Simple Example
+
+   If <current-domain> is "example.com", then this describes the
+   effect various possible SPF records for example.com would have
+   on various <sending-hosts>
+   
+   "v=spf1 +all"
+        -- any mail message passes
+   
+
+   "v=spf1 a -all"
+        -- sending hosts 192.168.1.10 and 192.168.1.11 pass
+
+   "v=spf1 a:example.org -all"
+        -- no sending hosts pass since example.org has no A records
+
+
+   "v=spf1 mx -all"
+        -- sending hosts 192.168.1.129 and 192.168.1.130 pass
+           
+   "v=spf1 mx:example.org -all"
+        -- sending host 192.168.2.140 passes
+        
+   "v=spf1 mx mx:example.org -all"
+        -- sending hosts 192.168.1.129, 192.168.1.130,
+           and 192.168.2.140 pass
+        
+   "v=spf1 mx/24 mx:example.org/24 -all"
+        -- any sending host in 192.168.1.0/24 or 192.168.2.0/24 passes
+
+
+   "v=spf1 ptr -all"
+        -- sending host 192.168.1.65 passes
+                (reverse IP is valid and in example.com)
+        -- sending host 192.168.2.140 fails
+                (reverse IP is valid, but not in example.com)
+        -- sending host 10.0.0.4 fails
+                (reverse IP is not valid)
+
+
+    "v=spf1 ip4:192.168.1.128/25 -all"
+        -- sending host 192.168.1.65 fails
+        -- sending host 192.168.1.129 passes
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 33]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+Appendix B.2 Multiple Domain Examples
+
+   These examples show the effect of related SPF records:
+   
+     example.org: "v=spf1 include:example.com include:example.net -all"
+
+   This SPF record would be used if mail from example.org actually came
+   through servers at example.com and example.net.  Example.org's
+   designated servers are the union of example.com and example.net's
+   designated servers.
+      
+     1.example.org: "v=spf1 redirect=example.org"
+     2.example.org: "v=spf1 redirect=example.org"
+     3.example.org: "v=spf1 redirect=example.org"
+
+   These SPF records allow a set of domains that all use the same
+   mail system to make use of that mail system's SPF record.  In this
+   way, only the mail system's SPF record needs to updated when
+   the mail setup changes.  These domains' SPF records never have to
+   change.
+
+Appendix B.3 RBL Style Example
+
+   Imagine that, in addition to the domain records listed above,
+   there are these:
+   
+    $Origin _spf.example.com.
+    mary.mobile-users                   A 127.0.0.2
+    fred.mobile-users                   A 127.0.0.2
+    15.15.168.192.joel.remote-users     A 127.0.0.2
+    16.15.168.192.joel.remote-users     A 127.0.0.2
+
+   Then consider these SPF records
+   
+    example.com:
+        "v=spf1 mx 
+                include:mobile-users._spf.%{d}
+                include:remote-users._spf.%{d}
+                -all"
+    
+    mobile-users._spf.example.com:
+        "v=spf1 exists:%{l1r+}.%{d}"
+    
+    remote-users._spf.example.com:
+        "v=spf1 exists:%{ir}.%{l1r+}.%{d}"
+
+   This describes users at example.com who send mail from arbitrary
+   servers, and users who send mail from a set of personal servers.
+
+
+Wong & Lentczner                                               [Page 34]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+    
+Normative References
+
+  [1] [RFC2396]
+
+Informative References
+
+   (These references will be properly cited in a later version of the
+   draft.)
+
+  [1] [RFC1034]
+  [2] [RFC1464]
+  [3] [RFC2119]
+  [4] [RFC2142]
+  [5] [RFC2234]
+  [6] [RFC2373]
+  [7] [RFC2505]
+  [8] [RFC2821]
+  [9] [RFC2822]
+
+ [10] Danisch, Hadmut.
+      "The RMX DNS RR Type for light weight sender authentication",
+      http://www.danisch.de/work/security/antispam.html, October 2003,
+      Work In Progress.
+
+ [11] Fecyk, Gordon.  "Designated Mailers Protocol", December 2003,
+      Work In Progress.  http://www.pan-am.ca/dmp/
+
+ [12] Wong, M.W., "Sender Rewriting Scheme", Work In Progress,
+      http://spf.pobox.com/srs/
+
+ [13] DeKok, Alan.  The LMAP discussion document.
+
+ [14] Vixie, Paul.  "Repudiating Mail-From".
+      http://ops.ietf.org/lists/namedroppers/namedroppers.2002/msg00658.html
+
+ [15] http://nospam.couchpotato.net/
+
+
+
+
+
+
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 35]
+Internet-Draft           Sender Policy Framework            Feb  8 2004
+
+
+
+
+
+
+
+
+
+Authors
+
+   Meng Weng Wong
+   Singapore
+   mengwong+spf@pobox.com
+
+   Mark Lentczner
+   1209 Villa Street
+   Mountain View, CA 94041
+   United States of America
+   markl@glyphic.com
+
+   Comments on this draft are welcome on the spf-discuss mailing list.
+   To subscribe to the mailing list, please see
+   http://spf.pobox.com/mailinglist.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Wong & Lentczner                                               [Page 36]
+
+

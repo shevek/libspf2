@@ -1,0 +1,56 @@
+
+
+A new version of the alternate C implementation of SPF (libspf-alt) is
+now available at:
+
+http://www.midwestcs.com/spf/libspf-alt
+
+Version 0.3 is mostly a bug-fix release.
+
+The major highlights of this release are:
+
+* Most of the work was directed toward the new SPF test system and
+  making libspf-alt pass as many of the tests as practical.
+
+* Quite a bit of documentation was added to the include files.  While
+  still far from production quality documentation, you should no
+  longer have to dig through lots of source code in order to figure
+  out what is going on.
+
+* IPv6 is not supported, making libspf-alt the first SPF
+  implementation to do so.  Testing, however, has been limited.
+
+* A new 'zone' DNS layer has been created.  This allows you to create
+  internal 'zone files' that will override or create fallbacks for
+  other domains that don't currently publish SPF records.  Unlike the
+  perl M:S:Q 1.996 override/fallback options, the libspf-alt 'zone'
+  DNS layer can also create SPF explanation records or any other DNS
+  entry that you find useful.
+
+  The zone DNS layer can also be used for things like marking sections
+  of the rDNS tree as not resolvable, thus instantly returning the
+  results, instead of waiting for all those name servers to timeout.
+
+* The caching DNS layer has been made more useful in several ways.
+  * The cache can now support more than 64k entries
+  * The cache now has a small reclaim-list to reduce the cost of hash
+    collisions.
+  * You can now set minimum Time To Live (TTL) values
+     * min_ttl	The absolute minimum TTL value in all cases.
+     * err_ttl	The minimum TTL value to use when there is a DNS error.
+     * txt_ttl	The minimum TTL value to use when a TXT query is done.
+                In the case of SPF, these are the SPF records and the
+ 		explanation records.  This TTL value is used even when
+    		no record is found, so domains that haven't set up SPF
+  		records won't be constantly queried.
+     * rdns_ttl	The minimum TTL value to use when looking up information
+   		in the reverse DNS tree. 
+
+
+
+Comments, suggestions, bug reports, and complaints, are welcome!
+
+
+
+-wayne
+

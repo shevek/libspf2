@@ -1,0 +1,29 @@
+
+
+A new version of the alternate C implementation of SPF (libspf-alt) is
+now available at:
+
+http://www.midwestcs.com/spf/libspf-alt
+
+Version 0.2 is mostly a cleanup release.  The major change is that
+libspf-alt now uses autoconf/configure to make it more portable.  It
+now compiles and passes its self-checks on Debian Linux (testing),
+FreeBSD 4.3 and SunOS 5.8.  The source code has been rearranged, it is
+now in a directory tree rather than everything in one big directory.
+The six different test suites that I've been using for testing can now
+be automatically run by using the "make check" command.
+
+
+The GNU autoconf/automake/libtools system (configure) gives a nice
+standardized system for things like "make install" and "make
+uninstall", but boy does it add bulk!  The configure script alone is
+over 750k!  Still, I think using these tools is well worth it.
+
+
+
+Comments, suggestions, bug reports, and complaints, are welcome!
+
+
+
+-wayne
+

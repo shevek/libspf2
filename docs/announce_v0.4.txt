@@ -1,0 +1,74 @@
+
+
+A new version of the alternate C implementation of SPF (libspf-alt) is
+now available at:
+
+http://www.midwestcs.com/spf/libspf-alt
+
+Version 0.4 makes a lot of strides toward a stable v1.0 release
+
+The major highlights of this release are:
+
+* IPv6 bug fixes.  I think IPv6 may actually be pretty functional
+  now.  Thanks to David Woodhouse <dwmw2 <at> infradead.org> for the
+  help with this.
+
+* libspf-alt has now been fairly heavily tested for being
+  thread-safe.  It turns out that it was actually the BIND resolver
+  library that was the biggest problem.  BIND4 is not thread safe, but
+  libspf-alt now uses the res_ninit() and res_nquery() functions so
+  that it is thread-safe on BIND8.  (I'm pretty sure the BIND9 usage
+  was always thread-safe.)
+
+  Thanks to Emmanuel Dreyfus <manu <at> netbsd.org>
+
+* Libspf-alt now has a SPF_result_helo() function to explicitly test
+  the HELO string, even if the MAIL FROM is not <>.
+
+* Libspf-alt now has a SPF_result_2mx() function to support domains
+  that have secondary MXes.  This is equivalent to the
+  Mail::SPF::Query result2 functionality.
+
+* The libspf-alt configure script now has a --bind-with=DIR option to
+  let people use a different version of the bind than the default
+  installed with the system.  This functionality was added by Emmanuel
+  Dreyfus <manu <at> netbsd.org>
+
+* There is now support for sending the error/warning/debug information
+  to syslong instead of stderr/stdout
+
+* There is now more documentation on the API.
+
+* There have been quite a few API changes with this release.  I hate
+  doing this, but I'm trying to get both a clean, stable, and
+  functional API ready for the v1.0 release.  I tried hard to think
+  ahead when I created the initial API, but hindsight beats foresight
+  every time.
+
+  Fortunately, most of the API changes are things that are either
+  pretty trival, or are things that are mostly used internally and few
+  if any applications have taken advantage of them.
+
+* There are now a couple of simple example programs included with the
+  distribution that should make it easier to figure out how to use the
+  libspf-alt API.
+
+* The code has been cleaned up enough so that it now compiles cleanly
+  with the gcc options "-W -Wall -Wmissing-prototypes
+  -Wwrite-strings".  On many systems it also compiles cleanly with
+  -ansi/-std=c89/-std=c99, but there are too many problems with
+  include file incompatibilities to distribute that way.
+
+  These are basically the same flags that BIND9 uses.
+
+* More DoS checks and limits have been added.
+
+
+
+
+Comments, suggestions, bug reports, and complaints, are welcome!
+
+
+
+-wayne
+

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+echo
+echo "Running regression tests using static test dns zone file..."
+
+./tests_single -tdns || exit 1

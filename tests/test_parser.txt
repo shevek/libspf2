@@ -1,0 +1,473 @@
+#
+# This file is read by test_parser.pl, use "test_parser.pl --help" for
+# details about how to run it.  Basically, this file contains options
+# that will be passed to the spftest program and checks to be done on
+# the spftest output.
+#
+# The format of this file is fairly free-format, but looks can be
+# somewhat deceptive.  The parsing done in test_parser.pl is pretty
+# simplistic.
+#
+# Blank lines, and lines beginning with '#' are ignored
+#
+# The lines all begin with a "command"
+#
+# default       This sets the default list of options to be included
+#               on all spftest commands.  These options are place
+#               first so, in theory, other options can override the
+#               defaults.  It is probably a bad idea to use this
+#               feature though.
+#
+# spftest       This causes the spftest program to be called with the
+#               specified options (along with the default options).
+#               The actual name of the spftest program will be
+#               determined by the test_parser.pl program, you can't just
+#               change it here.
+#
+# The following are commands that check the output of the spftest
+# program.
+# 
+# The first word after command is used to select the SPF
+# implementation that this check applies to.  This can either be a
+# string, or a regular expression enclosed in slashes.  So, the word
+# '/.*/' will match all SPF implementations, while 'perl' will only
+# match the implementation named perl.  Strings must be a complete
+# match, so 'perl' will not 'perl-extend'.
+#
+# The rest of the line is also either a literal string or regular
+# expression, but unlike the implementation, this can contain spaces.
+#
+# The order of the output checks is important.  Only the one check
+# for each type will be evaluated, so the commands with the most
+# general implementation specification should be last.
+#
+# rec-in        This checks the SPF record was correctly received by
+#               the spftest command.  This is the first line printed
+#               by spftest.
+#
+# err-msg       This is the error (or warning) message, if any, that
+#               results from parsing the SPF record.  In the future,
+#               this will need to be changed to support multiple error
+#               messages.  This is the second line printed by spftest.
+#
+# spf-header    This contains information about the SPF record,
+#               including such things as the number of mechanisms, the
+#               number of modifiers, and the number of bytes in the
+#               byte-compiled SPF record.  It is not included in any
+#               of the test databases because it is generally not
+#               useful for generic implementation testing. This is the
+#               third line printed by spftest.
+#               
+# rec-out       This is the SPF record as seen by the SPF
+#               implementation.  It will be different from the rec-in
+#               when an implementation converts old options (such as
+#               the default=allow) into current options, supplies
+#               defaults, or cleans up the record.  This is the fourth
+#               line printed by spftest.
+#
+# rec-out-auto  Most of the time, the rec-in and the rec-out are the
+#               same, so this check just verifies that this is true.
+#               This makes it easier to tell when the SPF
+#               implementation has intentionally changed the SPF
+#               record. 
+
+
+
+
+
+spftest spf "a"
+rec-in          /.*/ SPF record in:  a
+err-msg         /.*/ Could not find a valid SPF record near "" in "a"
+rec-out         /.*/ Unknown
+
+spftest spf "v=sp a"
+rec-in          /.*/ SPF record in:  v=sp a
+err-msg         /.*/ Could not find a valid SPF record near "" in "v=sp"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a"
+rec-in          /.*/ SPF record in:  v=spf1 a
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1a a"
+rec-in          /.*/ SPF record in:  v=spf1a a
+err-msg         /.*/ Could not find a valid SPF record near "v=spf1" in "v=spf1a"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 al"
+rec-in          /.*/ SPF record in:  v=spf1 al
+err-msg         /.*/ Unknown mechanism found in "al".
+rec-out         /.*/ Unknown
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 all"
+rec-in          /.*/ SPF record in:  v=spf1 all
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 alll"
+rec-in          /.*/ SPF record in:  v=spf1 alll
+err-msg         /.*/ Unknown mechanism found in "alll".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 alllll"
+rec-in          /.*/ SPF record in:  v=spf1 alllll
+err-msg         /.*/ Unknown mechanism found in "alllll".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 includ:a.a"
+rec-in          /.*/ SPF record in:  v=spf1 includ:a.a
+err-msg         /.*/ Unknown mechanism found near "includ" in "includ:a.a"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 include:a.a"
+rec-in          /.*/ SPF record in:  v=spf1 include:a.a
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 includee:a.a"
+rec-in          /.*/ SPF record in:  v=spf1 includee:a.a
+err-msg         /.*/ Unknown mechanism found near "includee" in "includee:a.a"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a/24"
+rec-in          /.*/ SPF record in:  v=spf1 a/24
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a/32//12"
+rec-in          /.*/ SPF record in:  v=spf1 a/32//12
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a//12
+
+spftest spf "v=spf1 a/32//128"
+rec-in          /.*/ SPF record in:  v=spf1 a/32//128
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a
+
+spftest spf "v=spf1 a/32//129"
+rec-in          /.*/ SPF record in:  v=spf1 a/32//129
+err-msg         /.*/ Invalid CIDR length near "/129" in "a/32//129"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a/x32//12"
+rec-in          /.*/ SPF record in:  v=spf1 a/x32//12
+err-msg         /.*/ Invalid CIDR length near "/x32//12" in "a/x32//12"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a/x32//128"
+rec-in          /.*/ SPF record in:  v=spf1 a/x32//128
+err-msg         /.*/ Invalid CIDR length near "/x32//128" in "a/x32//128"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a:/32//12"
+rec-in          /.*/ SPF record in:  v=spf1 a:/32//12
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a//12
+
+spftest spf "v=spf1 a:/32//128"
+rec-in          /.*/ SPF record in:  v=spf1 a:/32//128
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a
+
+spftest spf "v=spf1 a:/x32//12"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32//12
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out         /.*/ SPF record:  v=spf1 a:/x32//12
+
+spftest spf "v=spf1 a:/x32.com//12 +redirect=asdf.net"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 +redirect=asdf.net
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:/x32.com//12 redirect:asdf.net
+
+spftest spf "v=spf1 a:/x32.com//12 -redirect=asdf.net"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 -redirect=asdf.net
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:/x32.com//12 -redirect:asdf.net
+
+spftest spf "v=spf1 a:/x32.com//12 a"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 a
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:/x32.com//12 default=den"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 default=den
+err-msg         /.*/ Invalid option found in "default=den".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a:/x32.com//12 default=deny"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 default=deny
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:/x32.com//12 -all
+
+spftest spf "v=spf1 a:/x32.com//12 default=denyy"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 default=denyy
+err-msg         /.*/ Invalid option found in "default=denyy".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a:/x32.com//12 default=fail"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 default=fail
+err-msg         /.*/ Invalid option found in "default=fail".
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a:/x32.com//12 default=softfail"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 default=softfail
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:/x32.com//12 ~all
+
+spftest spf "v=spf1 a:/x32.com//12 mx"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 mx
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:/x32.com//12 mx
+
+spftest spf "v=spf1 a:/x32.com//12 redirect=asdf.net"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 redirect=asdf.net
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:/x32.com//12 redirect:asdf.net
+
+spftest spf "v=spf1 a:/x32.com//12 redirect=softfail"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12 redirect=softfail
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out         /.*/ SPF record:  v=spf1 a:/x32.com//12 redirect:softfail
+
+spftest spf "v=spf1 a:/x32.com//12"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//12
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:/x32.com//128"
+rec-in          /.*/ SPF record in:  v=spf1 a:/x32.com//128
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:/x32.com
+
+spftest spf "v=spf1 a:as%%20//24///4 mx=%{i3r}.spf.%{d}/24"
+rec-in          /.*/ SPF record in:  v=spf1 a:as%%20//24///4 mx=%{i3r}.spf.%{d}/24
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out         /.*/ SPF record:  v=spf1 a:as%-//24///4 mx=%{i3r}.spf.%{d}/24
+
+spftest spf "v=spf1 a:as%- mx=%{i3r}.spf.%{d}"
+rec-in          /.*/ SPF record in:  v=spf1 a:as%- mx=%{i3r}.spf.%{d}
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:as%-//24///4 mx=%{i3r}.spf.%{d}"
+rec-in          /.*/ SPF record in:  v=spf1 a:as%-//24///4 mx=%{i3r}.spf.%{d}
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:as%-//24///4 mx=%{i3r}.spf.%{d}/"
+rec-in          /.*/ SPF record in:  v=spf1 a:as%-//24///4 mx=%{i3r}.spf.%{d}/
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:as%-//24///4 mx=%{i3r}.spf.%{d}/24"
+rec-in          /.*/ SPF record in:  v=spf1 a:as%-//24///4 mx=%{i3r}.spf.%{d}/24
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:as%-//24//4 mx=%{i3r}.spf.%{d}"
+rec-in          /.*/ SPF record in:  v=spf1 a:as%-//24//4 mx=%{i3r}.spf.%{d}
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:as%-/24 mx=%{i3r}.spf.%{d}"
+rec-in          /.*/ SPF record in:  v=spf1 a:as%-/24 mx=%{i3r}.spf.%{d}
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:as%-/24//4 mx=%{i3r}.spf.%{d}"
+rec-in          /.*/ SPF record in:  v=spf1 a:as%-/24//4 mx=%{i3r}.spf.%{d}
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:as%-/324 mx=%{i3r}.spf.%{d}"
+rec-in          /.*/ SPF record in:  v=spf1 a:as%-/324 mx=%{i3r}.spf.%{d}
+err-msg         /.*/ Invalid CIDR length near "/324" in "a:as%-/324"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a:b/234//2"
+rec-in          /.*/ SPF record in:  v=spf1 a:b/234//2
+err-msg         /.*/ Invalid CIDR length near "/234//2" in "a:b/234//2"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a:b.c/24"
+rec-in          /.*/ SPF record in:  v=spf1 a:b.c/24
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:b.c/24//2"
+rec-in          /.*/ SPF record in:  v=spf1 a:b.c/24//2
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 a:b.c/24//332"
+rec-in          /.*/ SPF record in:  v=spf1 a:b.c/24//332
+err-msg         /.*/ Invalid CIDR length near "/332" in "a:b.c/24//332"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a:b.c/32//128"
+rec-in          /.*/ SPF record in:  v=spf1 a:b.c/32//128
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:b.c
+
+spftest spf "v=spf1 a:b.c/32//129"
+rec-in          /.*/ SPF record in:  v=spf1 a:b.c/32//129
+err-msg         /.*/ Invalid CIDR length near "/129" in "a:b.c/32//129"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 a:b.c/33//129"
+rec-in          /.*/ SPF record in:  v=spf1 a:b.c/33//129
+err-msg         /.*/ Invalid CIDR length near "/129" in "a:b.c/33//129"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 include:spf.trusted-forwarder.org"
+rec-in          /.*/ SPF record in:  v=spf1 include:spf.trusted-forwarder.org
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:1.2.3.4"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:1.2.3.4
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:11.22.33.44"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:11.22.33.44
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:111.222.133.144"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.133.144
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:111.222.133.144/22 ip4:1.2.3.4/004"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.133.144/22 ip4:1.2.3.4/004
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 ip4:111.222.133.144/22 ip4:1.2.3.4/4
+
+spftest spf "v=spf1 ip4:111.222.133.144/22 ip4:1.2.3.4/4"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.133.144/22 ip4:1.2.3.4/4
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:111.222.133.144/22 ip4:1.2.3/4"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.133.144/22 ip4:1.2.3/4
+err-msg         /.*/ Invalid IPv4 address literal near ":1.2.3/4" in "ip4:1.2.3/4"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ip4:111.222.133.144/22"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.133.144/22
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:111.222.33.4"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.33.4
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:111.222.33.44"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.33.44
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip4:111.222.33.444"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.33.444
+err-msg         /.*/ Invalid IPv4 address literal near ":111.222.33.444" in "ip4:111.222.33.444"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ip4:111.222.333.4"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.333.4
+err-msg         /.*/ Invalid IPv4 address literal near ":111.222.333.4" in "ip4:111.222.333.4"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ip4:111.222.333.44"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.333.44
+err-msg         /.*/ Invalid IPv4 address literal near ":111.222.333.44" in "ip4:111.222.333.44"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ip4:111.222.333.444"
+rec-in          /.*/ SPF record in:  v=spf1 ip4:111.222.333.444
+err-msg         /.*/ Invalid IPv4 address literal near ":111.222.333.444" in "ip4:111.222.333.444"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ip6:::"
+rec-in          /.*/ SPF record in:  v=spf1 ip6:::
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip6:::0"
+rec-in          /.*/ SPF record in:  v=spf1 ip6:::0
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 ip6:::
+
+spftest spf "v=spf1 ip6:::1 ip4:111.222.133.144/22 ip4:1.2.3.4/004"
+rec-in          /.*/ SPF record in:  v=spf1 ip6:::1 ip4:111.222.133.144/22 ip4:1.2.3.4/004
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 ip6:::1 ip4:111.222.133.144/22 ip4:1.2.3.4/4
+
+spftest spf "v=spf1 ip6:::1"
+rec-in          /.*/ SPF record in:  v=spf1 ip6:::1
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 ip6:::k"
+rec-in          /.*/ SPF record in:  v=spf1 ip6:::k
+err-msg         /.*/ Invalid IPv6 address literal near ":::k" in "ip6:::k"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 ipa4:111.222.133.144"
+rec-in          /.*/ SPF record in:  v=spf1 ipa4:111.222.133.144
+err-msg         /.*/ Invalid character found near "ipa" in "ipa4:111.222.133.144"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx mx:a mx:b mx:c mx:d mx:e mx:f mx:g"
+rec-in          /.*/ SPF record in:  v=spf1 mx mx:a mx:b mx:c mx:d mx:e mx:f mx:g
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx mx:a mx:b mx:c mx:d mx:e mx:f mx:g mx:h mx:i mx:j mx:k"
+rec-in          /.*/ SPF record in:  v=spf1 mx mx:a mx:b mx:c mx:d mx:e mx:f mx:g mx:h mx:i mx:j mx:k
+err-msg         /.*/ Mechanisms used too many DNS lookups near "j" in "mx:j"
+rec-out         /.*/ Unknown
+
+spftest spf "v=spf1 mx mx:a mx:b mx:c mx:d mx:e mx:f mx:g mx:h"
+rec-in          /.*/ SPF record in:  v=spf1 mx mx:a mx:b mx:c mx:d mx:e mx:f mx:g mx:h
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx mx:a mx:b mx:c"
+rec-in          /.*/ SPF record in:  v=spf1 mx mx:a mx:b mx:c
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx mx:a mx:b"
+rec-in          /.*/ SPF record in:  v=spf1 mx mx:a mx:b
+err-msg         /.*/ Warning: Hostname has a missing or invalid TLD
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx/23"
+rec-in          /.*/ SPF record in:  v=spf1 mx/23
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx:%{i3r}.spf.%{d} a:as%%20.a"
+rec-in          /.*/ SPF record in:  v=spf1 mx:%{i3r}.spf.%{d} a:as%%20.a
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 mx:%{i3r}.spf.%{d} a:as%-.a
+
+spftest spf "v=spf1 mx:xx.a/23"
+rec-in          /.*/ SPF record in:  v=spf1 mx:xx.a/23
+err-msg         /.*/ no errors
+rec-out-auto    /.*/
+
+spftest spf "v=spf1 mx=%{i3r}.spf.%{d} a:as%%20.a"
+rec-in          /.*/ SPF record in:  v=spf1 mx=%{i3r}.spf.%{d} a:as%%20.a
+err-msg         /.*/ no errors
+rec-out         /.*/ SPF record:  v=spf1 a:as%-.a mx=%{i3r}.spf.%{d}
+
+spftest spf "v=spf1 xip4:111.222.133.144"
+rec-in          /.*/ SPF record in:  v=spf1 xip4:111.222.133.144
+err-msg         /.*/ Invalid character found near "xip" in "xip4:111.222.133.144"
+rec-out         /.*/ Unknown
+
