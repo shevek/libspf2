@@ -1018,7 +1018,7 @@ header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com designates 19
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 20.spf1-test.mailzone.com designates 192.0.2.120 as permitted sender) client-ip=192.0.2.120; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.120 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="dog@cat.com;foo@bar.com"
-result          libspf-alt pass,pass,pass
+result          libspf2 pass,pass,pass
 result          /.*/ pass,pass
 smtp-comment    perl explanation: 20.spf1-test.mailzone.com A 192.0.2.120
 smtp-comment    libspf explanation
@@ -1027,14 +1027,14 @@ header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com designates 19
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 20.spf1-test.mailzone.com designates 192.0.2.120 as permitted sender) client-ip=192.0.2.120; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.33 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="foo@spf1-test.mailzone.com;foo@bar.com"
-result          libspf-alt pass,fail,fail
+result          libspf2 pass,fail,fail
 result          /.*/ fail,fail
 smtp-comment    /.*/ explanation
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.33 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="foo@bar.com;foo@spf1-test.mailzone.com"
-result          libspf-alt fail,fail,fail
+result          libspf2 fail,fail,fail
 result          /.*/ fail,fail
 smtp-comment    /.*/ explanation
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender

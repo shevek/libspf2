@@ -18,7 +18,7 @@ echo
 echo "Doing regression tests for RFC examples (one at a time)...."
 echo "Prog = $PROG"
 
-perl test.pl -impl libspf-alt -program $PROG -data test_rfc_examples.txt 2>&1 \
+perl test.pl -impl libspf2 -program $PROG -data test_rfc_examples.txt 2>&1 \
 	    | grep -v "^ok [0-9][0-9]*" | tee tests_single.out
 
 num_errors=`grep "^# Test [0-9][0-9]* got:" tests_single.out | grep -v "\*TODO\*)" | wc -l`

@@ -152,6 +152,10 @@ const char *SPF_strerror( int spf_c_err )
     case SPF_E_MECH_AFTER_ALL:
 	return "Mechanisms found after the \"all:\" mechanism will be ignored";
 	break;
+
+    case SPF_E_NOT_HOST:
+      return "Host not found";
+      break;
 	    
     default:
 	return "Unknown SPF error code";

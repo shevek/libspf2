@@ -13,7 +13,9 @@
  * These licenses can be found with the distribution in the file LICENSES
  */
 
-
+#ifndef __GNUC__
+#define __attribute__(x)
+#endif
 
 
 #ifndef INC_SPF
@@ -89,7 +91,7 @@ typedef int SPF_err_t;
 #define SPF_E_BAD_HOST_IP	27	/* Invalid hostname (possibly an IP address?) */
 #define SPF_E_BAD_HOST_TLD	28	/* Hostname has a missing or invalid TLD */
 #define SPF_E_MECH_AFTER_ALL	29	/* Mechanisms found after the \"all:\" mechanism will be ignored */
-
+#define SPF_E_NOT_HOST          30      /* Host not found               */
 
 
 /* ********************************************************************* */

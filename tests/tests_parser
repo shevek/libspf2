@@ -15,7 +15,7 @@ echo "Testing byte-compiler"
 echo "Prog = $PROG"
 
 
-perl test_parser.pl -impl libspf-alt -program $PROG -data test_parser.txt 2>&1 \
+perl test_parser.pl -impl libspf2 -program $PROG -data test_parser.txt 2>&1 \
 	    | grep -v "^ok [0-9][0-9]*" | tee tests_parser.out
 
 num_errors=`grep "^# Test [0-9][0-9]* got:" tests_parser.out | grep -v "\*TODO\*)" | wc -l`

@@ -63,7 +63,7 @@ close TESTFILE;
 # well enough to get the -data option to work that way.  -wayne
 my @tests = grep { /^\s*spfquery / } @test_table;
 
-if ( $SPFIMPL eq "libspf-alt" ) {
+if ( $SPFIMPL eq "libspf2" ) {
   plan tests => 1 + @tests*3, todo => [362 .. 364, 503 .. 508];
 } else {
   plan tests => 1 + @tests*3;

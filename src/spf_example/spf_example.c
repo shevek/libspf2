@@ -1,5 +1,5 @@
 /*
- *  spf_example - An example program for how to use libspf-alt
+ *  spf_example - An example program for how to use libspf2
  *	
  *  Author: Wayne Schlitt <wayne@midwestcs.com>
  *
@@ -13,7 +13,7 @@
 
 
 /*
- * The libspf-alt library uses the GNU autoconf system to help make
+ * The libspf2 library uses the GNU autoconf system to help make
  * the library more portable.  The config.h file should have the
  * HAVE_xxx defines that are appropriate for your system.  Either use
  * autconf to create it, or create it by hand.
@@ -61,7 +61,7 @@
 
 
 /*
- * libspf-alt public include files that are needed for this example
+ * libspf2 public include files that are needed for this example
  * program
  */
 
@@ -98,7 +98,7 @@ static void usage()
 
 
 /*
- * All the code is in the main routine, but most usages of libspf-alt
+ * All the code is in the main routine, but most usages of libspf2
  * would have the code spread around into various subrotines.
  */
 
@@ -174,7 +174,7 @@ int main( int argc, char *argv[] )
 /*
  * Configure the SPF system.
  *
- * libspf-alt is designed so that configurations can be set up once
+ * libspf2 is designed so that configurations can be set up once
  * and reused many times different emails delivered in a single SMTP
  * session or in different SMTP sessions.
  */

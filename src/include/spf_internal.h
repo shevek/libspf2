@@ -310,7 +310,7 @@ typedef union
 
 
 /*
- * Compiled SPF records as used internally by libspf-alt
+ * Compiled SPF records as used internally by libspf2
  */
 
 typedef struct

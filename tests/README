@@ -20,7 +20,7 @@ correctly parse SPF records and detect syntax errors.  This is the
 kind of thing that many of the web based "SPF wizards" and verifiers
 should be tested on.
 
-At this time, only the PHP and libspf-alt implementations are able to
+At this time, only the PHP and libspf2 implementations are able to
 do these kinds of checks, and the PHP is not able to run this test
 suite.
 
@@ -33,7 +33,7 @@ test_parser.txt         This datafile contains constructed SPF records
                         designed to test the implementation's parser.
                         It is designed to detect corner cases and
                         things that I suspected might catch bugs in
-                        libspf-alt.
+                        libspf2.
 
 test_adopt_roll.txt     This datafile contains (munged) SPF records
                         that have been registered on the SPF Adoption
@@ -61,7 +61,7 @@ tests_adopt_roll        This is a shell script that checks the
 These tests are designed to make sure the SPF implementations
 correctly evaluate SPF records and DNS errors.
 
-At this time, only the Perl, libspf and libspf-alt implementations are
+At this time, only the Perl, libspf and libspf2 implementations are
 able to run these checks.
 
 Information about the format of the datafiles can be found in
@@ -80,7 +80,7 @@ test.txt                This datafile contains constructed SPF queries
 test_rfc_examples.txt   This datafile contains SPF queries that are
                         found in the SPF specification document.  The
                         "Expanded Examples" are currently not in this
-                        dataset.  Currently, only the libspf-alt
+                        dataset.  Currently, only the libspf2
                         implementation can run this test because it
                         requires overriding SPF information for
                         example.{com,org,net}.

@@ -18,8 +18,8 @@ echo
 echo "Doing regression tests as one large batch...."
 echo "Prog = $PROG"
 
-(perl test.pl -impl libspf-alt -program $PROG -data test.txt -pipe-out | \
- perl test.pl -impl libspf-alt -program $PROG -data test.txt -pipe-in ) 2>&1 \
+(perl test.pl -impl libspf2 -program $PROG -data test.txt -pipe-out | \
+ perl test.pl -impl libspf2 -program $PROG -data test.txt -pipe-in ) 2>&1 \
 	    | grep -v "^ok [0-9][0-9]*" | tee tests_many.out
 
 num_errors=`grep "^# Test [0-9][0-9]* got:" tests_many.out | grep -v "\*TODO\*)" | wc -l`

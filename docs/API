@@ -1,7 +1,7 @@
 
-The Libspf-alt Application Programming Interface
+The Libspf2 Application Programming Interface
 
-This file is the start of the documentation on the libspf-alt API.  It
+This file is the start of the documentation on the libspf2 API.  It
 is not complete, but it should give you a start.  Corrections and/or
 suggests are welcome.
 
@@ -32,7 +32,7 @@ or doc/draft-mengwong-spf-00.txt
 
 
 
-The libspf-alt library creates several opaque "objects", which the
+The libspf2 library creates several opaque "objects", which the
 application program receive "ids" to identify them by.  These objects
 are the configuration object, the SPF record object and the DNS layer
 object.  These objects can all be mixed and matched.  You can evaluate
@@ -43,7 +43,7 @@ All of these objects have similar create/reset/dup/destroy functions.
 
 
 In addition, there are several typedef'ed structures that are used by
-libspf-alt.  Libspf-alt expects all pointers in these structures to be
+libspf2.  Libspf2 expects all pointers in these structures to be
 malloc'ed.
 
 All of these typedef'ed structures have init/free functions.
@@ -93,6 +93,6 @@ associated with this structure by calling SPF_free_output().
 
 There is a very simple example program available called spf_example.c
 in the bin directory.  The spfquery.c and spftest.c programs provide a
-little more sophisitcated usage of libspf-alt.
+little more sophisitcated usage of libspf2.
 
 -wayne

@@ -3,7 +3,7 @@
 # These are some of the examples out of the SPF RFC draft.
 #
 # It would be better to use the -override option to spfquery instead
-# of the libspf-alt "test" dns layer, but that option doesn't work
+# of the libspf2 "test" dns layer, but that option doesn't work
 # yet.
 #
 

@@ -78,6 +78,12 @@ SPF_err_t SPF_get_spf( SPF_config_t spfcid, SPF_dns_config_t spfdcid,
     switch( rr_txt->herrno )
     {
     case HOST_NOT_FOUND:
+      /*
+  	c_results->err = SPF_E_NOT_HOST;
+	return SPF_E_NOT_HOST;
+	break;
+      */
+    
     case NO_DATA:
 	c_results->err = SPF_E_NOT_SPF;
 	return SPF_E_NOT_SPF;
