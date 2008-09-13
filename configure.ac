@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(libspf2, 1.2.5, libspf2@rt.anarres.org)
+AC_INIT(libspf2, 1.2.6, libspf2@anarres.org)
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE(libspf2, $PACKAGE_VERSION)
 AC_CONFIG_SRCDIR([src/libspf2/spf_server.c])
@@ -14,7 +14,7 @@ major=`echo $PACKAGE_VERSION | sed 's/^\([[0-9]]*\)\.[[0-9]]*\.[[0-9]]*/\1/'`
 minor=`echo $PACKAGE_VERSION | sed 's/^[[0-9]]*\.\([[0-9]]*\)\.[[0-9]]*/\1/'`
 patch=`echo $PACKAGE_VERSION | sed 's/^[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)/\1/'`
 
-cat >src/libspf2/spf_lib_version.h <<_EOF_VERSION
+cat >src/include/spf_lib_version.h <<_EOF_VERSION
 #ifndef INC_SPF_VERSION
 #define INC_SPF_VERSION
 

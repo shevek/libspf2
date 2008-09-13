@@ -110,7 +110,7 @@ typedef
 struct SPF_data_str_struct
 {
     unsigned char	parm_type;
-    unsigned char	len;
+    unsigned char	len;	/* XXX Does this need to be size_t? */
     /* text: (char[len]) follows */
 } SPF_data_str_t;
 
@@ -224,7 +224,7 @@ struct SPF_record_struct
 
 struct SPF_macro_struct
 {
-    unsigned int	macro_len;	/* bytes of data */
+    size_t			 macro_len;	/* bytes of data */
     /* data: (SPF_data_t[] = char[macro_len]) follows */
 };
 

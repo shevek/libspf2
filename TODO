@@ -1,3 +1,5 @@
+SPF_MAX_DNS_MECH is in multiple places
+SPF_i_set_header_comment has a switch duplicated into spf_result.c
 
 TODO items (somewhat in priority order)
 

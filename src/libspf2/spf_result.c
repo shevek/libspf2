@@ -187,9 +187,12 @@ char *SPF_header_comment( SPF_config_t spfcid, SPF_output_t output )
 	break;
 	
     case SPF_RESULT_NEUTRAL:
-    case SPF_RESULT_NONE:
 	snprintf( p, p_end - p, "%s is neither permitted nor denied by %s",
 		  ip, spf_source );
+	break;
+    case SPF_RESULT_NONE:
+	snprintf( p, p_end - p, "%s does not provide an SPF record",
+		spf_source);
 	break;
 
     case SPF_RESULT_ERROR:

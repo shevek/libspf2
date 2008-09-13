@@ -168,21 +168,21 @@ struct _request_t {
 		struct sockaddr_in	in;
 		struct sockaddr_un	un;
 	} addr;
-	int		 addrlen;
-	char	*data;
-	int		 datalen;
+	socklen_t	 addrlen;
+	char		*data;
+	int			 datalen;
 
-	char	*ip;
-	char	*helo;
-	char	*sender;
-	char	*rcpt_to;
+	char		*ip;
+	char		*helo;
+	char		*sender;
+	char		*rcpt_to;
 
 	SPF_errcode_t	 spf_err;
 	SPF_request_t	*spf_request;
 	SPF_response_t	*spf_response;
 
-	char	 fmt[4096];
-	int		 fmtlen;
+	char		 fmt[4096];
+	int			 fmtlen;
 } request_t;
 
 typedef
@@ -640,7 +640,7 @@ daemon_bind_unix()
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
 	strcpy(addr.sun_path, spfd_config.path);
-	if (unlink(spfd_config.path < 0)) {
+	if (unlink(spfd_config.path) < 0) {
 		if (errno != ENOENT) {
 			perror("unlink");
 			DIE("Failed to unlink socket");

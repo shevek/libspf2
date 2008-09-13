@@ -67,7 +67,7 @@ struct SPF_mechtype_struct
 	unsigned char		 mech_type;
 	unsigned char		 is_dns_mech;
 	SPF_domspec_t		 has_domainspec;
-	SPF_cidr_t				 has_cidr;
+	SPF_cidr_t			 has_cidr;
 } SPF_mechtype_t;
 
 static const SPF_mechtype_t spf_mechtypes[] = {
@@ -98,9 +98,9 @@ SPF_mechtype_find(int mech_type)
 }
 
 static void
-SPF_c_ensure_capacity(void **datap, int *sizep, int length)
+SPF_c_ensure_capacity(void **datap, size_t *sizep, size_t length)
 {
-	int		 size = *sizep;
+	size_t		 size = *sizep;
 	if (length > size)
 		size = length + (length / 4);
 	if (size > *sizep) {
@@ -435,7 +435,7 @@ SPF_c_parse_var(SPF_response_t *spf_response, SPF_data_var_t *data,
 static SPF_errcode_t
 SPF_c_parse_macro(SPF_server_t *spf_server,
 				SPF_response_t *spf_response,
-				SPF_data_t *data, int *data_len,
+				SPF_data_t *data, size_t *data_len,
 				const char **startp, const char **endp,
 				size_t max_len, SPF_errcode_t big_err,
 				int is_mod)
@@ -448,7 +448,7 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 	size_t				len;
 			/* For parsing strings. */
 	char				*dst;
-	int					 ds_len;
+	size_t				 ds_len;
 
 	start = *startp;
 	end = *endp;
@@ -554,7 +554,7 @@ SPF_c_parse_domainspec(SPF_server_t *spf_server,
 				SPF_data_t *data, int *data_len,
 				const char **startp, const char **endp,
 				size_t max_len, SPF_errcode_t big_err,
-				int cidr_ok, int is_mod)
+				SPF_cidr_t cidr_ok, int is_mod)
 {
 	SPF_errcode_t		 err;
 			/* Generic parsing iterators and boundaries */

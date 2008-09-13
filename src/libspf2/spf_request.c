@@ -142,14 +142,18 @@ SPF_request_set_env_from(SPF_request_t *sr, const char *from)
 	SPF_FREE(sr->env_from_lp);
 	SPF_FREE(sr->env_from_dp);
 
+	if (*from == '\0' && sr->helo_dom != NULL)
+		from = sr->helo_dom;
 	cp = strrchr(from, '@');
 	if (cp && (cp != from)) {
 		sr->env_from = strdup(from);
-		sr->env_from_lp = strdup(from);	/* Too long, but simple */
-		sr->env_from_lp[(cp - from)] = '\0';
+		*cp = '\0';
+		sr->env_from_lp = strdup(from);
 		sr->env_from_dp = strdup(cp + 1);
+		*cp = '@';
 	}
 	else {
+		if (cp == from) from++; /* "@domain.example" */
 		len = sizeof("postmaster@") + strlen(from);
 		sr->env_from = malloc(len + 1);	/* sizeof("") == 1? */
 		sprintf(sr->env_from, "postmaster@%s", from);

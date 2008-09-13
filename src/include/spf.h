@@ -52,12 +52,12 @@
 
 /* FYI only -- defaults can't be changed without recompiling the library */
 #define SPF_DEFAULT_MAX_DNS_MECH 10	/* DoS limit on SPF mechanisms	*/
-#define SPF_DEFAULT_MAX_DNS_PTR	  5	/* DoS limit on PTR records	*/
-#define SPF_DEFAULT_MAX_DNS_MX	  5	/* DoS limit on MX records	*/
+#define SPF_DEFAULT_MAX_DNS_PTR	 10	/* DoS limit on PTR records	*/
+#define SPF_DEFAULT_MAX_DNS_MX	 10	/* DoS limit on MX records	*/
 #define SPF_DEFAULT_SANITIZE	  1
 #define SPF_DEFAULT_WHITELIST	  "include:spf.trusted-forwarder.org"
 #define SPF_EXP_MOD_NAME	"exp-text"
-#define SPF_DEFAULT_EXP		  "Please see http://spf.pobox.com/why.html?sender=%{S}&ip=%{C}&receiver=%{R}"
+#define SPF_DEFAULT_EXP		  "Please see http://www.openspf.org/Why?id=%{S}&ip=%{C}&receiver=%{R}"
 
 
 

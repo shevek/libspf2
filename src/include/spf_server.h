@@ -20,7 +20,6 @@ typedef struct SPF_server_struct SPF_server_t;
 
 #include "spf_record.h"
 #include "spf_dns.h"
-#include "spf_dns_internal.h"
 
 #ifndef SPF_MAX_DNS_MECH
 /* It is a bad idea to change this for two reasons.
@@ -44,13 +43,13 @@ typedef struct SPF_server_struct SPF_server_t;
 /* It is a bad idea to change this for the same reasons as mentioned
  * above for SPF_MAX_DNS_MECH
  */
-#define SPF_MAX_DNS_PTR   5
+#define SPF_MAX_DNS_PTR   10
 #endif
 #ifndef SPF_MAX_DNS_MX
 /* It is a bad idea to change this for the same reasons as mentioned
  * above for SPF_MAX_DNS_MECH
  */
-#define SPF_MAX_DNS_MX    5
+#define SPF_MAX_DNS_MX    10
 #endif
 
 struct SPF_server_struct {

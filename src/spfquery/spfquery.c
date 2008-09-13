@@ -174,9 +174,7 @@ unimplemented(const char flag)
 	struct option	*opt;
 	int				 i;
 
-	i = 0;
-	opt = &long_options[i];
-	while (opt->name) {
+	for (i = 0; (opt = &long_options[i])->name; i++) {
 		if (flag == opt->val) {
 			fprintf(stderr, "Unimplemented option: -%s or -%c\n",
 							opt->name, flag);
@@ -341,6 +339,7 @@ int main( int argc, char *argv[] )
 	SPF_request_t	*spf_request = NULL;
 	SPF_response_t	*spf_response = NULL;
 	SPF_response_t	*spf_response_2mx = NULL;
+	SPF_response_t	*spf_response_fallback = NULL;
 	SPF_errcode_t	 err;
 
 	char			*opt_file = NULL;
@@ -604,7 +603,8 @@ int main( int argc, char *argv[] )
 
 		spf_request = SPF_request_new(spf_server);
 
-		if (SPF_request_set_ipv4_str(spf_request, req->ip)) {
+		if (SPF_request_set_ipv4_str(spf_request, req->ip)
+				&& SPF_request_set_ipv6_str(spf_request, req->ip)) {
 			printf( "Invalid IP address.\n" );
 			CONTINUE_ERROR;
 		}
@@ -670,20 +670,20 @@ int main( int argc, char *argv[] )
 		/* We now have an option to call SPF_request_query_fallback */
 		if (opts->fallback) {
 			err = SPF_request_query_fallback(spf_request,
-							&spf_response, opts->fallback);
+							&spf_response_fallback, opts->fallback);
 			if (opts->debug)
-				response_print("fallback query", spf_response_2mx);
+				response_print("fallback query", spf_response_fallback);
 			if (err) {
 				response_print_errors("Failed to query best-guess",
-								spf_response, err);
+								spf_response_fallback, err);
 				CONTINUE_ERROR;
 			}
 
 			/* append the result */
-			APPEND_RESULT(SPF_response_result(spf_response_2mx));
+			APPEND_RESULT(SPF_response_result(spf_response_fallback));
 
 			spf_response = SPF_response_combine(spf_response,
-							spf_response_2mx);
+							spf_response_fallback);
 		}
 
 		printf( "%s\n%s\n%s\n%s\n",

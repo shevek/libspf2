@@ -49,8 +49,8 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 	SPF_record_t	*spf_record;
 	SPF_errcode_t	 err;
 	char			*buf;
-	int				 buflen;
-	int				 len;
+	size_t			 buflen;
+	size_t			 len;
 
 	SPF_ASSERT_NOTNULL(spf_response);
 	spf_request = spf_response->spf_request;
@@ -209,19 +209,22 @@ SPF_i_set_header_comment(SPF_response_t *spf_response)
 		break;
 
 	case SPF_RESULT_PERMERROR:
-		snprintf( p, p_end - p, "error in processing during lookup of %s: %s",
-					  spf_source, SPF_strerror( spf_response->err ) );
+		snprintf(p, p_end - p, "error in processing during lookup of %s: %s",
+					  spf_source, SPF_strerror(spf_response->err));
 		break;
 
 	case SPF_RESULT_NEUTRAL:
+		snprintf(p, p_end - p, "%s is neither permitted nor denied by %s",
+				ip, spf_source);
+		break;
 	case SPF_RESULT_NONE:
-		snprintf( p, p_end - p, "%s is neither permitted nor denied by %s",
-				  ip, spf_source );
+		snprintf(p, p_end - p, "%s does not provide an SPF record",
+				spf_source);
 		break;
 
 	case SPF_RESULT_TEMPERROR:
-		snprintf( p, p_end - p, "encountered temporary error during SPF processing of %s",
-				  spf_source );
+		snprintf(p, p_end - p, "encountered temporary error during SPF processing of %s",
+				spf_source );
 		break;
 
 
@@ -1022,7 +1025,10 @@ SPF_record_interpret(SPF_record_t *spf_record,
 				if (spf_record_subr)
 					SPF_record_free(spf_record_subr);
 				SPF_FREE_LOOKUP_DATA();
-				return DONE_TEMPERR( err );
+				if (err == SPF_E_DNS_ERROR)
+					return DONE_TEMPERR( err );
+				else
+					return DONE_PERMERR( err );
 			}
 
 			/*

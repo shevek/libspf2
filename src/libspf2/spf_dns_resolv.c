@@ -13,6 +13,16 @@
  * These licenses can be found with the distribution in the file LICENSES
  */
 
+/**
+ * If we have a res_ninit then we make a thread-local resolver
+ * state, which we use to perform all resolutions.
+ *
+ * If we do not have res_ninit, then we do a res_init() at
+ * server-create time, and a res_close() at server-close time, and
+ * we are NOT thread-safe. I think we don't actually have to call
+ * res_init(), but we do anyway.
+ */
+
 #ifndef _WIN32
 
 #include "spf_sys_config.h"
@@ -52,25 +62,13 @@
 #include "spf_dns_resolv.h"
 
 
-#if 0
-typedef struct
-{
 #if HAVE_DECL_RES_NINIT
-    struct __res_state	res_state;
-#endif
-} SPF_dns_resolv_config_t;
-#endif
-
-#if HAVE_DECL_RES_NINIT
-# if 0
-#  define SPF_h_errno spfhook->res_state.res_h_errno
-# else
-#  define SPF_h_errno res_state->res_h_errno
-# endif
+# define SPF_h_errno res_state->res_h_errno
 #else
 # define SPF_h_errno h_errno
 #endif
 
+#ifdef HAVE_DECL_RES_NINIT
 static pthread_once_t	res_state_control = PTHREAD_ONCE_INIT;
 static pthread_key_t	res_state_key;
 
@@ -86,23 +84,12 @@ SPF_dns_resolv_init_key()
 {
 	pthread_key_create(&res_state_key, SPF_dns_resolv_thread_term);
 }
-
-
-#if 0
-static inline SPF_dns_resolv_config_t *SPF_voidp2spfhook(void *hook)
-	{ return (SPF_dns_resolv_config_t *)hook; }
-static inline void *SPF_spfhook2voidp(SPF_dns_resolv_config_t *spfhook)
-	{ return (void *)spfhook; }
 #endif
-
 
 static SPF_dns_rr_t *
 SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 				const char *domain, ns_type rr_type, int should_cache)
 {
-#if 0
-    SPF_dns_resolv_config_t	*spfhook;
-#endif
     SPF_dns_rr_t			*spfrr;
 
     int		err;
@@ -135,15 +122,13 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 
 	SPF_ASSERT_NOTNULL(spf_dns_server);
 
-#if 0
-	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
-	SPF_ASSERT_NOTNULL(spfhook);
-#endif
-
+#if HAVE_DECL_RES_NINIT
+	/** Get the thread-local resolver state. */
 	res_spec = pthread_getspecific(res_state_key);
 	if (res_spec == NULL) {
 		res_state = (struct __res_state *)
 						malloc(sizeof(struct __res_state));
+		memset(res_state, 0, sizeof(struct __res_state));
 		if (res_ninit(res_state) != 0) {
 			SPF_error("Failed to call res_ninit()");
 		}
@@ -153,10 +138,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 		res_state = (struct __res_state *)res_spec;
 	}
 
-    /*
-     * try resolving the name
-     */
-#if HAVE_DECL_RES_NINIT
+	/* Resolve the name. */
 	dns_len = res_nquery(res_state, domain, ns_c_in, rr_type,
 			 response, sizeof(response));
 #else
@@ -391,19 +373,18 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 				size_t len;
 
 				if ( SPF_dns_rr_buf_realloc( spfrr, cnt, rdlen ) != SPF_E_SUCCESS )
-				return spfrr;
+					return spfrr;
 
-				dst = spfrr->rr[cnt]->txt;
+				dst = (u_char *)spfrr->rr[cnt]->txt;
 				len = 0;
 				src = (u_char *)rdata;
-				while ( rdlen > 0 )
-				{
-				len = *src;
-				src++;
-				memcpy( dst, src, len );
-				dst += len;
-				src += len;
-				rdlen -= len + 1;
+				while ( rdlen > 0 ) {
+					len = *src;
+					src++;
+					memcpy( dst, src, len );
+					dst += len;
+					src += len;
+					rdlen -= len + 1;
 				}
 				*dst = '\0';
 			} else {
@@ -454,21 +435,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 static void
 SPF_dns_resolv_free(SPF_dns_server_t *spf_dns_server)
 {
-#if 0
-	SPF_dns_resolv_config_t	*spfhook;
-#endif
-
 	SPF_ASSERT_NOTNULL(spf_dns_server);
-
-#if 0
-    if (spf_dns_server->hook) {
-		spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
-#if HAVE_DECL_RES_NINIT
-		res_nclose( &spfhook->res_state );
-#endif
-		free(spf_dns_server->hook);
-    }
-#endif
 
 #ifndef HAVE_DECL_RES_NINIT
 	res_close();
@@ -482,24 +449,20 @@ SPF_dns_resolv_new(SPF_dns_server_t *layer_below,
 				const char *name, int debug)
 {
 	SPF_dns_server_t		*spf_dns_server;
-#if 0
-	SPF_dns_resolv_config_t	*spfhook;
-#endif
 
+#if HAVE_DECL_RES_NINIT
 	pthread_once(&res_state_control, SPF_dns_resolv_init_key);
-
-    spf_dns_server = malloc(sizeof(SPF_dns_server_t));
-    if ( spf_dns_server == NULL )
-		return NULL;
-	memset(spf_dns_server, 0, sizeof(SPF_dns_server_t));
-
-#if 0
-    spf_dns_server->hook = calloc(1, sizeof(SPF_dns_resolv_config_t));
-    if ( spf_dns_server->hook == NULL ) {
-		free( spf_dns_server );
+#else
+    if ( res_init() != 0 ) {
+		perror("res_init");
 		return NULL;
     }
 #endif
+
+    spf_dns_server = malloc(sizeof(SPF_dns_server_t));
+    if (spf_dns_server == NULL)
+		return NULL;
+	memset(spf_dns_server, 0, sizeof(SPF_dns_server_t));
 
     if (name ==  NULL)
 		name = "resolv";
@@ -512,25 +475,6 @@ SPF_dns_resolv_new(SPF_dns_server_t *layer_below,
     spf_dns_server->layer_below = layer_below;
     spf_dns_server->name        = name;
     spf_dns_server->debug       = debug;
-
-#if 0
-    spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
-#endif
-
-#if HAVE_DECL_RES_NINIT
-#if 0
-    if ( res_ninit( &spfhook->res_state ) != 0 ) {
-		free(spfhook);
-		free(spf_dns_server);
-		return NULL;
-    }
-#endif
-#else
-    if ( res_init() != 0 ) {
-		free( spf_dns_server );
-		return NULL;
-    }
-#endif
 
     return spf_dns_server;
 }
