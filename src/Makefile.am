@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = foreign
+
 # Note: the order of SUBDIRS is important.
 # Attempt to disable parallel processing.
 .NOTPARALLEL:

@@ -21,6 +21,14 @@
 # include <stdlib.h>       /* malloc / free */
 #endif
 
+#ifdef HAVE_STRING_H
+# include <string.h>       /* strstr / strdup */
+#else
+# ifdef HAVE_STRINGS_H
+#  include <strings.h>       /* strstr / strdup */
+# endif
+#endif
+
 
 
 #include "spf.h"
@@ -30,124 +38,45 @@
 #include "spf_dns_null.h"
 
 
-typedef struct
+static SPF_dns_rr_t *
+SPF_dns_null_lookup(SPF_dns_server_t *spf_dns_server,
+				const char *domain, ns_type rr_type, int should_cache)
 {
-    int		debug;
-} SPF_dns_null_config_t; 
-
-
-static inline SPF_dns_null_config_t *SPF_voidp2spfhook( void *hook ) 
-    { return (SPF_dns_null_config_t *)hook; }
-static inline void *SPF_spfhook2voidp( SPF_dns_null_config_t *spfhook ) 
-    { return (void *)spfhook; }
-
-
-
-static SPF_dns_rr_t *SPF_dns_lookup_null( SPF_dns_config_t spfdcid, const char *domain, ns_type rr_type, int should_cache )
-{
-    SPF_dns_iconfig_t		*spfdic = SPF_dcid2spfdic( spfdcid );
-    SPF_dns_null_config_t	*spfhook = SPF_voidp2spfhook( spfdic->hook );
-    SPF_dns_rr_t		*spfrr;
-    const char			*source;
-
-    if ( spfhook->debug )
-	SPF_debugf( "DNS %s lookup:  %s  %s (%d)",
-		 spfdic->name, domain,
-		 ( (rr_type == ns_t_a)     ? "A" :
-		   (rr_type == ns_t_aaaa)  ? "AAAA" :
-		   (rr_type == ns_t_mx)    ? "MX" :
-		   (rr_type == ns_t_txt)   ? "TXT" :
-		   (rr_type == ns_t_ptr)   ? "PTR" :
-		   (rr_type == ns_t_any)   ? "ANY" :
-		   (rr_type == ns_t_invalid) ? "BAD" :
-		   "??" ),
-		 rr_type );
-
-    if ( spfdic->layer_below )
-	spfrr = SPF_dcid2spfdic( spfdic->layer_below )->lookup( spfdic->layer_below, domain, rr_type, should_cache );
-	
-    else
-	spfrr = &SPF_dns_nxdomain;
-
-    if ( spfhook->debug )
-    {
-	if ( spfrr->source )
-	{
-	    source = SPF_dcid2spfdic( spfrr->source )->name;
-	    if ( source == NULL )
-		source = "(null)";
-	}
-	else
-	    source = "null";
-	
-	SPF_debugf( "DNS %s found:   %s  %s (%d)  TTL: %ld  RR found: %d  herrno: %d  source: %s",
-		 spfdic->name, spfrr->domain,
-		 ( (spfrr->rr_type == ns_t_a)     ? "A" :
-		   (spfrr->rr_type == ns_t_aaaa)  ? "AAAA" :
-		   (spfrr->rr_type == ns_t_mx)    ? "MX" :
-		   (spfrr->rr_type == ns_t_txt)   ? "TXT" :
-		   (spfrr->rr_type == ns_t_ptr)   ? "PTR" :
-		   (spfrr->rr_type == ns_t_any)   ? "ANY" :
-		   (spfrr->rr_type == ns_t_invalid) ? "BAD" :
-		   "??" ),
-		 spfrr->rr_type, spfrr->ttl, spfrr->num_rr, spfrr->herrno,
-		 source );
-    }
-    
-    return spfrr;
+    if (spf_dns_server->layer_below)
+		return SPF_dns_lookup(spf_dns_server->layer_below,
+						domain, rr_type, should_cache);
+	return SPF_dns_rr_new_nxdomain(spf_dns_server, domain);
 }
 
-
-SPF_dns_config_t SPF_dns_create_config_null( SPF_dns_config_t layer_below, int debug, const char *name )
+static void
+SPF_dns_null_free( SPF_dns_server_t *spf_dns_server )
 {
-    SPF_dns_iconfig_t     *spfdic;
-    SPF_dns_null_config_t *spfhook;
-    
-    spfdic = malloc( sizeof( *spfdic ) );
-    if ( spfdic == NULL )
-	return NULL;
-
-    spfdic->hook = malloc( sizeof( SPF_dns_null_config_t ) );
-    if ( spfdic->hook == NULL )
-    {
-	free( spfdic );
-	return NULL;
-    }
-    
-    spfdic->destroy      = SPF_dns_destroy_config_null;
-    spfdic->lookup       = SPF_dns_lookup_null;
-    spfdic->get_spf      = NULL;
-    spfdic->get_exp      = NULL;
-    spfdic->add_cache    = NULL;
-    spfdic->layer_below  = layer_below;
-    if ( name )
-	spfdic->name     = name;
-    else
-	spfdic->name     = "null";
-    
-    spfhook = SPF_voidp2spfhook( spfdic->hook );
-    spfhook->debug = debug;
-
-    return SPF_spfdic2dcid( spfdic );
+	SPF_ASSERT_NOTNULL(spf_dns_server);
+	free(spf_dns_server);
 }
 
-void SPF_dns_reset_config_null( SPF_dns_config_t spfdcid )
+SPF_dns_server_t *
+SPF_dns_null_new(SPF_dns_server_t *spf_dns_server_below,
+				const char *name, int debug)
 {
-    if ( spfdcid == NULL )
-	SPF_error( "spfdcid is NULL" );
-}
+	SPF_dns_server_t		*spf_dns_server;
 
-void SPF_dns_destroy_config_null( SPF_dns_config_t spfdcid )
-{
-    SPF_dns_iconfig_t     *spfdic = SPF_dcid2spfdic( spfdcid );
+    spf_dns_server = malloc(sizeof(SPF_dns_server_t));
+    if ( spf_dns_server == NULL )
+		return NULL;
+	memset(spf_dns_server, 0, sizeof(SPF_dns_server_t));
 
-    if ( spfdcid == NULL )
-	SPF_error( "spfdcid is NULL" );
+    if (name ==  NULL)
+		name = "null";
 
-    SPF_dns_reset_config_null( spfdcid );
+    spf_dns_server->destroy      = SPF_dns_null_free;
+    spf_dns_server->lookup       = SPF_dns_null_lookup;
+    spf_dns_server->get_spf      = NULL;
+    spf_dns_server->get_exp      = NULL;
+    spf_dns_server->add_cache    = NULL;
+    spf_dns_server->layer_below  = spf_dns_server_below;
+	spf_dns_server->name         = name;
+	spf_dns_server->debug        = debug;
 
-    if ( spfdic->hook )
-	free( spfdic->hook );
-    if ( spfdic )
-	free( spfdic );
+    return spf_dns_server;
 }

@@ -1,13 +1,13 @@
-/* 
+/*
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of either:
- * 
+ *
  *   a) The GNU Lesser General Public License as published by the Free
  *      Software Foundation; either version 2.1, or (at your option) any
- *      later version, 
- * 
+ *      later version,
+ *
  *   OR
- * 
+ *
  *   b) The two-clause BSD license.
  *
  * These licenses can be found with the distribution in the file LICENSES
@@ -47,6 +47,9 @@
 # include <netdb.h>
 #endif
 
+#ifdef HAVE_PTHREAD_H
+# include <pthread.h>
+#endif
 
 #include "spf.h"
 #include "spf_dns.h"
@@ -69,50 +72,40 @@
  */
 
 
+typedef
+struct _SPF_dns_cache_bucket_t {
+	struct _SPF_dns_cache_bucket_t	*next;
+	SPF_dns_rr_t					*rr;
+} SPF_dns_cache_bucket_t;
+
 typedef struct
 {
-    int			debug;
-    SPF_dns_rr_t	**cache;
-    int			cache_size;
-    int			hash_mask;
-    int			max_hash_len;
+    SPF_dns_cache_bucket_t	**cache;
+    int						  cache_size;
+    pthread_mutex_t			  cache_lock;
 
-    SPF_dns_rr_t	**reclaim;
-    int			reclaim_size;
-    int			reclaim_mask;
+    int				hash_mask;
+    int				max_hash_len;
 
-    int			hit;
-    int			miss;
+#if 0
+    int				hit;
+    int				miss;
+#endif
 
-    time_t		min_ttl;
-    time_t		err_ttl;
-    time_t		txt_ttl;
-    time_t		rdns_ttl;
+    time_t			min_ttl;
+    time_t			err_ttl;
+    time_t			txt_ttl;
+    time_t			rdns_ttl;
 
-    int			conserve_cache;
+    int				conserve_cache;
 
-    SPF_dns_rr_t	nxdomain;
-} SPF_dns_cache_config_t; 
-
-
-
-/* FXIME  this isn't used.  shouldn't we use c_results anyway? */
-typedef struct 
-{
-    int			hash;
-
-    SPF_id_t		spfid;
-    SPF_id_t		spfid_optimized;
-    time_t		opt_utc_ttl;
-
-    SPF_id_t		exp_id;
-} SPF_dns_cache_data_t;
     
+} SPF_dns_cache_config_t;
 
 
-static inline SPF_dns_cache_config_t *SPF_voidp2spfhook( void *hook ) 
+static inline SPF_dns_cache_config_t *SPF_voidp2spfhook( void *hook )
     { return (SPF_dns_cache_config_t *)hook; }
-static inline void *SPF_spfhook2voidp( SPF_dns_cache_config_t *spfhook ) 
+static inline void *SPF_spfhook2voidp( SPF_dns_cache_config_t *spfhook )
     { return (void *)spfhook; }
 
 
@@ -214,241 +207,443 @@ const unsigned int crc_32_tab[256] = {
 	0x2d02ef8dL
 };
 
-inline static int crc32str(unsigned int accum, const char *str, int max_hash_len )
+static inline int
+crc32str(unsigned int accum, const char *str, int max_hash_len)
 {
-    for( ; *str != '\0' && max_hash_len > 0; str++ )
-    {
-	if ( *str == '.' )
-	    continue;
-	
-	accum = crc_32_tab[ (unsigned char)accum ^ (unsigned char)*str ]
-	    ^ (unsigned char)(accum >> 8);
+    for( ; *str != '\0' && max_hash_len > 0; str++ ) {
+		if ( *str == '.' )
+			continue;
 
-	max_hash_len--;
-    }
-    
+		accum = crc_32_tab[ (unsigned char)accum ^ (unsigned char)*str ]
+			^ (unsigned char)(accum >> 8);
 
-   return(accum);
+		max_hash_len--;
+	}
+
+
+	return accum;
 }
 
-#define hash(h,s,a) (crc32str(a,s,h->max_hash_len) & (h->hash_mask))
+// #define hash(h,s,a) (crc32str(a,s,h->max_hash_len) & (h->hash_mask))
+#define hash(h,s,a) crc32str(a,s,h->max_hash_len)
 
-
-static SPF_dns_rr_t *SPF_dns_lookup_cache( SPF_dns_config_t spfdcid, const char *domain, ns_type rr_type, int should_cache )
+/* This must be called with the lock held. */
+static SPF_dns_cache_bucket_t *
+SPF_dns_cache_bucket_find(SPF_dns_cache_config_t *spfhook,
+				const char *domain, ns_type rr_type, int idx)
 {
-    SPF_dns_iconfig_t		*spfdic = SPF_dcid2spfdic( spfdcid );
-    SPF_dns_cache_config_t	*spfhook = SPF_voidp2spfhook( spfdic->hook );
+	SPF_dns_cache_bucket_t	*bucket;
+	SPF_dns_cache_bucket_t	*prev;
+	SPF_dns_rr_t			*rr;
+	time_t					 now;
 
-    SPF_dns_rr_t	*cached_rr, *reclaimed_rr, *fetched_rr;
-    int			h, hr;
-    time_t		t = 0;
-    char		*p;
+    bucket = spfhook->cache[idx];
+	prev = NULL;
+	time(&now);
 
+	while (bucket != NULL) {
+		rr = bucket->rr;
+
+		if (rr->utc_ttl < now) {
+			/* Unlink the bucket. */
+			if (prev != NULL)
+				prev->next = bucket->next;
+			else
+				spfhook->cache[idx] = bucket->next;
+			/* Free the bucket. */
+			if (bucket->rr)
+				SPF_dns_rr_free(bucket->rr);
+			free(bucket);
+			/* Set iterator back one step. */
+			bucket = prev;	/* Might be NULL */
+		}
+	  	else if (rr->rr_type != rr_type) {
+			/* Types differ */
+		}
+		else if (strcmp(rr->domain, domain) != 0) {
+			/* Domains differ */
+		}
+		else {
+			/* Move the bucket to the top of the chain. */
+			if (prev != NULL) {
+				prev->next = bucket->next;
+				bucket->next = spfhook->cache[idx];
+				spfhook->cache[idx] = bucket;
+			}
+			return bucket;
+		}
+
+		prev = bucket;		/* Might be NULL */
+		if (bucket == NULL)	/* After an unlink */
+			bucket = spfhook->cache[idx];
+		else
+			bucket = bucket->next;
+	}
+
+	return NULL;
+}
+
+/* This must be called with the lock held. */
+static void
+SPF_dns_cache_bucket_add(SPF_dns_cache_config_t *spfhook,
+				SPF_dns_rr_t *rr, int idx)
+{
+	SPF_dns_cache_bucket_t	*bucket;
+
+	bucket = (SPF_dns_cache_bucket_t *)
+				malloc(sizeof(SPF_dns_cache_bucket_t));
+	bucket->next = spfhook->cache[idx];
+	spfhook->cache[idx] = bucket;
+	bucket->rr = rr;
+}
+
+
+static void
+SPF_dns_cache_rr_fixup(SPF_dns_cache_config_t *spfhook,
+				SPF_dns_rr_t *cached_rr,
+				const char *domain, ns_type rr_type)
+{
+    char			*p;
+
+    /* make sure the RR has enough data to be useful for caching */
+    if (cached_rr->rr_type == ns_t_any)
+		cached_rr->rr_type = rr_type;
+
+	/* XXX I'm still not sure about this bit. */
+	if (cached_rr->domain == NULL || cached_rr->domain[0] != '\0') {
+		char	*new_domain;
+		size_t	new_len = strlen( domain ) + 1;
+
+		if ( cached_rr->domain_buf_len < new_len ) {
+			new_domain = realloc(cached_rr->domain, new_len);
+			if ( new_domain == NULL ) {
+				/* XXX Panic! */
+				// SPF_dns_rr_free(cached_rr);
+				// spfhook->cache[ h ] = NULL;
+				// return fetched_rr;
+			}
+
+			cached_rr->domain = new_domain;
+			cached_rr->domain_buf_len = new_len;
+		}
+		strcpy(cached_rr->domain, domain);
+	}
+
+    /* set up the ttl values */
+    if ( cached_rr->ttl < spfhook->min_ttl )
+		cached_rr->ttl = spfhook->min_ttl;
+
+    if ( cached_rr->ttl < spfhook->txt_ttl
+			&& cached_rr->rr_type == ns_t_txt )
+		cached_rr->ttl = spfhook->txt_ttl;
+
+    if ( cached_rr->ttl < spfhook->err_ttl
+			&& cached_rr->herrno != NETDB_SUCCESS )
+		cached_rr->ttl = spfhook->err_ttl;
+
+    if ( cached_rr->ttl < spfhook->rdns_ttl ) {
+		p = strstr( cached_rr->domain, ".arpa" );
+		if ( p && p[ sizeof( ".arpa" )-1 ] == '\0' )
+			cached_rr->ttl = spfhook->rdns_ttl;
+    }
+
+	cached_rr->utc_ttl = cached_rr->ttl + time(NULL);
+}
+
+
+static SPF_dns_rr_t *
+SPF_dns_cache_lookup(SPF_dns_server_t *spf_dns_server,
+				const char *domain, ns_type rr_type, int should_cache)
+{
+    SPF_dns_cache_config_t	*spfhook;
+	SPF_dns_cache_bucket_t	*bucket;
+	SPF_dns_rr_t			*cached_rr;
+	SPF_dns_rr_t			*rr;
+    int						 idx;
+
+	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
+
+    pthread_mutex_lock(&(spfhook->cache_lock));
+
+	idx = hash(spfhook, domain, 0 /* spfhook->hash_mask+rr_type */);
+	idx &= (spfhook->cache_size - 1);
+
+	bucket = SPF_dns_cache_bucket_find(spfhook, domain, rr_type, idx);
+	if (bucket != NULL) {
+		if (bucket->rr != NULL) {
+			SPF_dns_rr_dup(&rr, bucket->rr);
+			pthread_mutex_unlock(&(spfhook->cache_lock));
+			return rr;
+		}
+	}
+
+	/* Make sure we don't hang onto this outside the lock.
+	 * idx is presumably safe. */
+	bucket = NULL;
+
+	pthread_mutex_unlock(&(spfhook->cache_lock));
+
+    if ( spf_dns_server->layer_below )
+		rr = SPF_dns_lookup( spf_dns_server->layer_below,
+						domain, rr_type, should_cache );
+    else
+		return SPF_dns_rr_new_nxdomain(spf_dns_server, domain);
+
+    if (spfhook->conserve_cache && !should_cache)
+		return rr;
+
+    pthread_mutex_lock(&(spfhook->cache_lock));
+
+	if (SPF_dns_rr_dup(&cached_rr, rr))	{
+		/* XXX This represents a malloc failure. Put a warning in. */
+		pthread_mutex_unlock(&(spfhook->cache_lock));
+		if (cached_rr)
+			SPF_dns_rr_free(cached_rr);
+		return rr;
+	}
+
+	SPF_dns_cache_rr_fixup(spfhook, cached_rr, domain, rr_type);
+
+	SPF_dns_cache_bucket_add(spfhook, cached_rr, idx);
+
+    pthread_mutex_unlock(&(spfhook->cache_lock));
+
+    return rr;
+}
+
+
+
+
+
+
+#if 0
+
+static SPF_dns_rr_t *
+SPF_dns_cache_lookup(SPF_dns_server_t *spf_dns_server,
+				const char *domain, ns_type rr_type, int should_cache)
+{
+    SPF_dns_cache_config_t	*spfhook;
+	SPF_errcode_t			 err;
+
+    SPF_dns_rr_t	*cached_rr, *fetched_rr;
+    int				h;
+    time_t			t = 0;
+    char			*p;
+
+	spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
+
+    pthread_mutex_lock(&(spfhook->cache_lock));
 
     /* see if the RR is in the cache */
     h = hash( spfhook, domain, spfhook->hash_mask + rr_type );
     cached_rr = spfhook->cache[ h ];
-    
+
     if ( cached_rr
-	 && cached_rr->rr_type == rr_type
-	 && strcmp( cached_rr->domain, domain ) == 0
-	 && cached_rr->utc_ttl >= (t = time( NULL )))
+	  && cached_rr->rr_type == rr_type
+	  && strcmp( cached_rr->domain, domain ) == 0
+	  && cached_rr->utc_ttl >= (t = time( NULL )))
     {
-	spfhook->hit++;
-	if ( spfhook->debug > 1 )
-	    SPF_debugf( "hit!  %d/%d  h: %d  should_cache: %d%s",
-		spfhook->hit, spfhook->miss, h,
-		should_cache, cached_rr == NULL ? "  cold" : "" 
-	    );
-	return cached_rr;
+		spfhook->hit++;
+		if ( spf_dns_server->debug > 1 )
+			SPF_debugf( "hit!  %d/%d  h: %d  should_cache: %d",
+			spfhook->hit, spfhook->miss, h, should_cache);
+		SPF_dns_rr_dup(&cached_rr, cached_rr);
+		pthread_mutex_unlock(&(spfhook->cache_lock));
+		return cached_rr;
     }
-
-    /* see if the RR is in the reclaim pool */
-    hr = h & spfhook->reclaim_mask;
-    reclaimed_rr = spfhook->reclaim[ hr ];
-    
-    if ( reclaimed_rr
-	 && reclaimed_rr->rr_type == rr_type
-	 && strcmp( reclaimed_rr->domain, domain ) == 0
-	 && reclaimed_rr->utc_ttl >= (t ? t : (t = time( NULL ))))
-    {
-	spfhook->hit++;
-	if ( spfhook->debug > 1 )
-	    SPF_debugf( "hit!  %d/%d  h: %d  should_cache: %d%s  reclaimed",
-		spfhook->hit, spfhook->miss, h,
-		should_cache, cached_rr == NULL ? "  cold" : "" 
-	    );
-
-	spfhook->cache[ h ] = reclaimed_rr;
-	spfhook->reclaim[ hr ] = cached_rr;
-
-	return reclaimed_rr;
-    }
-    
 
     spfhook->miss++;
-    if ( spfhook->debug > 1 )
-	SPF_debugf( "miss...  %d/%d  h: %d  should_cache: %d%s",
-		spfhook->hit, spfhook->miss, h,
-		should_cache, cached_rr == NULL ? "  cold" : "" 
-	    );
+    if ( spf_dns_server->debug > 1 )
+		SPF_debugf( "miss...  %d/%d  h: %d  should_cache: %d%s",
+			spfhook->hit, spfhook->miss, h,
+			should_cache, cached_rr == NULL ? "  cold" : ""
+			);
 
-    
+    pthread_mutex_unlock(&(spfhook->cache_lock));
 
-    if ( spfdic->layer_below )
-	fetched_rr = SPF_dcid2spfdic( spfdic->layer_below )->lookup( spfdic->layer_below, domain, rr_type, should_cache );
+    if ( spf_dns_server->layer_below )
+		fetched_rr = SPF_dns_lookup( spf_dns_server->layer_below,
+						domain, rr_type, should_cache );
     else
-	return &spfhook->nxdomain;
+		return SPF_dns_rr_new_nxdomain(spf_dns_server, domain);
 
-    if ( spfhook->conserve_cache  &&  !should_cache )
-	return fetched_rr;
-
-
-    /* try to stash away the cached RR onto the reclaim pool */
-    if ( cached_rr  &&  cached_rr->utc_ttl > (t ? t : (t = time( NULL ))))
-    {
-	if ( reclaimed_rr == NULL )
-	    reclaimed_rr = SPF_dns_create_rr();
-	if ( reclaimed_rr ) 
-	{
-	    if ( SPF_dns_copy_rr( reclaimed_rr, cached_rr ) == SPF_E_SUCCESS )
-		spfhook->reclaim[ hr ] = reclaimed_rr;
-	    else
-	    {
-		SPF_dns_destroy_rr( reclaimed_rr );
-		reclaimed_rr = NULL;
-	    }
-	}
+    pthread_mutex_lock(&(spfhook->cache_lock));
+    if ( spfhook->conserve_cache  &&  !should_cache ) {
+		pthread_mutex_unlock(&(spfhook->cache_lock));
+		return fetched_rr;
     }
-    
 
     /* try to store the fetched RR into the cache */
-    if ( cached_rr == NULL )
-	cached_rr = SPF_dns_create_rr();
-    if ( cached_rr == NULL )
-	return fetched_rr;
-    
-    if ( SPF_dns_copy_rr( cached_rr, fetched_rr ) != SPF_E_SUCCESS )
-    {
-	SPF_dns_destroy_rr( cached_rr );
-	return fetched_rr;
-    }
-    
+    if ( cached_rr != NULL ) {
+		SPF_dns_rr_free(cached_rr);
+		/* XXX Shevek put this in to clobber the entry */
+		/* I have a nasty feeling that this might actually
+		 * be the right answer. */
+		cached_rr = NULL;
+		spfhook->cache[ h ] = NULL;
+	}
+	if ( ( err = SPF_dns_rr_dup(&cached_rr, fetched_rr) ) )
+		fprintf(stderr, "Oh shit. %d\n", err);
 
     /* make sure the RR has enough data to be useful for caching */
-    if ( cached_rr->rr_type == ns_t_any )
-    {
-	cached_rr->rr_type = rr_type;
-	if ( cached_rr->domain ) cached_rr->domain[0] = '\0';
+    if ( cached_rr->rr_type == ns_t_any ) {
+		cached_rr->rr_type = rr_type;
+		/* Huh? Ed. */
+		if ( cached_rr->domain )
+			cached_rr->domain[0] = '\0';
     }
 
-    if ( cached_rr->domain == NULL  ||  cached_rr->domain[0] != '\0' )
-    {
-	char   *new_domain;
-	size_t new_len = strlen( domain ) + 1;
+	if (cached_rr->domain == NULL || cached_rr->domain[0] != '\0') {
+		char   *new_domain;
+		size_t new_len = strlen( domain ) + 1;
 
-	if ( cached_rr->domain_buf_len < new_len )
-	{
-	    new_domain = realloc( cached_rr->domain, new_len );
-	    if ( new_domain == NULL )
-	    {
-		SPF_dns_destroy_rr( cached_rr );
-		spfhook->cache[ h ] = NULL;
-		return fetched_rr;
-	    }
+		if ( cached_rr->domain_buf_len < new_len ) {
+			new_domain = realloc( cached_rr->domain, new_len );
+			if ( new_domain == NULL ) {
+				SPF_dns_rr_free( cached_rr );
+				spfhook->cache[ h ] = NULL;
+				return fetched_rr;
+			}
 
-	    cached_rr->domain = new_domain;
-	    cached_rr->domain_buf_len = new_len;
+			cached_rr->domain = new_domain;
+			cached_rr->domain_buf_len = new_len;
+		}
+		strcpy( cached_rr->domain, domain );
 	}
-	strcpy( cached_rr->domain, domain );
-    }
-
-
-
 
     /* set up the ttl values */
     if ( cached_rr->ttl < spfhook->min_ttl )
-	cached_rr->ttl = spfhook->min_ttl;
+		cached_rr->ttl = spfhook->min_ttl;
 
     if ( cached_rr->ttl < spfhook->txt_ttl
-	 && cached_rr->rr_type == ns_t_txt )
-	cached_rr->ttl = spfhook->txt_ttl;
+			&& cached_rr->rr_type == ns_t_txt )
+		cached_rr->ttl = spfhook->txt_ttl;
 
     if ( cached_rr->ttl < spfhook->err_ttl
-	 && cached_rr->herrno != NETDB_SUCCESS )
-	cached_rr->ttl = spfhook->err_ttl;
+			&& cached_rr->herrno != NETDB_SUCCESS )
+		cached_rr->ttl = spfhook->err_ttl;
 
-    if ( cached_rr->ttl < spfhook->rdns_ttl )
-    {
-	p = strstr( cached_rr->domain, ".arpa" );
-	if ( p && p[ sizeof( ".arpa" )-1 ] == '\0' )
-	    cached_rr->ttl = spfhook->rdns_ttl;
+    if ( cached_rr->ttl < spfhook->rdns_ttl ) {
+		p = strstr( cached_rr->domain, ".arpa" );
+		if ( p && p[ sizeof( ".arpa" )-1 ] == '\0' )
+			cached_rr->ttl = spfhook->rdns_ttl;
     }
 
-    if ( t == 0 ) t = time( NULL );
-    cached_rr->utc_ttl = cached_rr->ttl + t;
-
+    if ( t == 0 )
+		t = time( NULL );
+	cached_rr->utc_ttl = cached_rr->ttl + t;
 
     spfhook->cache[ h ] = cached_rr;
 
-    return cached_rr;
+    pthread_mutex_unlock(&(spfhook->cache_lock));
+
+    return fetched_rr;
+}
+#endif
+
+
+
+static void
+SPF_dns_cache_free( SPF_dns_server_t *spf_dns_server )
+{
+    SPF_dns_cache_config_t	*spfhook;
+	SPF_dns_cache_bucket_t	*bucket;
+	SPF_dns_cache_bucket_t	*prev;
+    int						 i;
+
+	SPF_ASSERT_NOTNULL(spf_dns_server);
+
+    spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
+	if ( spfhook ) {
+		pthread_mutex_lock(&(spfhook->cache_lock));
+	
+		if (spfhook->cache) {
+			for( i = 0; i < spfhook->cache_size; i++ ) {
+				bucket = spfhook->cache[i];
+				while (bucket != NULL) {
+					prev = bucket;
+					bucket = bucket->next;
+
+					/* Free the bucket. */
+					if (prev->rr)
+						SPF_dns_rr_free(prev->rr);
+					free(prev);
+				}
+			}
+			free(spfhook->cache);
+		}
+
+		pthread_mutex_unlock(&(spfhook->cache_lock));
+
+		/* 
+		 * There is a risk that something might grab the mutex
+		 * here and try to look things up and try to resolve
+		 * stuff from a mashed cache it might happen but that's
+		 * what you get for trying to simultaneously free and
+		 * use a resource destroy will then return EBUSY but
+		 * it'll probably segfault so there ain't much to be
+		 * done really.
+		 */
+		pthread_mutex_destroy(&(spfhook->cache_lock));
+
+		free(spfhook);
+	}
+
+    free(spf_dns_server);
 }
 
 
-SPF_dns_config_t SPF_dns_create_config_cache( SPF_dns_config_t layer_below, int cache_bits, int debug )
+
+SPF_dns_server_t *
+SPF_dns_cache_new(SPF_dns_server_t *layer_below,
+				const char *name, int debug, int cache_bits)
 {
-    SPF_dns_iconfig_t     *spfdic;
-    SPF_dns_cache_config_t *spfhook;
-    
-    if ( layer_below == NULL )
-	SPF_error( "layer_below is NULL." );
+	SPF_dns_server_t		*spf_dns_server;
+    SPF_dns_cache_config_t	*spfhook;
+
+	SPF_ASSERT_NOTNULL(layer_below);
 
     if ( cache_bits < 1 || cache_bits > 16 )
-	SPF_error( "cache bits out of range (1..16)." );
-    
+		SPF_error( "cache bits out of range (1..16)." );
 
-    spfdic = malloc( sizeof( *spfdic ) );
-    if ( spfdic == NULL )
-	return NULL;
 
-    spfdic->hook = malloc( sizeof( SPF_dns_cache_config_t ) );
-    if ( spfdic->hook == NULL )
-    {
-	free( spfdic );
-	return NULL;
+	spf_dns_server = malloc(sizeof(SPF_dns_server_t));
+    if (spf_dns_server == NULL)
+		return NULL;
+	memset(spf_dns_server, 0, sizeof(SPF_dns_server_t));
+
+    spf_dns_server->hook = malloc(sizeof(SPF_dns_cache_config_t));
+    if (spf_dns_server->hook == NULL) {
+		free(spf_dns_server);
+		return NULL;
     }
-    
-    spfdic->destroy     = SPF_dns_destroy_config_cache;
-    spfdic->lookup      = SPF_dns_lookup_cache;
+	memset(spf_dns_server->hook, 0, sizeof(SPF_dns_cache_config_t));
+
+	if (name == NULL)
+		name = "cache";
+
+    spf_dns_server->destroy     = SPF_dns_cache_free;
+    spf_dns_server->lookup      = SPF_dns_cache_lookup;
+    spf_dns_server->get_spf     = NULL;
+    spf_dns_server->get_exp     = NULL;
+    spf_dns_server->add_cache   = NULL;
+    spf_dns_server->layer_below = layer_below;
+    spf_dns_server->name        = name;
+    spf_dns_server->debug       = debug;
+
+    spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
+
+	spfhook->cache_size = 1 << cache_bits;
+	spfhook->hash_mask  = spfhook->cache_size - 1;
+	spfhook->max_hash_len = cache_bits > 4 ? cache_bits * 2 : 8;
+
+    spfhook->cache = calloc(spfhook->cache_size,
+									sizeof(*spfhook->cache));
+
 #if 0
-    /* FIXME  need to do more than just cache DNS records */
-    spfdic->get_spf     = SPF_dns_get_spf_cache;
-    spfdic->get_exp     = SPF_dns_get_exp_cache;
-#else
-    spfdic->get_spf     = NULL;
-    spfdic->get_exp     = NULL;
-    spfdic->add_cache   = NULL;
-#endif
-    spfdic->layer_below = layer_below;
-    spfdic->name        = "cache";
-    
-    spfhook = SPF_voidp2spfhook( spfdic->hook );
-
-    spfhook->debug      = debug;
-
-    spfhook->cache_size = 1 << cache_bits;
-    spfhook->hash_mask  = spfhook->cache_size - 1;
-    spfhook->max_hash_len = cache_bits > 4 ? cache_bits * 2 : 8;
-
-    spfhook->reclaim_size = 1 << (cache_bits - 3); /* 8:1 overloading	*/
-    if ( spfhook->reclaim_size <  1 ) spfhook->reclaim_size = 1;
-    spfhook->reclaim_mask = spfhook->reclaim_size - 1;
-
-    spfhook->cache = calloc( spfhook->cache_size, sizeof( *spfhook->cache ) );
-    spfhook->reclaim = calloc( spfhook->reclaim_size, sizeof( *spfhook->reclaim ) );
-
     spfhook->hit        = 0;
     spfhook->miss       = 0;
+#endif
 
     spfhook->min_ttl    = 30;
     spfhook->err_ttl    = 30*60;
@@ -456,116 +651,50 @@ SPF_dns_config_t SPF_dns_create_config_cache( SPF_dns_config_t layer_below, int 
     spfhook->rdns_ttl   = 30*60;
     spfhook->conserve_cache  = cache_bits < 12;
 
-    if ( spfhook->cache == NULL )
-    {
-	free( spfdic );
-	return NULL;
+    if (spfhook->cache == NULL) {
+		free(spfhook);
+		free(spf_dns_server);
+		return NULL;
     }
 
-    spfhook->nxdomain = SPF_dns_nxdomain;
-    spfhook->nxdomain.source = SPF_spfdic2dcid( spfdic );
-    
-    return SPF_spfdic2dcid( spfdic );
+	pthread_mutex_init(&(spfhook->cache_lock),NULL);
+
+    return spf_dns_server;
 }
 
-void SPF_dns_reset_config_cache( SPF_dns_config_t spfdcid )
+void
+SPF_dns_cache_set_ttl( SPF_dns_server_t *spf_dns_server,
+				time_t min_ttl, time_t err_ttl,
+				time_t txt_ttl, time_t rdns_ttl )
 {
-    SPF_dns_iconfig_t		*spfdic = SPF_dcid2spfdic( spfdcid );
-    SPF_dns_cache_config_t	*spfhook;
-    int			i;
-
-    if ( spfdcid == NULL )
-	SPF_error( "spfdcid is NULL" );
-
-    spfhook = SPF_voidp2spfhook( spfdic->hook );
-    if ( spfhook == NULL )
-	SPF_error( "spfdcid.hook is NULL" );
-	
-    if ( spfhook->cache == NULL )
-	SPF_error( "spfdcid.hook->cache is NULL" );
-	
-    if ( spfhook->reclaim == NULL )
-	SPF_error( "spfdcid.hook->reclaim is NULL" );
-	
-    for( i = 0; i < spfhook->cache_size; i++ )
-    {
-	if ( spfhook->cache[i] )
-	    SPF_dns_reset_rr( spfhook->cache[i] );
-    }
-
-    for( i = 0; i < spfhook->reclaim_size; i++ )
-    {
-	if ( spfhook->reclaim[i] )
-	    SPF_dns_reset_rr( spfhook->reclaim[i] );
-    }
-}
-
-
-void SPF_dns_set_ttl_cache( SPF_dns_config_t spfdcid, time_t min_ttl,
-			    time_t err_ttl, time_t txt_ttl,
-			    time_t rdns_ttl )
-{
-    SPF_dns_iconfig_t    *spfdic = SPF_dcid2spfdic( spfdcid );
     SPF_dns_cache_config_t *spfhook;
 
+	SPF_ASSERT_NOTNULL(spf_dns_server);
 
-    if ( spfdcid == NULL )
-	SPF_error( "spfdcid is NULL" );
+    spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
 
-    spfhook = SPF_voidp2spfhook( spfdic->hook );
-
-    spfhook->min_ttl  = min_ttl;
-    spfhook->err_ttl  = err_ttl;
-    spfhook->txt_ttl  = txt_ttl;
-    spfhook->rdns_ttl = rdns_ttl;
+    if (spfhook != NULL) {
+        pthread_mutex_lock(&(spfhook->cache_lock));
+        spfhook->min_ttl  = min_ttl;
+        spfhook->err_ttl  = err_ttl;
+        spfhook->txt_ttl  = txt_ttl;
+        spfhook->rdns_ttl = rdns_ttl;
+        pthread_mutex_unlock(&(spfhook->cache_lock));
+    }
 }
 
 
-void SPF_dns_set_conserve_cache( SPF_dns_config_t spfdcid, int conserve_cache )
+void
+SPF_dns_set_conserve_cache( SPF_dns_server_t *spf_dns_server,
+				int conserve_cache )
 {
-    SPF_dns_iconfig_t    *spfdic = SPF_dcid2spfdic( spfdcid );
     SPF_dns_cache_config_t *spfhook;
 
+	SPF_ASSERT_NOTNULL(spf_dns_server);
 
-    if ( spfdcid == NULL )
-	SPF_error( "spfdcid is NULL" );
-
-    spfhook = SPF_voidp2spfhook( spfdic->hook );
-
-    spfhook->conserve_cache = conserve_cache;
+    spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
+	/* This is a boolean and it doesn't matter if it
+	 * changes suddenly, thus no lock. */
+    if (spfhook != NULL)
+        spfhook->conserve_cache = conserve_cache;
 }
-
-
-void SPF_dns_destroy_config_cache( SPF_dns_config_t spfdcid )
-{
-    SPF_dns_iconfig_t     *spfdic = SPF_dcid2spfdic( spfdcid );
-    SPF_dns_cache_config_t	*spfhook;
-    int			i;
-
-
-    if ( spfdcid == NULL )
-	SPF_error( "spfdcid is NULL" );
-
-    spfhook = SPF_voidp2spfhook( spfdic->hook );
-    if ( spfhook )
-    {
-	for( i = 0; i < spfhook->cache_size; i++ )
-	{
-	    if ( spfhook->cache[i] )
-		SPF_dns_destroy_rr( spfhook->cache[i] );
-	}
-	if ( spfhook->cache ) free( spfhook->cache );
-
-	for( i = 0; i < spfhook->reclaim_size; i++ )
-	{
-	    if ( spfhook->reclaim[i] )
-		SPF_dns_destroy_rr( spfhook->reclaim[i] );
-	}
-	if ( spfhook->reclaim ) free( spfhook->reclaim );
-
-	free( spfhook );
-    }
-    
-    free( spfdic );
-}
-

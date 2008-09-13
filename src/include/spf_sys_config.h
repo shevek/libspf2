@@ -19,6 +19,7 @@
 #ifndef INC_SPF_SYS_CONFIG
 #define INC_SPF_SYS_CONFIG
 
+#include "spf_win32_internal.h"
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -40,7 +41,7 @@
 # else
 /* looks like they have bind4/8 include files, use bind9 */
 #  define HAVE_BIND8
-#  include "replace/arpa_nameser.h"
+#  include "../libreplace/arpa_nameser.h"
 #  define HAVE_NS_TYPE 1		/* we have it now		*/
 # endif
 #endif

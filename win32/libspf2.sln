@@ -1,0 +1,37 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libspf2", "libspf2\libspf2.vcproj", "{88CA443E-8AD3-4A25-9893-13BF057351A1}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "spfquery", "spfquery\spfquery.vcproj", "{891BC3C0-9D4B-4E39-8282-4E947818F9CE}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "spftest", "spftest\spftest.vcproj", "{891BC3C0-9D4B-4E39-8282-4E947818F9CE}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{88CA443E-8AD3-4A25-9893-13BF057351A1}.Debug.ActiveCfg = Debug|Win32
+		{88CA443E-8AD3-4A25-9893-13BF057351A1}.Debug.Build.0 = Debug|Win32
+		{88CA443E-8AD3-4A25-9893-13BF057351A1}.Release.ActiveCfg = Release|Win32
+		{88CA443E-8AD3-4A25-9893-13BF057351A1}.Release.Build.0 = Release|Win32
+		{891BC3C0-9D4B-4E39-8282-4E947818F9CE}.Debug.ActiveCfg = Debug|Win32
+		{891BC3C0-9D4B-4E39-8282-4E947818F9CE}.Debug.Build.0 = Debug|Win32
+		{891BC3C0-9D4B-4E39-8282-4E947818F9CE}.Release.ActiveCfg = Release|Win32
+		{891BC3C0-9D4B-4E39-8282-4E947818F9CE}.Release.Build.0 = Release|Win32
+		{891BC3C0-9D4B-4E39-8282-4E947818F9CE}.Debug.ActiveCfg = Debug|Win32
+		{891BC3C0-9D4B-4E39-8282-4E947818F9CE}.Debug.Build.0 = Debug|Win32
+		{891BC3C0-9D4B-4E39-8282-4E947818F9CE}.Release.ActiveCfg = Release|Win32
+		{891BC3C0-9D4B-4E39-8282-4E947818F9CE}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

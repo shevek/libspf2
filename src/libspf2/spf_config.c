@@ -44,6 +44,8 @@
 #include "spf.h"
 #include "spf_internal.h"
 
+#if 0
+
 
 static SPF_c_results_t	SPF_default_whitelist;
 static SPF_c_results_t	SPF_default_exp;
@@ -86,7 +88,14 @@ void SPF_reset_config( SPF_config_t spfcid )
     if ( SPF_default_rec_dom == NULL )
     {
 	SPF_default_rec_dom = malloc( HOST_NAME_MAX );
+#ifdef _WIN32
+	gethostnameFQDN( SPF_default_rec_dom, HOST_NAME_MAX );
+#else
 	gethostname( SPF_default_rec_dom, HOST_NAME_MAX );
+#endif
+	/* man gethostname(2): It is unspecified whether the truncated
+	 * hostname will be NUL-terminated.  */
+	SPF_default_rec_dom[HOST_NAME_MAX - 1] = '\0';
     }
     if ( SPF_default_rec_dom != NULL )
 	spfic->rec_dom = strdup( SPF_default_rec_dom );
@@ -159,6 +168,8 @@ SPF_config_t SPF_dup_config( SPF_config_t src_spfcid )
 
     dst_spfcid = SPF_create_config();
     dst_spfic = SPF_cid2spfic( dst_spfcid );
+    /* create calls reset, which allocates */
+    if ( dst_spfic->rec_dom ) free( dst_spfic->rec_dom );
 
     if ( dst_spfic )
     {
@@ -926,3 +937,5 @@ int  SPF_get_debug( SPF_config_t spfcid )
     return spfic->debug;
 }
 
+
+#endif

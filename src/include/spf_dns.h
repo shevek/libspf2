@@ -91,7 +91,7 @@ typedef int	ns_type;
  * For those who don't have <netdb.h>
  */
 
-#ifndef HAVE_NETDB_H
+#if !defined(HAVE_NETDB_H) && !defined(_WIN32)
 #define NETDB_SUCCESS	0
 #define	HOST_NOT_FOUND 	1		/* NXDOMAIN (authoritative answer)*/
 #define	TRY_AGAIN	2		/* SERVFAIL (no authoritative answer)*/
@@ -100,26 +100,81 @@ typedef int	ns_type;
 #endif
 typedef int SPF_dns_stat_t;
 
+typedef struct SPF_dns_server_struct SPF_dns_server_t;
 
-
+#include "spf_request.h"
+#include "spf_dns_rr.h"
 
 /*
  * bundle up the info needed to use a dns method
  */
 
+typedef void (*SPF_dns_destroy_t)(SPF_dns_server_t *spf_dns_server);
+typedef SPF_dns_rr_t *(*SPF_dns_lookup_t)(
+				SPF_dns_server_t *spf_dns_server,
+				const char *domain,
+				ns_type ns_type, int should_cache
+					);
+typedef SPF_errcode_t (*SPF_dns_get_spf_t)( SPF_server_t *spf_server,
+					SPF_request_t *spf_request,
+					SPF_response_t *spf_response,
+					SPF_record_t **spf_recordp);
+typedef SPF_errcode_t (*SPF_dns_get_exp_t)( SPF_server_t *spf_server,
+					const char *domain,
+					char **buf, size_t *buf_len );
+typedef int (*SPF_dns_add_cache_t)( SPF_server_t *spf_server,
+				    SPF_dns_rr_t spfrr );
 
-void SPF_dns_destroy_config( SPF_dns_config_t spfdcid );
+struct SPF_dns_server_struct
+{
+    SPF_dns_destroy_t	 destroy;
 
+    SPF_dns_lookup_t	 lookup;
+    SPF_dns_get_spf_t	 get_spf;
+    SPF_dns_get_exp_t	 get_exp;
+    SPF_dns_add_cache_t  add_cache;
+
+    /* the next DNS layer down to call if this layer can't give an answer */
+    SPF_dns_server_t	*layer_below;
+
+    const char			*name;		/* name of the layer		*/
+	int					 debug;
+    void				*hook;		/* server-specific data */
+};
+
+
+void			 SPF_dns_free( SPF_dns_server_t *spf_dns_server );
+SPF_dns_rr_t	*SPF_dns_lookup( SPF_dns_server_t *spf_dns_server,
+			      const char *domain, ns_type rr_type,
+			      int should_cache );
+SPF_dns_rr_t	*SPF_dns_rlookup( SPF_dns_server_t *spf_dns_server,
+			       struct in_addr ipv4, ns_type rr_type,
+			       int should_cache );
+SPF_dns_rr_t	*SPF_dns_rlookup6( SPF_dns_server_t *spf_dns_server,
+				struct in6_addr ipv6, ns_type rr_type,
+				int should_cache );
+
+
+/* The client domain is the validated domain name of the client IP
+ * address.  This is not just the domain name(s) found in the reverse
+ * DNS tree, but involves checking to make sure these name(s) use the
+ * client IP address.  The complete validation procedure is described
+ * in section 5.4 of the SPF spec.
+ */
+char		*SPF_dns_get_client_dom(SPF_dns_server_t *spf_dns_server,
+				SPF_request_t *sr);
 
 /*
  * helper functions
  */
 
 
+#if 0
 #ifdef WORDS_BIGENDIAN
 #define SPF_IPV4(a,b,c,d) ((unsigned long)((((unsigned long)a)<<24) + (((unsigned long)b)<<16) + (((unsigned long)c)<<8) + (unsigned long)d))
 #else
 #define SPF_IPV4(a,b,c,d) ((unsigned long)((((unsigned long)d)<<24) + (((unsigned long)c)<<16) + (((unsigned long)b)<<8) + (unsigned long)a))
+#endif
 #endif
 
 

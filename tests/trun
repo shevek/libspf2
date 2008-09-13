@@ -1,7 +1,0 @@
-#!/bin/sh
-
-# just to make gdb<->bash easier
-
-PROG=../src/spftest/spftest_static
-
-valgrind --leak-check=yes --show-reachable=yes --num-callers=8 $PROG "$@"

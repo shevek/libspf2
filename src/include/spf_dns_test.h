@@ -19,6 +19,8 @@
 #ifndef INC_SPF_DNS_TEST
 #define INC_SPF_DNS_TEST
 
+#include "spf_dns.h"
+
 /* For an overview of the DNS layer system, see spf_dns.h */
 
 /*
@@ -39,9 +41,8 @@
  * with them, or you will leak memory. 
  */
 
-SPF_dns_config_t SPF_dns_create_config_test( SPF_dns_config_t layer_below );
-void SPF_dns_reset_config_test( SPF_dns_config_t spfdc );
-void SPF_dns_destroy_config_test( SPF_dns_config_t spfdc );
+SPF_dns_server_t	*SPF_dns_test_new( SPF_dns_server_t *layer_below,
+				const char *name, int debug);
 
 
 #endif

@@ -41,39 +41,37 @@
 
 
 
-
-void SPF_print( SPF_id_t spfid )
+SPF_errcode_t
+SPF_record_print(SPF_record_t *spf_record)
 {
-    SPF_internal_t *spfi = SPF_id2spfi(spfid);
     char	*prt_buf = NULL;
-    size_t	prt_len = 0;
+    size_t	 prt_len = 0;
+    int		 err;
 
-    int		err;
+	if (spf_record == NULL) {
+		SPF_info("SPF header: <null record>");
+		SPF_info("Unknown");
+		return SPF_E_SUCCESS;
+	}
 
-    /*
-     * make sure we were passed valid data to work with
-     */
-    if ( spfi == NULL )
-	SPF_error( "spfid is NULL" );
-    
     SPF_infof( "SPF header:  version: %d  mech %d/%d  mod %d/%d  len=%d",
-	    spfi->header.version,
-	    spfi->header.num_mech, spfi->header.mech_len, 
-	    spfi->header.num_mod, spfi->header.mod_len,
-	    sizeof(spfi->header) + spfi->header.mech_len
-	    + spfi->header.mod_len);
+	    spf_record->version,
+	    spf_record->num_mech, spf_record->mech_len, 
+	    spf_record->num_mod, spf_record->mod_len,
+	    sizeof(SPF_record_t) + spf_record->mech_len
+	    + spf_record->mod_len);
 
-    err = SPF_id2str( &prt_buf, &prt_len, spfid );
+    err = SPF_record_stringify(spf_record, &prt_buf, &prt_len);
     if ( err == SPF_E_RESULT_UNKNOWN )
 	SPF_info( "Unknown" );
     else if ( err )
-	SPF_infof( "SPF_id2str error: %s (%d)", SPF_strerror( err ), err );
+	SPF_infof( "SPF_record_stringify error: %s (%d)", SPF_strerror( err ), err );
     else
 	SPF_infof( "SPF record:  %s", prt_buf );
 
     if ( prt_buf )
-	free( prt_buf );
-	    
+		free( prt_buf );
+	return SPF_E_SUCCESS;
 }
 
 
@@ -82,7 +80,7 @@ void SPF_print( SPF_id_t spfid )
 
 void SPF_print_sizeof(void)
 {
-    SPF_infof( "sizeof(SPF_rec_header_t)=%u", sizeof(SPF_rec_header_t));
+    // SPF_infof( "sizeof(SPF_rec_header_t)=%u", sizeof(SPF_rec_header_t));
     SPF_infof( "sizeof(SPF_mech_t)=%u", sizeof(SPF_mech_t));
     SPF_infof( "sizeof(SPF_data_t)=%u", sizeof(SPF_data_t));
     SPF_infof( "sizeof(SPF_mod_t)=%u", sizeof(SPF_mod_t));

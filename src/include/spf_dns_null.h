@@ -48,9 +48,8 @@
  * generated the output.
  */
  
-SPF_dns_config_t SPF_dns_create_config_null( SPF_dns_config_t layer_below, int debug, const char *name );
-void SPF_dns_reset_config_null( SPF_dns_config_t spfdcid );
-void SPF_dns_destroy_config_null( SPF_dns_config_t spfdcid );
+SPF_dns_server_t	*SPF_dns_null_new( SPF_dns_server_t *layer_below,
+				const char *name, int debug);
 
 
 #endif

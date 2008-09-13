@@ -1,6 +1,0 @@
-#!/bin/sh
-
-echo
-echo "Running regression tests using valigrind..."
-
-./tests_many -val || exit 1

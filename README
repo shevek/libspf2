@@ -1,3 +1,5 @@
+This readme has been adapted from Wayne's original readme by
+Shevek <libspf2@anarres.org>
 
 Libspf2 is an implementation of the SPF specification as found at
 http://www.ietf.org/internet-drafts/draft-mengwong-spf-00.txt
@@ -7,7 +9,6 @@ Libspf2 is in beta testing and should only be used in production
 systems with caution.  It has not been widely compiled and tested on
 machines with different operating systems, CPU architectures, or
 network configurations.  It has not been audited for security errors.
-It is new code, and should be treated as such.
 
 While libspf2 is beta code, a lot of effort has been put into
 making it secure by design, and a great deal of effort has been put
@@ -21,7 +22,7 @@ The valgrind program is regularly run to make sure that there are no
 memory leaks and reads/writes to invalid memory.
 
 
-Please report all bugs to <wayne@midwestcs.com>.
+Please report all bugs to <libspf2@anarres.org>
 
 
 This code has been compiled and passed its regression tests on Debian

@@ -3,8 +3,8 @@
  * it under the terms of either:
  * 
  *   a) The GNU Lesser General Public License as published by the Free
- *      Software Foundation; either version 2.1, or (at your option) any
- *      later version,
+ *	  Software Foundation; either version 2.1, or (at your option) any
+ *	  later version,
  * 
  *   OR
  * 
@@ -17,9 +17,9 @@
 
 
 #ifdef STDC_HEADERS
-# include <stdio.h>        /* stdin / stdout */
-# include <stdlib.h>       /* malloc / free */
-# include <ctype.h>        /* isupper / tolower */
+# include <stdio.h>		/* stdin / stdout */
+# include <stdlib.h>	   /* malloc / free */
+# include <ctype.h>		/* isupper / tolower */
 #endif
 
 #ifdef HAVE_INTTYPES_H
@@ -27,1081 +27,996 @@
 #endif
 
 #ifdef HAVE_STRING_H
-# include <string.h>       /* strstr / strdup */
+# include <string.h>	   /* strstr / strdup */
 #else
 # ifdef HAVE_STRINGS_H
-#  include <strings.h>       /* strstr / strdup */
+#  include <strings.h>	   /* strstr / strdup */
 # endif
 #endif
 
 
 
+#undef SPF_ALLOW_DEPRECATED_DEFAULT
+
 #include "spf.h"
 #include "spf_internal.h"
+#include "spf_response.h"
+#include "spf_record.h"
 
-#define CIDR_NONE	0
-#define CIDR_OPTIONAL	1
-#define CIDR_ONLY	2
+typedef
+enum SPF_cidr_enum {
+	CIDR_NONE, CIDR_OPTIONAL, CIDR_ONLY
+} SPF_cidr_t;
+
+typedef
+enum SPF_domspec_enum {
+	DOMSPEC_NONE, DOMSPEC_OPTIONAL, DOMSPEC_REQUIRED
+} SPF_domspec_t;
+
+/* This is greater than any possible total mechanism or modifier.
+ *	 SPF_MAX_MOD_LEN  + SPF_MAX_STR_LEN
+ *	 SPF_MAX_MECH_LEN + SPF_MAX_STR_LEN
+ */
+#define SPF_RECORD_BUFSIZ	  4096
 
 
-static SPF_err_t SPF_c_common_data_add( SPF_data_t *data, int *header_len, size_t *parm_len, size_t max_len, SPF_err_t big_err, char const **p_p, char const **p_token, int cidr_ok, int is_mod )
+
+typedef
+struct SPF_mechtype_struct
 {
-    const char	*p = *p_p;
-    const char	*token = *p_token;
-    const char	*real_end, *data_end;
-    const char	*cur, *start;
-    
-    size_t	len, ds_len;
+	unsigned char		 mech_type;
+	unsigned char		 is_dns_mech;
+	SPF_domspec_t		 has_domainspec;
+	SPF_cidr_t				 has_cidr;
+} SPF_mechtype_t;
 
-    int		str_found;
-    char	*dst;
-    int		c;
+static const SPF_mechtype_t spf_mechtypes[] = {
+	{ MECH_UNKNOWN,		FALSE,		DOMSPEC_NONE,		CIDR_NONE },
+	{ MECH_A,			TRUE,		DOMSPEC_OPTIONAL,	CIDR_OPTIONAL },
+	{ MECH_MX,			TRUE,		DOMSPEC_OPTIONAL,	CIDR_OPTIONAL },
+	{ MECH_PTR,			TRUE,		DOMSPEC_OPTIONAL,	CIDR_NONE },
+	{ MECH_INCLUDE,		TRUE,		DOMSPEC_REQUIRED,	CIDR_NONE },
+	{ MECH_IP4,			FALSE,		DOMSPEC_REQUIRED,	CIDR_OPTIONAL },
+	{ MECH_IP6,			FALSE,		DOMSPEC_REQUIRED,	CIDR_OPTIONAL },
+	{ MECH_EXISTS,		TRUE,		DOMSPEC_REQUIRED,	CIDR_NONE },
+	{ MECH_ALL,			FALSE,		DOMSPEC_NONE,		CIDR_NONE },
+	{ MECH_REDIRECT,	TRUE,		DOMSPEC_REQUIRED,	CIDR_NONE },
+};
 
-    SPF_err_t		comp_stat;
+#define spf_num_mechanisms \
+		sizeof(spf_mechtypes) / sizeof(spf_mechtypes[0])
 
-    len = strcspn( p, " " );
-    real_end = data_end = p + len;
-    start = p;
-    
+static const SPF_mechtype_t *
+SPF_mechtype_find(int mech_type)
+{
+	int		 i;
+	for (i = 0; i < spf_num_mechanisms; i++) {
+			if (spf_mechtypes[i].mech_type == mech_type)
+			return &spf_mechtypes[i];
+	}
+	return NULL;
+}
 
-    /*
-     * create the CIDR length info
-     */
-    if ( cidr_ok == CIDR_OPTIONAL  ||  cidr_ok == CIDR_ONLY ) 
-    {
-	start = cur = data_end - 1;
+static void
+SPF_c_ensure_capacity(void **datap, int *sizep, int length)
+{
+	int		 size = *sizep;
+	if (length > size)
+		size = length + (length / 4);
+	if (size > *sizep) {
+		*datap = realloc(*datap, size);
+		*sizep = size;
+	}
+}
+
+/* If a struct for IP addresses is added which itself contains a
+ * CIDR field, then this must be modified to take a (cidr *) rather
+ * than a (SPF_data_cidr_t *) */
+static SPF_errcode_t
+SPF_c_parse_cidr_ip6(SPF_response_t *spf_response,
+				unsigned char *maskp,
+				const char **startp, const char **endp)
+{
+	int		 mask;
+
+	mask = strtoul(*startp + 1, NULL, 10);
+
+	if (mask > 128) {
+		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CIDR,
+						NULL, *startp,
+						"Invalid IPv6 CIDR netmask (>128)");
+	}
+	else if (mask == 0) {
+		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CIDR,
+						NULL, *startp,
+						"Invalid IPv6 CIDR netmask (=0)");
+	}
+	else if (mask == 128) {
+		mask = 0;
+	}
+
+	*maskp = mask;
+
+	return SPF_E_SUCCESS;
+}
+
+static SPF_errcode_t
+SPF_c_parse_cidr_ip4(SPF_response_t *spf_response,
+				unsigned char *maskp,
+				const char **startp, const char **endp)
+{
+	int		 mask;
+
+	mask = strtoul(*startp + 1, NULL, 10);
+
+	if ( mask > 32 ) {
+		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CIDR,
+						NULL, *startp,
+						"Invalid IPv4 CIDR netmask (>32)");
+	}
+	else if ( mask == 0 ) {
+		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CIDR,
+						NULL, *startp,
+						"Invalid IPv4 CIDR netmask (=0)");
+	}
+	else if ( mask == 32 ) {
+		mask = 0;
+	}
+
+	*maskp = mask;
+
+	return SPF_E_SUCCESS;
+}
+
+static SPF_errcode_t
+SPF_c_parse_cidr(SPF_response_t *spf_response,
+				SPF_data_cidr_t *data,
+				const char **startp, const char **endp)
+{
+	SPF_errcode_t		 err;
+	const char				*start;
+	const char				*end;
+
+	end = *endp;
+	start = end - 1;
+
+	memset(data, 0, sizeof(SPF_data_cidr_t));
+	data->parm_type = PARM_CIDR;
 
 	/* find the beginning of the CIDR length notation */
-	while( isdigit( SPF_c2ui( *start ) ) )
-	    start--;
+	while( isdigit( (unsigned char)( *start ) ) )
+		start--;
 
-	if ( cur != start  &&  *start == '/' )
-	{
-	    /* we have at least '/nnn' */
-	    data->dc.parm_type = PARM_CIDR;
-	    data->dc.ipv4 = 0;
-	    data->dc.ipv6 = 0;
+	/* Something is frying my brain and I can't pull an invariant
+	 * out of this suitable for resetting *endp. So I nested the
+	 * 'if's instead. Perhaps I'll manage to refactor later. */
 
+	if ( start != (end - 1)  &&  *start == '/' ) {
+		if ( start[-1] == '/' ) {
+			/* get IPv6 CIDR length */
+			err = SPF_c_parse_cidr_ip6(spf_response, &data->ipv6, &start, &end);
+			if (err)
+					return err;
+			/* now back up and see if there is a ipv4 cidr length */
+			end = start - 1;		/* The first '/' */
+			start = end - 1;
+			while( isdigit( (unsigned char)( *start ) ) )
+				start--;
 
-	    /* get IPv6 CIDR length */
-	    if ( start[-1] == '/' )
-	    {
-		data_end = start - 1;
-		cur = start + 1;
-		c = 0;
-		while ( isdigit( SPF_c2ui( *cur ) ) )
-		{
-		    c *= 10;
-		    c += *cur - '0';
-		    cur++;
-		    if ( c > 128 )
-		    {
-			token = start;
-			p = cur;
-			comp_stat = SPF_E_INVALID_CIDR;
-			goto error;
-		    }
+			/* get IPv4 CIDR length */
+			if ( start != (end - 1)  &&  *start == '/' ) {
+				err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, &start, &end);
+				if (err)
+					return err;
+				*endp = start;
+			}
+			else {
+				*endp = end;
+			}
 		}
-		if ( c == 0 ) 
-		{
-		    token = start;
-		    p = cur;
-		    comp_stat = SPF_E_INVALID_CIDR;
-		    goto error;
+		else {
+			/* get IPv4 CIDR length */
+			err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, &start, &end);
+			if (err)
+				return err;
+			*endp = start;
 		}
-		if ( c == 128 ) c = 0;
-
-		data->dc.ipv6 = c;
-
-		/* now back up and see if there is a ipv4 cidr length */
-		start -= 2;
-		cur = start;
-		while( isdigit( SPF_c2ui( *start ) ) )
-		    start--;
-	    }
-
-	    /* get IPv4 CIDR length */
-	    if ( cur != start  &&  *start == '/' )
-	    {
-		data_end = start;
-		cur = start + 1;
-		c = 0;
-		while ( isdigit( SPF_c2ui( *cur ) ) )
-		{
-		    c *= 10;
-		    c += *cur - '0';
-		    cur++;
-		    if ( c > 32 )
-		    {
-			token = start;
-			p = cur;
-			comp_stat = SPF_E_INVALID_CIDR;
-			goto error;
-		    }
-		}
-		if ( c == 0 ) 
-		{
-		    token = start;
-		    p = cur;
-		    comp_stat = SPF_E_INVALID_CIDR;
-		    goto error;
-		}
-		if ( c == 32 ) c = 0;
-		data->dc.ipv4 = c;
-	    }
-
-
-	    if ( data->dc.ipv4 != 0  ||  data->dc.ipv6 != 0 )
-	    {
-		len = sizeof( *data );
-	    
-		if ( *header_len + len > max_len )
-		{
-		    comp_stat = big_err;
-		    goto error;
-		}
-		*header_len += len;
-
-		if ( *parm_len + len > max_len ) /* redundant */
-		{
-		    comp_stat = big_err;
-		    goto error;
-		}
-		*parm_len += len;
-
-		data = SPF_next_data( data );
-	    }
 	}
-    }
 
-    if ( cidr_ok == CIDR_ONLY  &&  p != data_end )
-    {
-	p = start;
-	comp_stat = SPF_E_INVALID_CIDR;
-	goto error;
-    }
+	return SPF_E_SUCCESS;
+}
 
+static SPF_errcode_t
+SPF_c_parse_var(SPF_response_t *spf_response, SPF_data_var_t *data,
+				const char **startp, const char **endp,
+				int is_mod)
+{
+	const char		*token;
+	const char		*p;
+	char		 c;
+	int				 val;
 
-    /*
-     * create the data blocks
-     */
-    while ( p != data_end )
-    {
-	/* is this a string? */
-	str_found = FALSE;
-	dst = NULL;
-	ds_len = 0;
-	while ( p[0] != '%'  ||  p[1] != '{' )
-	{
-	    if ( !str_found )
-	    {
-		data->ds.parm_type = PARM_STRING;
-		ds_len = data->ds.len = 0;
-		ds_len = data->ds.reserved = 0;
-		dst = SPF_data_str( data );
-		str_found = TRUE;
-	    }
-	    
-	    token = p;
-	    len = strcspn( p, " %" );
-	    if ( p + len > data_end )
-		len = data_end - p;
-	    p += len;
+	memset(data, 0, sizeof(SPF_data_var_t));
 
-	    memcpy( dst, token, len );
-	    ds_len += len;
-	    dst += len;
-
-	    if ( p == data_end  ||  p[1] == '{' )
-	    {
-		
-#if 0
-		/* align to an even length */
-		if ( (ds_len & 1) == 1 )
-		{
-		    *dst++ = '\0';
-		    ds_len++;
-		}
-#endif
-
-		break;
-	    }
-	    
-
-	    /* must be % escape code */
-	    p++;
-	    switch ( *p )
-	    {
-	    case '%':
-		*dst++ = '%';
-		ds_len++;
-		break;
-		
-	    case '_':
-		*dst++ = ' ';
-		ds_len++;
-		break;
-
-	    case '-':
-		*dst++ = '%';
-		*dst++ = '2';
-		*dst++ = '0';
-		ds_len += 3;
-		break;
-
-	    default:
-		*dst++ = *p;
-		ds_len++;
-		/* FIXME   issue a warning? */
-#if 0
-		/* SPF spec says to treat it as a literal */
-		comp_stat = SPF_E_INVALID_ESC;
-		goto error;
-#endif
-		break;
-	    }
-	    p++;
-	}
-    
-	    
-	if ( str_found )
-	{
-	    if ( ds_len > SPF_MAX_STR_LEN )
-	    {
-		comp_stat = SPF_E_BIG_STRING;
-		goto error;
-	    }
-	    data->ds.len = ds_len;
-
-	    len = sizeof( *data ) + ds_len;
-	    
-	    if ( *header_len + len > max_len )
-	    {
-		comp_stat = big_err;
-		goto error;
-	    }
-	    *header_len += len;
-
-	    if ( *parm_len + len > max_len ) /* redundant */
-	    {
-		comp_stat = big_err;
-		goto error;
-	    }
-	    *parm_len += len;
-
-	    data = SPF_next_data( data );
-	}
-	
-	/* end of string? */
-	if ( *p != '%' )
-	    break;
-	
-
-	/* this must be a variable */
-	p += 2;
-	token = p;
+	p = *startp;
 
 	/* URL encoding */
 	c = *p;
-	if ( isupper( SPF_c2ui( c ) ) )
+	if ( isupper( (unsigned char)( c ) ) )
 	{
-	    data->dv.url_encode = TRUE;
-	    c = tolower(c);
+		data->url_encode = TRUE;
+		c = tolower(c);
 	}
 	else
-	    data->dv.url_encode = FALSE;
+		data->url_encode = FALSE;
+
+#define SPF_CHECK_IN_MODIFIER() \
+		if ( !is_mod ) \
+			return SPF_response_add_error_ptr(spf_response, \
+						SPF_E_INVALID_VAR, NULL, p, \
+						"'%c' macro is only valid in modifiers", c);
 
 	switch ( c )
 	{
-	case 'l':		/* local-part of envelope-sender */
-	    data->dv.parm_type = PARM_LP_FROM;
-	    break;
+	case 'l':				/* local-part of envelope-sender */
+		data->parm_type = PARM_LP_FROM;
+		break;
 
-	case 's':		/* envelope-sender		*/
-	    data->dv.parm_type = PARM_ENV_FROM;
-	    break;
+	case 's':				/* envelope-sender				*/
+		data->parm_type = PARM_ENV_FROM;
+		break;
 
-	case 'o':		/* envelope-domain		*/
-	    data->dv.parm_type = PARM_DP_FROM;
-	    break;
+	case 'o':				/* envelope-domain				*/
+		data->parm_type = PARM_DP_FROM;
+		break;
 
-	case 'd':		/* current-domain		*/
-	    data->dv.parm_type = PARM_CUR_DOM;
-	    break;
+	case 'd':				/* current-domain				*/
+		data->parm_type = PARM_CUR_DOM;
+		break;
 
-	case 'i':		/* SMTP client IP		*/
-	    data->dv.parm_type = PARM_CLIENT_IP;
-	    break;
+	case 'i':				/* SMTP client IP				*/
+		data->parm_type = PARM_CLIENT_IP;
+		break;
 
-	case 'c':		/* SMTP client IP (pretty)	*/
-	    data->dv.parm_type = PARM_CLIENT_IP_P;
-	    break;
+	case 'c':				/* SMTP client IP (pretty)		*/
+		SPF_CHECK_IN_MODIFIER();
+		data->parm_type = PARM_CLIENT_IP_P;
+		break;
 
-	case 't':		/* time in UTC epoch secs	*/
-	    if ( !is_mod )
-	    {
-		comp_stat = SPF_E_INVALID_VAR;
-		goto error;
-	    }
-	    data->dv.parm_type = PARM_TIME;
-	    break;
+	case 't':				/* time in UTC epoch secs		*/
+		SPF_CHECK_IN_MODIFIER();
+		data->parm_type = PARM_TIME;
+		break;
 
-	case 'p':		/* SMTP client domain name	*/
-	    data->dv.parm_type = PARM_CLIENT_DOM;
-	    break;
+	case 'p':				/* SMTP client domain name		*/
+		data->parm_type = PARM_CLIENT_DOM;
+		break;
 
-	case 'v':		/* IP ver str - in-addr/ip6	*/
-	    data->dv.parm_type = PARM_CLIENT_VER;
-	    break;
+	case 'v':				/* IP ver str - in-addr/ip6		*/
+		data->parm_type = PARM_CLIENT_VER;
+		break;
 
-	case 'h':		/* HELO/EHLO domain		*/
-	    data->dv.parm_type = PARM_HELO_DOM;
-	    break;
+	case 'h':				/* HELO/EHLO domain				*/
+		data->parm_type = PARM_HELO_DOM;
+		break;
 
-	case 'r':		/* receiving domain		*/
-	    data->dv.parm_type = PARM_REC_DOM;
-	    break;
+	case 'r':				/* receiving domain				*/
+		SPF_CHECK_IN_MODIFIER();
+		data->parm_type = PARM_REC_DOM;
+		break;
 
 	default:
-	    comp_stat = SPF_E_INVALID_VAR;
-	    goto error;
-	    break;
+		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_VAR,
+						NULL, p,
+						"Unknown variable '%c'", c);
 	}
 	p++;
 	token = p;
-	    
+		
 	/* get the number of subdomains to truncate to */
-	c = 0;
-	while ( isdigit( SPF_c2ui( *p ) ) )
+	val = 0;
+	while ( isdigit( (unsigned char)( *p ) ) )
 	{
-	    c *= 10;
-	    c += *p - '0';
-	    p++;
+		val *= 10;
+		val += *p - '0';
+		p++;
 	}
-	if ( c > 15  ||  (c == 0 && p != token) )
-	{
-	    comp_stat = SPF_E_BIG_SUBDOM;
-	    goto error;
-	}
-	data->dv.num_rhs = c;
+	if ( val > 128  ||  (val == 0 && p != token) )
+		return SPF_response_add_error_ptr(spf_response, SPF_E_BIG_SUBDOM,
+						NULL, token,
+						"Subdomain truncation depth too large");
+	data->num_rhs = val;
 	token = p;
-	    
+		
 	/* should the string be reversed? */
 	if ( *p == 'r' )
 	{
-	    data->dv.rev = 1;
-	    p++;
+		data->rev = 1;
+		p++;
 	}
 	else
-	    data->dv.rev = FALSE;
+		data->rev = FALSE;
 	token = p;
 
 
 	/* check for delimiters */
-	data->dv.delim_dot = FALSE;
-	data->dv.delim_dash = FALSE;
-	data->dv.delim_plus = FALSE;
-	data->dv.delim_equal = FALSE;
-	data->dv.delim_bar = FALSE;
-	data->dv.delim_under = FALSE;
+	data->delim_dot = FALSE;
+	data->delim_dash = FALSE;
+	data->delim_plus = FALSE;
+	data->delim_equal = FALSE;
+	data->delim_bar = FALSE;
+	data->delim_under = FALSE;
 
+	/*vi:{*/
 	if ( *p == '}' )
-	    data->dv.delim_dot = TRUE;
+		data->delim_dot = TRUE;
 
+	/*vi:{*/
 	while( *p != '}' )
 	{
-	    token = p;
-	    switch( *p )
-	    {
-	    case '.':
-		data->dv.delim_dot = TRUE;
-		break;
-		    
-	    case '-':
-		data->dv.delim_dash = TRUE;
-		break;
-		    
-	    case '+':
-		data->dv.delim_plus = TRUE;
-		break;
-		    
-	    case '=':
-		data->dv.delim_equal = TRUE;
-		break;
-		    
-	    case '|':
-		data->dv.delim_bar = TRUE;
-		break;
-		    
-	    case '_':
-		data->dv.delim_under = TRUE;
-		break;
+		token = p;
+		switch( *p )
+		{
+		case '.':
+			data->delim_dot = TRUE;
+			break;
+				
+		case '-':
+			data->delim_dash = TRUE;
+			break;
+				
+		case '+':
+			data->delim_plus = TRUE;
+			break;
+				
+		case '=':
+			data->delim_equal = TRUE;
+			break;
+				
+		case '|':
+			data->delim_bar = TRUE;
+			break;
+				
+		case '_':
+			data->delim_under = TRUE;
+			break;
 
-	    default:
-		comp_stat = SPF_E_INVALID_DELIM;
-		goto error;
-		break;
-	    }
-	    p++;
+		default:
+			return SPF_response_add_error_ptr(spf_response,
+							SPF_E_INVALID_DELIM, NULL, p,
+							"Invalid delimiter '%c'", *p);
+		}
+		p++;
 	}
 	p++;
 	token = p;
 
-	len = sizeof( *data );
-	if ( *header_len + len > max_len )
-	{
-	    comp_stat = big_err;
-	    goto error;
-	}
-	*header_len += len;
 
-	if ( *parm_len + len > max_len ) /* redundant */
-	{
-	    comp_stat = big_err;
-	    goto error;
-	}
-	*parm_len += len;
-
-	data = SPF_next_data( data );
-    }
-    
-    comp_stat = SPF_E_SUCCESS;
-
-  error:
-    *p_p = real_end;
-    *p_token = token;
-    
-    return comp_stat;
+	return SPF_E_SUCCESS;
 }
 
 
-SPF_err_t SPF_c_mech_add( SPF_id_t spfid, int mech_type, int prefix )
+		/* Sorry, Wayne. */
+#define SPF_ADD_LEN_TO(_val, _len, _max) do { \
+			if ( (_val) + _align_sz(_len) > (_max) ) {				\
+				return SPF_response_add_error_ptr(spf_response,		\
+					big_err, NULL, start,							\
+					"SPF domainspec too long "						\
+					"(%d chars, %d max)",							\
+					(_val) + (_len), _max);							\
+			}														\
+			(_val) += _align_sz(_len);								\
+		} while(0)
+
+#define SPF_INIT_STRING_LITERAL()		do { \
+			data->ds.parm_type = PARM_STRING;						\
+			data->ds.len = 0;										\
+			dst = SPF_data_str( data );								\
+			ds_len = 0;												\
+		} while(0)
+
+#define SPF_FINI_STRING_LITERAL()		do { \
+			if ( ds_len > 0 ) {										\
+				if ( ds_len > SPF_MAX_STR_LEN ) {					\
+					return SPF_response_add_error_ptr(spf_response,		\
+									SPF_E_BIG_STRING, NULL, start,	\
+								"String literal too long "			\
+								"(%d chars, %d max)",				\
+								ds_len, SPF_MAX_STR_LEN);			\
+				}													\
+				data->ds.len = ds_len;								\
+				len = sizeof( *data ) + ds_len;						\
+				SPF_ADD_LEN_TO(*data_len, len, max_len);			\
+				data = SPF_data_next( data );						\
+				ds_len = 0;											\
+			}														\
+		} while(0)
+
+static SPF_errcode_t
+SPF_c_parse_macro(SPF_server_t *spf_server,
+				SPF_response_t *spf_response,
+				SPF_data_t *data, int *data_len,
+				const char **startp, const char **endp,
+				size_t max_len, SPF_errcode_t big_err,
+				int is_mod)
 {
-    SPF_internal_t *spfi = SPF_id2spfi(spfid);
-
-    if ( spfi->mech_buf_len - spfi->header.mech_len < sizeof( SPF_mech_t ) )
-    {
-	SPF_mech_t *new_first;
-	size_t	   new_len;
-	
-	/* FIXME  dup code */
-	/* allocate lots so we don't have to remalloc often */
-	new_len = spfi->mech_buf_len + 8 * sizeof( SPF_mech_t ) + 64;
-
-	new_first = realloc( spfi->mech_first, new_len );
-	if ( new_first == NULL )
-	    return SPF_E_NO_MEMORY;
-
-	spfi->mech_last = (SPF_mech_t *)((char *)new_first + ((char *)spfi->mech_last - (char *)spfi->mech_first));
-	spfi->mech_first = new_first;
-	spfi->mech_buf_len = new_len;
-    }
-    
-    if ( spfi->header.num_mech > 0 )
-	spfi->mech_last = SPF_next_mech( spfi->mech_last );
-    spfi->mech_last->mech_type = mech_type;
-    spfi->mech_last->prefix_type = prefix;
-    spfi->mech_last->parm_len = 0;
-
-    if ( spfi->header.mech_len + sizeof( SPF_mech_t ) > SPF_MAX_MECH_LEN )
-	return SPF_E_BIG_MECH;
-
-    spfi->header.mech_len += sizeof( SPF_mech_t );
-    spfi->header.num_mech++;
-
-    return SPF_E_SUCCESS;
-}
-
-
-SPF_err_t SPF_c_mech_data_add( SPF_id_t spfid, char const **p_p, char const **p_token, int cidr_ok )
-{
-    SPF_internal_t *spfi = SPF_id2spfi(spfid);
-
-    const char	*p = *p_p;
-    
-    size_t	len;
-
-    SPF_mech_t  *mech;
-    SPF_data_t  *data;
-    
-    SPF_err_t	comp_stat;
-
-    size_t	header_len;
-    size_t	parm_len;
-
-
-    /*
-     * expand the buffer
-     *
-     * in the worse case, data can be "%-%-%-%-..." which will be
-     * converted into "%20%20%20%20....", a 3/2 increase, plus you have to
-     * add in the overhead of the data struct and a possible rounding to
-     * an even number of bytes.
-     */
-
-    len = strcspn( p, " " );
-    if ( spfi->mech_buf_len - spfi->header.mech_len < (3 * len) / 2 + 8 )
-    {
-	SPF_mech_t *new_first;
-	size_t	   new_len;
-	
-	/* FIXME  dup code */
-	/* allocate lots so we don't have to remalloc often */
-	new_len = spfi->mech_buf_len + 8 * len + 64;
-
-	new_first = realloc( spfi->mech_first, new_len );
-	if ( new_first == NULL )
-	    return SPF_E_NO_MEMORY;
-
-	spfi->mech_last = (SPF_mech_t *)((char *)new_first + ((char *)spfi->mech_last - (char *)spfi->mech_first));
-	spfi->mech_first = new_first;
-	spfi->mech_buf_len = new_len;
-    }
-    
-    mech = spfi->mech_last;
-    data = SPF_mech_data( mech );
-
-
-    header_len = spfi->header.mech_len;
-    parm_len = mech->parm_len;
-    
-    comp_stat = SPF_c_common_data_add( data, &header_len, &parm_len, SPF_MAX_MECH_LEN, SPF_E_BIG_MECH, p_p, p_token, cidr_ok, FALSE );
-    
-    spfi->header.mech_len = header_len;
-    mech->parm_len = parm_len;
-    
-    return comp_stat;
-}
-
-
-SPF_err_t SPF_c_mech_ip4_add( SPF_id_t spfid, char const **p_p, char const **p_token )
-{
-    SPF_internal_t *spfi = SPF_id2spfi(spfid);
-
-    const char	*p = *p_p;
-    const char	*token = *p_token;
-    const char	*real_end, *data_end;
-    const char	*cur, *start;
-    
-    SPF_err_t	err;
-    int		c;
-    size_t	len;
-
-    SPF_mech_t  *mech;
-    struct in_addr  *data;
-    
-    SPF_err_t	comp_stat;
-
-    char	ip4_buf[ INET_ADDRSTRLEN ];
-
-    len = strcspn( p, " " );
-    real_end = data_end = p + len;
-    start = p;
-
-    /*
-     * expand the buffer
-     */
-
-    len = sizeof( struct in_addr );
-    if ( spfi->mech_buf_len - spfi->header.mech_len < len )
-    {
-	SPF_mech_t *new_first;
-	size_t	   new_len;
-	
-	/* FIXME  dup code */
-	/* allocate lots so we don't have to remalloc often */
-	new_len = spfi->mech_buf_len + 8 * len + 64;
-
-	new_first = realloc( spfi->mech_first, new_len );
-	if ( new_first == NULL )
-	    return SPF_E_NO_MEMORY;
-
-	spfi->mech_last = (SPF_mech_t *)((char *)new_first + ((char *)spfi->mech_last - (char *)spfi->mech_first));
-	spfi->mech_first = new_first;
-	spfi->mech_buf_len = new_len;
-    }
-    
-    mech = spfi->mech_last;
-    data = SPF_mech_ip4_data( mech );
-
-
-    /*
-     * create the CIDR length info
-     */
-    start = cur = data_end - 1;
-
-    /* find the beginning of the CIDR length notation */
-    while( isdigit( SPF_c2ui( *start ) ) )
-	start--;
-
-    if ( cur != start  &&  *start == '/' )
-    {
-	/* get IPv4 CIDR length */
-	cur = start + 1;
-	c = 0;
-	while ( isdigit( SPF_c2ui( *cur ) ) )
-	{
-	    c *= 10;
-	    c += *cur - '0';
-	    cur++;
-	    if ( c > 32 )
-	    {
-		token = start;
-		p = cur;
-		comp_stat = SPF_E_INVALID_CIDR;
-		goto error;
-	    }
-	}
-	if ( c == 0 ) 
-	{
-	    token = start;
-	    p = cur;
-	    comp_stat = SPF_E_INVALID_CIDR;
-	    goto error;
-	}
-	if ( c == 32 ) c = 0;
-
-	mech->parm_len = c;
-	data_end = start;
-    }
-
-
-    /*
-     * create the data block
-     */
-
-    len =  data_end - p;
-    if ( len > sizeof( ip4_buf ) - 1 )
-    {
-	comp_stat = SPF_E_INVALID_IP4;
-	goto error;
-    }
-		    
-    memcpy( ip4_buf, p, len );
-    ip4_buf[ len ] = '\0';
-    err = inet_pton( AF_INET, ip4_buf,
-		     data );
-    if ( err <= 0 )
-    {
-	comp_stat = SPF_E_INVALID_IP4;
-	goto error;
-    }
-		    
-
-    len = sizeof( *data );
-	    
-    if ( spfi->header.mech_len + len > SPF_MAX_MECH_LEN )
-    {
-	comp_stat = SPF_E_BIG_MECH;
-	goto error;
-    }
-
-    spfi->header.mech_len += len;
-
-    comp_stat = SPF_E_SUCCESS;
-
-  error:
-    *p_p = real_end;
-    *p_token = token;
-    
-    return comp_stat;
-}
-
-
-SPF_err_t SPF_c_mech_ip6_add( SPF_id_t spfid, char const **p_p, char const **p_token )
-{
-    SPF_internal_t *spfi = SPF_id2spfi(spfid);
-
-    const char	*p = *p_p;
-    const char	*token = *p_token;
-    const char	*real_end, *data_end;
-    const char	*cur, *start;
-    
-    SPF_err_t	err;
-    int		c;
-    size_t	len;
-
-    SPF_mech_t  *mech;
-    struct in6_addr  *data;
-    
-    SPF_err_t	comp_stat;
-
-    char	ip6_buf[ INET6_ADDRSTRLEN ];
-
-    len = strcspn( p, " " );
-    real_end = data_end = p + len;
-    start = p;
-
-    /*
-     * expand the buffer
-     */
-
-    len = sizeof( struct in_addr );
-    if ( spfi->mech_buf_len - spfi->header.mech_len < len )
-    {
-	SPF_mech_t *new_first;
-	size_t	   new_len;
-	
-	/* FIXME  dup code */
-	/* allocate lots so we don't have to remalloc often */
-	new_len = spfi->mech_buf_len + 8 * len + 64;
-
-	new_first = realloc( spfi->mech_first, new_len );
-	if ( new_first == NULL )
-	    return SPF_E_NO_MEMORY;
-
-	spfi->mech_last = (SPF_mech_t *)((char *)new_first + ((char *)spfi->mech_last - (char *)spfi->mech_first));
-	spfi->mech_first = new_first;
-	spfi->mech_buf_len = new_len;
-    }
-    
-    mech = spfi->mech_last;
-    data = SPF_mech_ip6_data( mech );
-
-
-    /*
-     * create the CIDR length info
-     */
-    start = cur = data_end - 1;
-
-    /* find the beginning of the CIDR length notation */
-    while( isdigit( SPF_c2ui( *start ) ) )
-	start--;
-
-    if ( cur != start  &&  *start == '/' )
-    {
-	/* get IPv6 CIDR length */
-	cur = start + 1;
-	c = 0;
-	while ( isdigit( SPF_c2ui( *cur ) ) )
-	{
-	    c *= 10;
-	    c += *cur - '0';
-	    cur++;
-	    if ( c > 128 )
-	    {
-		token = start;
-		p = cur;
-		comp_stat = SPF_E_INVALID_CIDR;
-		goto error;
-	    }
-	}
-	if ( c == 0 ) 
-	{
-	    token = start;
-	    p = cur;
-	    comp_stat = SPF_E_INVALID_CIDR;
-	    goto error;
-	}
-	if ( c == 128 ) c = 0;
-
-	mech->parm_len = c;
-	data_end = start;
-    }
-
-
-    /*
-     * create the data block
-     */
-
-    len =  data_end - p;
-    if ( len > sizeof( ip6_buf ) - 1 )
-    {
-	comp_stat = SPF_E_INVALID_IP6;
-	goto error;
-    }
-		    
-    memcpy( ip6_buf, p, len );
-    ip6_buf[ len ] = '\0';
-    err = inet_pton( AF_INET6, ip6_buf,
-		     data );
-    if ( err <= 0 )
-    {
-	comp_stat = SPF_E_INVALID_IP6;
-	goto error;
-    }
-		    
-
-    len = sizeof( *data );
-	    
-    if ( spfi->header.mech_len + len > SPF_MAX_MECH_LEN )
-    {
-	comp_stat = SPF_E_BIG_MECH;
-	goto error;
-    }
-
-    spfi->header.mech_len += len;
-
-    comp_stat = SPF_E_SUCCESS;
-
-  error:
-    *p_p = real_end;
-    *p_token = token;
-    
-    return comp_stat;
-}
-
-
-SPF_err_t SPF_c_mod_add( SPF_id_t spfid, const char *mod_name, size_t name_len )
-{
-    SPF_internal_t *spfi = SPF_id2spfi(spfid);
-    size_t	len;
-
-    if ( spfi->mod_buf_len - spfi->header.mod_len
-	< sizeof( SPF_mod_t ) + name_len )
-    {
-	SPF_mod_t *new_first;
-	size_t	   new_len;
-	
-	/* FIXME  dup code */
-	/* allocate lots so we don't have to remalloc often */
-	new_len = spfi->mod_buf_len + 8 * (sizeof( SPF_mod_t ) + name_len) + 64;
-
-	new_first = realloc( spfi->mod_first, new_len );
-	if ( new_first == NULL )
-	    return SPF_E_NO_MEMORY;
-
-	spfi->mod_last = (SPF_mod_t *)((char *)new_first + ((char *)spfi->mod_last - (char *)spfi->mod_first));
-	spfi->mod_first = new_first;
-	spfi->mod_buf_len = new_len;
-    }
-    
-    if ( spfi->header.num_mod > 0 )
-	spfi->mod_last = SPF_next_mod( spfi->mod_last );
-
-    if ( name_len > SPF_MAX_MOD_LEN )
-	return SPF_E_BIG_MOD;
-
-    spfi->mod_last->name_len = name_len;
-    spfi->mod_last->data_len = 0;
-    len = sizeof( SPF_mod_t ) + name_len;
-
-    if ( spfi->header.mod_len + len > SPF_MAX_MOD_LEN )
-	return SPF_E_BIG_MOD;
-
-    memcpy( SPF_mod_name( spfi->mod_last ), mod_name, name_len );
-
-    spfi->header.mod_len += len;
-    spfi->header.num_mod++;
-
-    return SPF_E_SUCCESS;
-}
-
-
-SPF_err_t SPF_c_mod_data_add( SPF_id_t spfid, char const **p_p, char const **p_token, int cidr_ok )
-{
-    SPF_internal_t *spfi = SPF_id2spfi(spfid);
-
-    const char	*p = *p_p;
-    
-    size_t	len;
-
-    SPF_mod_t	*mod;
-    SPF_data_t  *data;
-    
-    SPF_err_t	comp_stat;
-
-    size_t	header_len;
-    size_t	parm_len;
-
-
-    /*
-     * expand the buffer
-     *
-     * in the worse case, data can be "%-%-%-%-..." which will be
-     * converted into "%20%20%20%20....", a 3/2 increase, plus you have to
-     * add in the overhead of the data struct and a possible rounding to
-     * an even number of bytes.
-     */
-
-    len = strcspn( p, " " );
-    if ( spfi->mod_buf_len - spfi->header.mod_len < (3 * len) / 2 + 8 )
-    {
-	SPF_mod_t *new_first;
-	size_t	   new_len;
-	
-	/* FIXME  dup code */
-	/* allocate lots so we don't have to remalloc often */
-	new_len = spfi->mod_buf_len + 8 * len + 64;
-
-	new_first = realloc( spfi->mod_first, new_len );
-	if ( new_first == NULL )
-	    return SPF_E_NO_MEMORY;
-
-	spfi->mod_last = (SPF_mod_t *)((char *)new_first + ((char *)spfi->mod_last - (char *)spfi->mod_first));
-	spfi->mod_first = new_first;
-	spfi->mod_buf_len = new_len;
-    }
-    
-    mod = spfi->mod_last;
-    data = SPF_mod_data( mod );
-
-
-    header_len = spfi->header.mod_len;
-    parm_len = mod->data_len;
-    
-    comp_stat = SPF_c_common_data_add( data, &header_len, &parm_len, SPF_MAX_MOD_LEN, SPF_E_BIG_MOD, p_p, p_token, cidr_ok, TRUE );
-    
-    spfi->header.mod_len = header_len;
-    mod->data_len = parm_len;
-    
-    return comp_stat;
-}
-
-
-void SPF_lint( SPF_id_t spfid, SPF_c_results_t *c_results )
-{
-    SPF_data_t	*d, *data_end;
-
-    char	*s;
-    char	*s_end;
-
-    int		found_non_ip;
-    int		found_valid_tld;
-    
-
-    SPF_internal_t *spfi = SPF_id2spfi(spfid);
-
-    SPF_mech_t  *mech;
-    SPF_data_t  *data;
-    
-
-    size_t	header_len;
-
-    int		i;
-
-
-    header_len = spfi->header.mech_len;
-    
-
-    /* FIXME  these warnings suck.  Should call SPF_id2str to give more
-     * context. */
-
-    /* FIXME  there shouldn't be a limit of just one warning */
-
-    mech = spfi->mech_first;
-    for( i = 0; i < spfi->header.num_mech; i++, mech = SPF_next_mech( mech ) )
-    {
-	if ( ( mech->mech_type == MECH_ALL
-	       || mech->mech_type == MECH_REDIRECT )
-	     && i != spfi->header.num_mech - 1 )
-	{
-	    if ( c_results->err_msg == NULL
-		 || c_results->err_msg_len < SPF_C_ERR_MSG_SIZE )
-	    {
-		char *new_err_msg;
-		
-		new_err_msg = realloc( c_results->err_msg, SPF_C_ERR_MSG_SIZE );
-		if ( new_err_msg == NULL )
-		    return;
-		c_results->err_msg = new_err_msg;
-		c_results->err_msg_len = SPF_C_ERR_MSG_SIZE;
-	    }
-
-
-	    snprintf( c_results->err_msg, c_results->err_msg_len,
-		      "Warning: %s",
-		      SPF_strerror( SPF_E_MECH_AFTER_ALL ) );
-	}
+	SPF_errcode_t		 err;
+			/* Generic parsing iterators and boundaries */
+	const char			*start;
+	const char			*end;
+	const char			*p;
+	size_t				len;
+			/* For parsing strings. */
+	char				*dst;
+	int					 ds_len;
+
+	start = *startp;
+	end = *endp;
 
 	/*
-	 * if we are dealing with a mechanism, make sure that the data
-	 * at least looks like a valid host name.
-	 *
-	 * note: this routine isn't called to handle ip4: and ip6: and all
-	 * the other mechanisms require a host name.
+	 * Create the data blocks
 	 */
 
-	if ( mech->mech_type == MECH_IP4
-	     || mech->mech_type == MECH_IP6 )
-	    continue;
+	p = start;
 
-	data = SPF_mech_data( mech );
-	data_end = SPF_mech_end_data( mech );
-	if ( data == data_end )
-	    continue;
+	/* Initialise the block as a string. If ds_len == 0 later, we
+	 * will just clobber it. */
+	SPF_INIT_STRING_LITERAL();
 
-	if ( data->dc.parm_type == PARM_CIDR )
-	{
-	    data = SPF_next_data( data );
-	    if ( data == data_end )
-		continue;
-	}
-	
+	while ( p != end ) {
+		len = strcspn( p, " %" );
+		if (len > 0) {				/* An optimisation */
+			if ( p + len > end )	/* Don't re-parse the CIDR mask */
+				len = end - p;
+			if (spf_server->debug)
+				SPF_debugf("Adding string literal (%d): '%*.*s'",
+								len, len, len, p);
+			memcpy( dst, p, len );
+			ds_len += len;
+			dst += len;
+			p += len;
 
-	found_valid_tld = FALSE;
-	found_non_ip = FALSE;
-
-	for( d = data; d < data_end; d = SPF_next_data( d ) )
-	{
-	    switch( d->dv.parm_type )
-	    {
-	    case PARM_CIDR:
-		SPF_error( "Multiple CIDR parameters found" );
-		break;
-		
-	    case PARM_CLIENT_IP:
-	    case PARM_CLIENT_IP_P:
-	    case PARM_LP_FROM:
-		found_valid_tld = FALSE;
-		break;
-
-	    case PARM_STRING:
-		found_valid_tld = FALSE;
-
-		s = SPF_data_str( d );
-		s_end = s + d->ds.len;
-		for( ; s < s_end; s++ )
-		{
-		    if ( !isdigit( SPF_c2ui( *s ) ) && *s != '.' && *s != ':' )
-			found_non_ip = TRUE;
-
-		    if ( *s == '.' ) 
-			found_valid_tld = TRUE;
-		    else if ( !isalpha( SPF_c2ui( *s ) ) )
-			found_valid_tld = FALSE;
+			/* If len == 0 then we never entered the while(). Thus
+			 * if p == end, then len != 0 and we reach this test. */
+			if ( p == end )
+				break;
 		}
-		break;
 
-	    default:
-		found_non_ip = TRUE;
-		found_valid_tld = TRUE;
-	    
-		break;
-	    }
+		/* Now, we must have a %-escape code, since if we hit a
+		 * space, then we are at the end. */
+		p++;
+		switch ( *p )
+		{
+		case '%':
+			*dst++ = '%';
+			ds_len++;
+			p++;
+			break;
+			
+		case '_':
+			*dst++ = ' ';
+			ds_len++;
+			p++;
+			break;
+
+		case '-':
+			*dst++ = '%'; *dst++ = '2'; *dst++ = '0';
+			ds_len += 3;
+			p++;
+			break;
+
+		default:
+			/* SPF spec says to treat it as a literal, not
+			 * SPF_E_INVALID_ESC */
+			/* FIXME   issue a warning? */
+			*dst++ = '%';
+			ds_len++;
+			break;
+
+		case '{':  /*vi:}*/
+			SPF_FINI_STRING_LITERAL();
+
+			/* this must be a variable */
+			p++;
+			err = SPF_c_parse_var(spf_response, &data->dv, &p, &end, is_mod);
+			if (err != SPF_E_SUCCESS)
+				return err;
+			p += strcspn(p, "} ");
+			if (*p == '}')
+				p++;
+			else if (*p == ' ')
+				return SPF_response_add_error_ptr(spf_response,
+						SPF_E_INVALID_VAR,
+						*startp, p,
+						"Unterminated variable?");
+
+
+			len = SPF_data_len(data);
+			SPF_ADD_LEN_TO(*data_len, len, max_len);
+			data = SPF_data_next( data );
+
+			SPF_INIT_STRING_LITERAL();
+
+			break;
+		}
 	}
 
-	if ( !found_valid_tld || !found_non_ip )
+	SPF_FINI_STRING_LITERAL();
+
+	return SPF_E_SUCCESS;
+
+}
+
+/* What a fuck-ugly prototype. */
+static SPF_errcode_t
+SPF_c_parse_domainspec(SPF_server_t *spf_server,
+				SPF_response_t *spf_response,
+				SPF_data_t *data, int *data_len,
+				const char **startp, const char **endp,
+				size_t max_len, SPF_errcode_t big_err,
+				int cidr_ok, int is_mod)
+{
+	SPF_errcode_t		 err;
+			/* Generic parsing iterators and boundaries */
+	const char			*start;
+	const char			*end;
+	const char			*p;
+	size_t				len;
+
+	p = *startp;
+	start = *startp;
+	end = *endp;
+
+	if (spf_server->debug)
+		SPF_debugf("Parsing domainspec starting at %s, cidr is %s",
+						p,
+						cidr_ok == CIDR_OPTIONAL ? "optional" :
+						cidr_ok == CIDR_ONLY ? "only" :
+						cidr_ok == CIDR_NONE ? "forbidden" :
+						"ERROR!"
+						);
+
+	/*
+	 * create the CIDR length info
+	 */
+	if ( cidr_ok == CIDR_OPTIONAL  ||  cidr_ok == CIDR_ONLY ) 
 	{
-	    if ( c_results->err_msg == NULL
-		 || c_results->err_msg_len < SPF_C_ERR_MSG_SIZE )
-	    {
-		char *new_err_msg;
-		
-		new_err_msg = realloc( c_results->err_msg, SPF_C_ERR_MSG_SIZE );
-		if ( new_err_msg == NULL )
-		    return;
-		c_results->err_msg = new_err_msg;
-		c_results->err_msg_len = SPF_C_ERR_MSG_SIZE;
-	    }
-
-	    if ( !found_non_ip )
-	    {
-		snprintf( c_results->err_msg, c_results->err_msg_len,
-			  "Warning: %s",
-			  SPF_strerror( SPF_E_BAD_HOST_IP ) );
-	    }
-	    else if ( !found_valid_tld )
-	    {
-		snprintf( c_results->err_msg, c_results->err_msg_len,
-			  "Warning: %s",
-			  SPF_strerror( SPF_E_BAD_HOST_TLD ) );
-	    }
+		err = SPF_c_parse_cidr(spf_response, &data->dc, &start, &end);
+		if (err != SPF_E_SUCCESS)
+			return err;
+		if (data->dc.ipv4 != 0  ||  data->dc.ipv6 != 0) {
+			len = SPF_data_len(data);
+			SPF_ADD_LEN_TO(*data_len, len, max_len);
+			data = SPF_data_next(data);
+		}
 	}
 
-    }
+	if ( cidr_ok == CIDR_ONLY  &&  start != end ) {
+		/* We had a mechanism followed by a '/', thus it HAS to be
+		 * a CIDR, and the peculiar-looking error message is
+		 * justified. However, we don't know _which_ CIDR. */
+		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CIDR,
+						NULL, start,
+						"Invalid CIDR after mechanism");
+	}
 
-    /* FIXME check for modifiers that should probably be mechanisms */
+	return SPF_c_parse_macro(spf_server, spf_response, data, data_len,
+				&start, &end, max_len, big_err, is_mod);
+}
+
+
+static SPF_errcode_t
+SPF_c_parse_ip4(SPF_response_t *spf_response, SPF_mech_t *mech, char const **startp)
+{
+	const char				*start;
+	const char				*end;
+	const char				*p;
+
+	char				 buf[ INET_ADDRSTRLEN ];
+	size_t				 len;
+	int						 err;
+
+	unsigned char		 mask;
+	struct in_addr		*addr;
+
+	start = *startp + 1;
+	len = strcspn(start, " ");
+	end = start + len;
+	p = end - 1;
+
+	mask = 0;
+	while (isdigit( (unsigned char)(*p) ))
+		p--;
+	if (p != (end - 1) && *p == '/') {
+		err = SPF_c_parse_cidr_ip4(spf_response, &mask, &p, &end);
+		if (err)
+			return err;
+		end = p;
+	}
+	mech->mech_len = mask;
+
+	len = end - start;
+	if ( len > sizeof( buf ) - 1 )
+		return SPF_E_INVALID_IP4;
+
+	memcpy( buf, start, len );
+	buf[ len ] = '\0';
+	addr = SPF_mech_ip4_data(mech);
+	err = inet_pton( AF_INET, buf, addr );
+	if ( err <= 0 )
+		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_IP4,
+						NULL, buf, NULL);
+
+	return SPF_E_SUCCESS;
+}
+
+static SPF_errcode_t
+SPF_c_parse_ip6(SPF_response_t *spf_response, SPF_mech_t *mech, char const **startp)
+{
+	const char				*start;
+	const char				*end;
+	const char				*p;
+
+	char				 buf[ INET_ADDRSTRLEN ];
+	size_t				 len;
+	int						 err;
+
+	unsigned char		 mask;
+	struct in6_addr		*addr;
+
+	start = *startp + 1;
+	len = strcspn(start, " ");
+	end = start + len;
+	p = end - 1;
+
+	mask = 0;
+	while (isdigit( (unsigned char)(*p) ))
+		p--;
+	if (p != (end - 1) && *p == '/') {
+		err = SPF_c_parse_cidr_ip6(spf_response, &mask, &p, &end);
+		if (err)
+			return err;
+		end = p;
+	}
+	mech->mech_len = mask;
+
+	len = end - start;
+	if ( len > sizeof( buf ) - 1 )
+		return SPF_E_INVALID_IP6;
+
+	memcpy( buf, start, len );
+	buf[ len ] = '\0';
+	addr = SPF_mech_ip6_data(mech);
+	err = inet_pton( AF_INET6, buf, addr );
+	if ( err <= 0 )
+		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_IP6,
+						NULL, buf, NULL);
+
+	return SPF_E_SUCCESS;
+}
+
+
+static SPF_errcode_t
+SPF_c_mech_add(SPF_server_t *spf_server,
+				SPF_record_t *spf_record, SPF_response_t *spf_response,
+				const SPF_mechtype_t *mechtype, int prefix,
+				const char **mech_value)
+{
+	char				 buf[SPF_RECORD_BUFSIZ];
+	SPF_mech_t				*spf_mechanism = (SPF_mech_t *)buf;
+	SPF_data_t				*data;
+	size_t						 data_len;
+	const char				*end;
+	size_t						 len;
+
+	SPF_errcode_t		 err;
+
+	memset(buf, 'B', sizeof(buf));	/* Poison the buffer. */
+	memset(spf_mechanism, 0, sizeof(SPF_mech_t));
+
+	if (spf_server->debug)
+		SPF_debugf("SPF_c_mech_add: type=%d, value=%s",
+						mechtype->mech_type, *mech_value);
+
+	spf_mechanism->prefix_type = prefix;
+	spf_mechanism->mech_type = mechtype->mech_type;
+	spf_mechanism->mech_len = 0;
+
+	len = sizeof( SPF_mech_t );
+
+	if ( spf_record->mech_len + len > SPF_MAX_MECH_LEN )
+		return SPF_E_BIG_MECH;
+
+	data = SPF_mech_data(spf_mechanism);
+	data_len = 0;
+
+	end = *mech_value + strcspn(*mech_value, " ");
+
+	switch (mechtype->mech_type) {
+		/* We know the properties of IP4 and IP6. */
+			case MECH_IP4:
+			if (**mech_value == ':') {
+				err = SPF_c_parse_ip4(spf_response, spf_mechanism, mech_value);
+				data_len = sizeof(struct in_addr);
+			}
+			else {
+				err = SPF_E_MISSING_OPT;
+				SPF_response_add_error_ptr(spf_response, err,
+						NULL, *mech_value,
+						"Mechanism requires a value.");
+			}
+			break;
+
+		case MECH_IP6:
+			if (**mech_value == ':') {
+				err = SPF_c_parse_ip6(spf_response, spf_mechanism, mech_value);
+				data_len = sizeof(struct in6_addr);
+			}
+			else {
+				err = SPF_E_MISSING_OPT;
+				SPF_response_add_error_ptr(spf_response, err,
+						NULL, *mech_value,
+						"Mechanism requires a value.");
+			}
+			break;
+
+		default:
+			if (**mech_value == ':' || **mech_value == '=') {
+				if (mechtype->has_domainspec == DOMSPEC_NONE) {
+					err = SPF_E_INVALID_OPT;
+					SPF_response_add_error_ptr(spf_response, err,
+							NULL, *mech_value,
+							"Mechanism does not permit a value.");
+				}
+				else {
+					(*mech_value)++;
+					err = SPF_c_parse_domainspec(spf_server,
+									spf_response, data, &data_len,
+									mech_value, &end,
+									SPF_MAX_MECH_LEN, SPF_E_BIG_MECH,
+									mechtype->has_cidr, FALSE );
+				}
+			}
+			else if (**mech_value == '/') {
+				if (mechtype->has_domainspec == DOMSPEC_REQUIRED) {
+					err = SPF_E_MISSING_OPT;
+					SPF_response_add_error_ptr(spf_response, err,
+							NULL, *mech_value,
+							"Mechanism requires a value.");
+				}
+				else if (mechtype->has_cidr == CIDR_NONE) {
+					err = SPF_E_INVALID_CIDR;
+					SPF_response_add_error_ptr(spf_response, err,
+							NULL, *mech_value,
+							"Mechanism does not permit a CIDR.");
+				}
+				else {
+					err = SPF_c_parse_domainspec(spf_server,
+									spf_response, data, &data_len,
+									mech_value, &end,
+									SPF_MAX_MECH_LEN, SPF_E_BIG_MECH,
+									CIDR_ONLY, FALSE );
+				}
+			}
+			else if (**mech_value == ' '  ||  **mech_value == '\0') {
+				if (mechtype->has_domainspec == DOMSPEC_REQUIRED) {
+					err = SPF_E_MISSING_OPT;
+					SPF_response_add_error_ptr(spf_response, err,
+							NULL, *mech_value,
+							"Mechanism requires a value.");
+				}
+				else {
+					err = SPF_E_SUCCESS;
+				}
+			}
+			else {
+				err = SPF_E_SYNTAX;
+				SPF_response_add_error_ptr(spf_response, err,
+						NULL, *mech_value,
+						"Unknown character '%c' after mechanism.",
+						**mech_value);
+			}
+
+			/* Does not apply to ip4/ip6 */
+			spf_mechanism->mech_len = data_len;
+			break;
+	}
+
+	len += data_len;
+
+	/* Copy the thing in. */
+	if (err == SPF_E_SUCCESS) {
+		if (mechtype->is_dns_mech)
+			spf_record->num_dns_mech++;
+		SPF_c_ensure_capacity((void **)&spf_record->mech_first,
+							&spf_record->mech_size,
+							spf_record->mech_len + len);
+		memcpy( (char *)spf_record->mech_first + spf_record->mech_len,
+			spf_mechanism,
+			len);
+		spf_record->mech_len += len;
+		spf_record->num_mech++;
+	}
+
+	*mech_value = end;
+
+	return err;
+}
+
+static SPF_errcode_t
+SPF_c_mod_add(SPF_server_t *spf_server,
+				SPF_record_t *spf_record, SPF_response_t *spf_response,
+				const char *mod_name, size_t name_len,
+				const char **mod_value)
+{
+	char				 buf[SPF_RECORD_BUFSIZ];
+	SPF_mod_t			*spf_modifier = (SPF_mod_t *)buf;
+	SPF_data_t			*data;
+	size_t				 data_len;
+	const char			*end;
+	size_t				 len;
+
+	SPF_errcode_t		 err;
+
+	memset(buf, 'A', sizeof(buf));
+	memset(spf_modifier, 0, sizeof(SPF_mod_t));
+
+	if ( name_len > SPF_MAX_MOD_LEN )
+		return SPF_E_BIG_MOD;
+
+	spf_modifier->name_len = name_len;
+	spf_modifier->data_len = 0;
+
+	/* So that spf_modifier + len == SPF_mod_data(spf_modifier) */
+	len = _align_sz(sizeof( SPF_mod_t ) + name_len);
+
+	if ( spf_record->mod_len + len > SPF_MAX_MOD_LEN )
+		return SPF_E_BIG_MOD;
+
+	memcpy(SPF_mod_name(spf_modifier), mod_name, name_len);
+
+	data = SPF_mod_data(spf_modifier);
+	data_len = 0;
+
+	end = *mod_value + strcspn(*mod_value, " ");
+
+	err = SPF_c_parse_domainspec(spf_server,
+					spf_response, data, &data_len,
+					mod_value, &end,
+					SPF_MAX_MOD_LEN, SPF_E_BIG_MOD,
+					CIDR_NONE, TRUE );
+	spf_modifier->data_len = data_len;
+	len += data_len;
+
+	/* Copy the thing in. */
+	if (err == SPF_E_SUCCESS) {
+		SPF_c_ensure_capacity((void **)&spf_record->mod_first,
+							&spf_record->mod_size,
+							spf_record->mod_len + len);
+		memcpy( (char *)spf_record->mod_first + spf_record->mod_len,
+			spf_modifier,
+			len);
+		spf_record->mod_len += len;
+		spf_record->num_mod++;
+	}
+
+	return err;
+}
+
+static void
+SPF_record_lint(SPF_server_t *spf_server,
+								SPF_response_t *spf_response,
+								SPF_record_t *spf_record)
+{
+	SPF_data_t		*d, *data_end;
+
+	char		*s;
+	char		*s_end;
+
+	int			 found_non_ip;
+	int			 found_valid_tld;
+	
+	SPF_mech_t  *mech;
+	SPF_data_t  *data;
+	
+	int				i;
+
+	/* FIXME  these warnings suck.  Should call SPF_id2str to give more
+	 * context. */
+
+	mech = spf_record->mech_first;
+	for (i = 0;
+					i < spf_record->num_mech;
+						i++,
+						mech = SPF_mech_next( mech ) )
+	{
+		if ( ( mech->mech_type == MECH_ALL
+			   || mech->mech_type == MECH_REDIRECT )
+			 && i != spf_record->num_mech - 1 )
+		{
+			SPF_response_add_warn(spf_response, SPF_E_MECH_AFTER_ALL,
+							"Mechanisms found after the \"all:\" "
+							"mechanism will be ignored.");
+		}
+
+		/*
+		 * if we are dealing with a mechanism, make sure that the data
+		 * at least looks like a valid host name.
+		 *
+		 * note: this routine isn't called to handle ip4: and ip6: and all
+		 * the other mechanisms require a host name.
+		 */
+
+		if ( mech->mech_type == MECH_IP4
+			 || mech->mech_type == MECH_IP6 )
+			continue;
+
+		data = SPF_mech_data( mech );
+		data_end = SPF_mech_end_data( mech );
+		if ( data == data_end )
+			continue;
+
+		if ( data->dc.parm_type == PARM_CIDR )
+		{
+			data = SPF_data_next( data );
+			if ( data == data_end )
+				continue;
+		}
+		
+
+		found_valid_tld = FALSE;
+		found_non_ip = FALSE;
+
+		for( d = data; d < data_end; d = SPF_data_next( d ) )
+		{
+			switch( d->dv.parm_type )
+			{
+			case PARM_CIDR:
+				SPF_error( "Multiple CIDR parameters found" );
+				break;
+				
+			case PARM_CLIENT_IP:
+			case PARM_CLIENT_IP_P:
+			case PARM_LP_FROM:
+				found_valid_tld = FALSE;
+				break;
+
+			case PARM_STRING:
+				found_valid_tld = FALSE;
+
+				s = SPF_data_str( d );
+				s_end = s + d->ds.len;
+				for( ; s < s_end; s++ ) {
+					if ( !isdigit( (unsigned char)( *s ) ) && *s != '.' && *s != ':' )
+						found_non_ip = TRUE;
+
+					if ( *s == '.' ) 
+						found_valid_tld = TRUE;
+					else if ( !isalpha( (unsigned char)( *s ) ) )
+						found_valid_tld = FALSE;
+				}
+				break;
+
+			default:
+				found_non_ip = TRUE;
+				found_valid_tld = TRUE;
+			
+				break;
+			}
+		}
+
+		if ( !found_valid_tld || !found_non_ip ) {
+			if ( !found_non_ip )
+				SPF_response_add_warn(spf_response, SPF_E_BAD_HOST_IP,
+							"Invalid hostname (an IP address?)");
+			else if ( !found_valid_tld )
+				SPF_response_add_warn(spf_response, SPF_E_BAD_HOST_TLD,
+							"Hostname has a missing or invalid TLD");
+		}
+
+	}
+
+	/* FIXME check for modifiers that should probably be mechanisms */
 }
 
 
@@ -1114,594 +1029,348 @@ void SPF_lint( SPF_id_t spfid, SPF_c_results_t *c_results )
  * computers to deal with.
  */
 
-SPF_err_t SPF_compile( SPF_config_t spfcid, const char *record, SPF_c_results_t *c_results )
+SPF_errcode_t
+SPF_record_compile(SPF_server_t *spf_server,
+								SPF_response_t *spf_response, 
+								SPF_record_t **spf_recordp,
+								const char *record)
 {
-    SPF_id_t		spfid;
-    SPF_iconfig_t	*spfic = SPF_cid2spfic( spfcid );
-    
-    SPF_err_t	comp_stat;
-    
-    const char	*p, *token;
-    char	*p2, *p2_end;
-    
-    int		prefix, mech;
-    int		mech_len;
+	const SPF_mechtype_t*mechtype;
+	SPF_record_t		*spf_record;
+	SPF_error_t			*spf_error;
+	SPF_errcode_t		 err;
+	
+	const char			*name_start;
+	int					 name_len;
 
-    SPF_err_t	err;
-    int		c;
-    
-    int		num_dns_mech = 0;
-    
+	const char			*val_start;
+	const char			*val_end;
+	
+	int					 prefix;
 
-    /* FIXME  there shouldn't be a limit of just one error message,
-     * we should continue parsing the rest of the record. */
+	const char			*p;
+	int					 i;
 
 
-    /*
-     * make sure we were passed valid data to work with
-     */
-    if ( spfcid == NULL )
-	SPF_error( "spfcid is NULL" );
+	/*
+	 * make sure we were passed valid data to work with
+	 */
+	SPF_ASSERT_NOTNULL(spf_server);
+	SPF_ASSERT_NOTNULL(spf_recordp);
+	SPF_ASSERT_NOTNULL(record);
 
-    if ( record == NULL )
-	SPF_error( "SPF record is NULL" );
+	if (spf_server->debug)
+		SPF_debugf("Compiling record %s", record);
 
-    if ( c_results == NULL )
-	SPF_error( "c_results is NULL" );
+	/*
+	 * and make sure that we will always set *spf_recordp
+	 * just incase we can't find a valid SPF record
+	 */
+	*spf_recordp = NULL;
 
+	/*
+	 * See if this is record is even an SPF record
+	 */
+	p = record;
 
-    /*
-     * initialize the SPF data
-     */
-    SPF_reset_c_results( c_results );
+	if ( strncmp( p, SPF_VER_STR, sizeof( SPF_VER_STR )-1 ) != 0 )
+		return SPF_response_add_error_ptr(spf_response, SPF_E_NOT_SPF,
+						NULL, p,
+						"Could not find a valid SPF record");
+	p += sizeof( SPF_VER_STR ) - 1;
 
-    if ( c_results->spfid == NULL ) c_results->spfid = SPF_create_id();
-    spfid = c_results->spfid;
-    
-    if ( spfid == NULL )
-    {
-	comp_stat = SPF_E_NO_MEMORY;
-	goto error;
-    }
-    
-    SPF_reset_id( spfid );
+	if ( *p != '\0' && *p != ' ' )
+		return SPF_response_add_error_ptr(spf_response, SPF_E_NOT_SPF,
+						NULL, p,
+						"Could not find a valid SPF record");
 
+	spf_record = SPF_record_new(spf_server, record);
+	spf_record->version = 1;
+	*spf_recordp = spf_record;
 
-
-    
-    /*
-     * See if this is record is even an SPF record
-     */
-    p = record;
-    token = p;
-
-    if ( strncmp( p, SPF_VER_STR, sizeof( SPF_VER_STR )-1 ) != 0 )
-    {
-	comp_stat = SPF_E_NOT_SPF;
-	goto error;
-    }
-    p += sizeof( SPF_VER_STR ) - 1;
-
-    if ( *p != '\0' && *p != ' ' )
-    {
-	comp_stat = SPF_E_NOT_SPF;
-	goto error;
-    }
-    token = p;
-    
-    
-    /*
-     * parse the SPF record
-     */
-    while( *p != '\0' )
-    {
-	/* skip to the next token */
-	while( *p == ' ' )
-	    p++;
-	token = p;
-
-	if (*p == '\0' )
-	    break;
-
-	/* see if we have a valid prefix */
-	prefix = PREFIX_UNKNOWN;
-	switch( *p )
+	/*
+	 * parse the SPF record
+	 */
+	while( *p != '\0' )
 	{
-	case '+':
-	    prefix = PREFIX_PASS;
-	    p++;
-	    break;
-	    
-	case '-':
-	    prefix = PREFIX_FAIL;
-	    p++;
-	    break;
-	    
-	case '~':
-	    prefix = PREFIX_SOFTFAIL;
-	    p++;
-	    break;
-	    
-	case '?':
-	    prefix = PREFIX_NEUTRAL;
-	    p++;
-	    break;
-	}
-	if ( ispunct( SPF_c2ui( *p ) ) )
-	{
-	    comp_stat = SPF_E_INVALID_PREFIX;
-	    goto error;
-	}
-	token = p;
-	    
-	/* get the mechanism/modifier */
-	if ( isalpha( SPF_c2ui( *p  ) ) )
-	    while ( isalnum( SPF_c2ui( *p  ) ) || *p == '_' || *p == '-' )
-		p++;
+		/* TODO WARN: If it's a \n or a \t */
+		/* skip to the next token */
+		while( *p == ' ' )
+			p++;
 
+		if (*p == '\0' )
+			break;
 
-	/* See if we have a modifier or a prefix */
-	mech_len = p - token;
-	c = *p;
-	if ( strncmp( token, "default=", sizeof( "default=" )-1 ) == 0 )
-	{
-	    c = ':';
-	    p += strcspn( p, " " );
-	    mech_len = p - token;
-	}
-	else if ( strncmp( token, "redirect=", sizeof( "redirect=" )-1 ) == 0 )
-	    c = ':';
-	else if ( strncmp( token, "ip4:", sizeof( "ip4:" )-1 ) != 0
-		  && strncmp( token, "ip6:", sizeof( "ip6:" )-1 ) != 0 
-		  && strncmp( token, "exp-text=", sizeof( "exp-text=" )-1 ) != 0 )
-	{
-	    for( p = token; p < token + mech_len; p++ )
-	    {
-		if ( !isalpha( SPF_c2ui( *p  ) ) )
+		/* see if we have a valid prefix */
+		prefix = PREFIX_UNKNOWN;
+		switch( *p )
 		{
-		    comp_stat = SPF_E_INVALID_CHAR;
-		    goto error;
+		case '+':
+			prefix = PREFIX_PASS;
+			p++;
+			break;
+			
+		case '-':
+			prefix = PREFIX_FAIL;
+			p++;
+			break;
+			
+		case '~':
+			prefix = PREFIX_SOFTFAIL;
+			p++;
+			break;
+			
+		case '?':
+			prefix = PREFIX_NEUTRAL;
+			p++;
+			break;
+
+		default:
+			while ( ispunct( (unsigned char)( *p ) ) ) {
+				SPF_response_add_error_ptr(spf_response,
+								SPF_E_INVALID_PREFIX, NULL, p,
+								"Invalid prefix '%c'", *p);
+					p++;
+			}
+			break;
 		}
-	    }
+
+		name_start = p;
+		val_end = name_start + strcspn(p, " ");
+
+		/* get the mechanism/modifier */
+		if ( ! isalpha( (unsigned char)*p ) ) {
+			/* We could just bail on this one. */
+			SPF_response_add_error_ptr(spf_response,
+							SPF_E_INVALID_CHAR, NULL, p,
+							"Invalid character at start of mechanism");
+			p += strcspn(p, " ");
+			continue;
+		}
+		while ( isalnum( (unsigned char)*p ) || *p == '_' || *p == '-' )
+			p++;
+
+/* TODO: These or macros like them are used in several places. Merge. */
+#define STREQ_SIZEOF(a, b) \
+				(strncasecmp((a), (b), sizeof( (b) ) - 1) == 0)
+#define STREQ_SIZEOF_N(a, b, n) \
+				(((n) == sizeof(b) - 1) && (strncasecmp((a),(b),(n)) == 0))
+
+		/* See if we have a modifier or a prefix */
+		name_len = p - name_start;
+
+		if (spf_server->debug)
+			SPF_debugf("Name starts at  %s", name_start);
+
+		switch ( *p ) 
+		{
+		case ':':
+		case '/':
+		case ' ':
+		case '\0':
+		compile_mech:		/* A bona fide label */
+			
+			/*
+			 * parse the mechanism
+			 */
+
+			/* mechanisms default to PREFIX_PASS */
+			if ( prefix == PREFIX_UNKNOWN )
+				prefix = PREFIX_PASS;
+
+			if ( STREQ_SIZEOF_N(name_start, "a", name_len) )
+				mechtype = SPF_mechtype_find(MECH_A);
+			else if ( STREQ_SIZEOF_N(name_start, "mx", name_len) )
+				mechtype = SPF_mechtype_find(MECH_MX);
+			else if ( STREQ_SIZEOF_N(name_start, "ptr", name_len) )
+				mechtype = SPF_mechtype_find(MECH_PTR);
+			else if ( STREQ_SIZEOF_N(name_start, "include", name_len) )
+				mechtype = SPF_mechtype_find(MECH_INCLUDE);
+			else if ( STREQ_SIZEOF_N(name_start, "ip4", name_len) )
+				mechtype = SPF_mechtype_find(MECH_IP4);
+			else if ( STREQ_SIZEOF_N(name_start, "ip6", name_len) )
+				mechtype = SPF_mechtype_find(MECH_IP6);
+			else if ( STREQ_SIZEOF_N(name_start, "exists", name_len) )
+				mechtype = SPF_mechtype_find(MECH_EXISTS);
+			else if ( STREQ_SIZEOF_N(name_start, "all", name_len) )
+				mechtype = SPF_mechtype_find(MECH_ALL);
+#ifdef SPF_ALLOW_DEPRECATED_DEFAULT
+			else if ( STREQ_SIZEOF_N(name_start,
+											"default=allow", name_len) )
+			{
+				SPF_response_add_warn_ptr(spf_response, SPF_E_INVALID_OPT,
+								NULL, name_start,
+								"Deprecated option 'default=allow'");
+				mechtype = SPF_mechtype_find(MECH_ALL);
+				prefix = PREFIX_PASS;
+			}
+			else if (STREQ_SIZEOF_N(name_start,
+											"default=softfail",name_len))
+			{
+				SPF_response_add_warn_ptr(spf_response, SPF_E_INVALID_OPT,
+								NULL, name_start,
+								"Deprecated option 'default=softfail'");
+				mechtype = SPF_mechtype_find(MECH_ALL);
+				prefix = PREFIX_SOFTFAIL;
+			}
+			else if ( STREQ_SIZEOF_N(name_start,
+											"default=deny", name_len) )
+			{
+				SPF_response_add_warn_ptr(spf_response, SPF_E_INVALID_OPT,
+								NULL, name_start,
+								"Deprecated option 'default=deny'");
+				mechtype = SPF_mechtype_find(MECH_ALL);
+				prefix = PREFIX_FAIL;
+			}
+			else if ( STREQ_SIZEOF(name_start, "default=") )
+			{
+				SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_OPT,
+								NULL, name_start,
+								"Invalid modifier 'default=...'");
+				p = val_end;
+				continue;
+			}
+#endif
+			/* FIXME  the redirect mechanism needs to be moved to
+			 * the very end */
+			else if ( STREQ_SIZEOF_N(name_start, "redirect", name_len) )
+				mechtype = SPF_mechtype_find(MECH_REDIRECT);
+			else
+			{
+				SPF_response_add_error_ptr(spf_response, SPF_E_UNKNOWN_MECH,
+								NULL, name_start,
+								"Unknown mechanism found");
+				p = val_end;
+				continue;
+			}
+
+			if (mechtype == NULL) {
+				return SPF_response_add_error_ptr(spf_response,
+								SPF_E_INTERNAL_ERROR,
+								NULL, name_start,
+								"Failed to find specification for "
+								"a recognised mechanism");
+			}
+
+			if (spf_server->debug)
+				SPF_debugf("Adding mechanism type %d",
+								(int)mechtype->mech_type);
+
+			val_start = p;
+			err = SPF_c_mech_add(spf_server,
+							spf_record, spf_response,
+							mechtype, prefix, &val_start);
+			if ( err )
+				/* Do nothing. Continue for the next error. */ ;
+			/* We shouldn't have to worry about the child function
+			 * updating the pointer. So we just use our 'well known'
+			 * copy. */
+			p = val_end;
+			break;
+
+		case '=':
+			
+			/*
+			 * parse the modifier
+			 */
+
+			/* modifiers can't have prefixes */
+			if (prefix != PREFIX_UNKNOWN)
+				SPF_response_add_error_ptr(spf_response, SPF_E_MOD_W_PREF,
+								NULL, name_start,
+								"Modifiers may not have prefixes");
+			prefix = PREFIX_UNKNOWN;	/* For redirect/include */
+
+#ifdef SPF_ALLOW_DEPRECATED_DEFAULT
+			/* Deal with legacy special case */
+			if ( STREQ_SIZEOF(name_start, "default=") ) {
+				/* Consider the whole 'default=foo' as a token. */
+				p = val_end;
+				name_len = p - name_start;
+				goto compile_mech;
+			}
+#endif
+
+			/* We treat 'redirect' as a mechanism. */
+			if ( STREQ_SIZEOF(name_start, "redirect=") )
+				goto compile_mech;
+
+			p++;
+			val_start = p;
+			err = SPF_c_mod_add(spf_server,
+							spf_record, spf_response,
+							name_start, name_len, &val_start);
+			if ( err )
+				/* Do nothing. Continue for the next error. */ ;
+			p = val_end;
+			break;
+			
+			
+		default:
+			SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CHAR,
+							NULL, p,
+							"Invalid character in middle of mechanism");
+			p = val_end;
+			break;
+		}
 	}
 	
-	switch ( c ) 
-	{
-	case ':':
-	case '/':
-	case ' ':
-	case '\0':
-	    
-	    /*
-	     * parse the mechanism
-	     */
 
-	    /* mechanisms default to PREFIX_PASS */
-	    if ( prefix == PREFIX_UNKNOWN )
-		prefix = PREFIX_PASS;
-	    
-	    
-	    if ( mech_len == sizeof( "a" )-1 
-		 && strncmp( token, "a", mech_len ) == 0 )
-		mech = MECH_A;
-	    else if ( mech_len == sizeof( "mx" )-1 
-		      && strncmp( token, "mx", mech_len ) == 0 )
-		mech = MECH_MX;
-	    else if ( mech_len == sizeof( "ptr" )-1 
-		      && strncmp( token, "ptr", mech_len ) == 0 )
-		mech = MECH_PTR;
-	    else if ( mech_len == sizeof( "include" )-1 
-		      && strncmp( token, "include", mech_len ) == 0 )
-		mech = MECH_INCLUDE;
-	    else if ( mech_len == sizeof( "ip4" )-1 
-		      && strncmp( token, "ip4", mech_len ) == 0 )
-		mech = MECH_IP4;
-	    else if ( mech_len == sizeof( "ip6" )-1 
-		      && strncmp( token, "ip6", mech_len ) == 0 )
-		mech = MECH_IP6;
-	    else if ( mech_len == sizeof( "exists" )-1 
-		      && strncmp( token, "exists", mech_len ) == 0 )
-		mech = MECH_EXISTS;
-	    else if ( mech_len == sizeof( "all" )-1 
-		      && strncmp( token, "all", mech_len ) == 0 )
-		mech = MECH_ALL;
-	    else if ( mech_len == sizeof( "default=allow" )-1 
-		      && strncmp( token, "default=allow", mech_len ) == 0 )
-	    {
-		mech = MECH_ALL;
-		prefix = PREFIX_PASS;
-		c = *p;
-	    }
-	    else if ( mech_len == sizeof( "default=softfail" )-1 
-		      && strncmp( token, "default=softfail", mech_len ) == 0 )
-	    {
-		mech = MECH_ALL;
-		prefix = PREFIX_SOFTFAIL;
-		c = *p;
-	    }
-	    else if ( mech_len == sizeof( "default=deny" )-1 
-		      && strncmp( token, "default=deny", mech_len ) == 0 )
-	    {
-		mech = MECH_ALL;
-		prefix = PREFIX_FAIL;
-		c = *p;
-	    }
-	    else if ( strncmp( token, "default=", sizeof( "default=" )-1 ) == 0 )
-	    {
-		comp_stat = SPF_E_INVALID_OPT;
-		goto error;
-	    }
-	    else if ( mech_len == sizeof( "redirect" )-1 
-		      && strncmp( token, "redirect", mech_len ) == 0 )
-		/* FIXME  the redirect mechanism needs to be moved to the very end */
-		mech = MECH_REDIRECT;
-	    else
-	    {
-		comp_stat = SPF_E_UNKNOWN_MECH;
-		goto error;
-	    }
-	    token = p;
-	    
-	    err = SPF_c_mech_add( spfid, mech, prefix );
-	    if ( err )
-	    {
-		comp_stat = err;
-		goto error;
-	    }
+	/*
+	 * check for common mistakes
+	 */
+	SPF_record_lint(spf_server, spf_response, spf_record);
 
-	    if ( c == ':' )
-	    {
-		switch( mech )
-		{
-		case MECH_A:
-		case MECH_MX:
-		    num_dns_mech++;
 
-		    p++;
-		    err = SPF_c_mech_data_add( spfid, &p, &token, CIDR_OPTIONAL );
-		    if ( err )
-		    {
-			comp_stat = err;
-			goto error;
-		    }
-		    break;
+	/*
+	 * do final cleanup on the record
+	 */
 
-		case MECH_PTR:
-		case MECH_INCLUDE:
-		case MECH_EXISTS:
-		case MECH_REDIRECT:
-		    num_dns_mech++;
-		    
-		    p++;
-		    err = SPF_c_mech_data_add( spfid, &p, &token, CIDR_NONE );
-		    if ( err )
-		    {
-			comp_stat = err;
-			goto error;
-		    }
-		    break;
+	/* FIXME realloc (shrink) spfi buffers? */
 
-		case MECH_ALL:
-		    comp_stat = SPF_E_INVALID_OPT;
-		    goto error;
-		    break;
-		    
-		case MECH_IP4:
-		    p++;
-		    err = SPF_c_mech_ip4_add( spfid, &p, &token );
-		    if ( err )
-		    {
-			comp_stat = err;
-			goto error;
-		    }
-		    break;
-
-		case MECH_IP6:
-		    p++;
-		    err = SPF_c_mech_ip6_add( spfid, &p, &token );
-		    if ( err )
-		    {
-			comp_stat = err;
-			goto error;
-		    }
-		    break;
-
-		default:
-		    comp_stat = SPF_E_INTERNAL_ERROR;
-		    goto error;
-		    break;
+	if (SPF_response_errors(spf_response) > 0) {
+		for (i = 0; i < SPF_response_messages(spf_response); i++) {
+			spf_error = SPF_response_message(spf_response, i);
+			if (SPF_error_errorp(spf_error))
+				return SPF_error_code(spf_error);
 		}
-
-	    
-	    }
-	    else if ( *p == '/' )
-	    {
-		switch( mech )
-		{
-		case MECH_A:
-		case MECH_MX:
-		    num_dns_mech++;
-
-		    err = SPF_c_mech_data_add( spfid, &p, &token, CIDR_ONLY );
-		    if ( err )
-		    {
-			comp_stat = err;
-			goto error;
-		    }
-		    break;
-
-		case MECH_PTR:
-		case MECH_INCLUDE:
-		case MECH_EXISTS:
-		case MECH_REDIRECT:
-		case MECH_ALL:
-		case MECH_IP4:
-		case MECH_IP6:
-		    comp_stat = SPF_E_INVALID_CIDR;
-		    goto error;
-		    break;
-		    
-		default:
-		    comp_stat = SPF_E_INTERNAL_ERROR;
-		    goto error;
-		    break;
-		}
-	    }
-	    else if ( *p == ' ' || *p == '\0' )
-	    {
-		switch( mech )
-		{
-		case MECH_A:
-		case MECH_MX:
-		case MECH_PTR:
-		    num_dns_mech++;
-		    break;
-
-		case MECH_ALL:
-		    break;
-
-		case MECH_INCLUDE:
-		case MECH_IP4:
-		case MECH_IP6:
-		case MECH_EXISTS:
-		case MECH_REDIRECT:
-		    comp_stat = SPF_E_MISSING_OPT;
-		    goto error;
-		    break;
-		    
-		default:
-		    comp_stat = SPF_E_INTERNAL_ERROR;
-		    goto error;
-		    break;
-		}
-	    } else {
-		comp_stat = SPF_E_SYNTAX;
-		goto error;
-	    }
-
-	    if ( num_dns_mech > spfic->max_dns_mech
-		 || num_dns_mech > SPF_MAX_DNS_MECH )
-	    {
-		comp_stat = SPF_E_BIG_DNS;
-		goto error;
-	    }
-		
-	    break;
-
-	case '=':
-	    
-	    /*
-	     * parse the modifier
-	     */
-
-	    /* modifiers can't have prefixes */
-	    if ( prefix != PREFIX_UNKNOWN )
-	    {
-		comp_stat = SPF_E_MOD_W_PREF;
-		goto error;
-	    }
-
-	    /* FIXME  reject duplicate mods?  Or are dup mods a feature? */
-
-	    err = SPF_c_mod_add( spfid, token, p - token );
-	    if ( err )
-	    {
-		comp_stat = err;
-		goto error;
-	    }
-	    p++;
-	    token = p;
-	    
-	    err = SPF_c_mod_data_add( spfid, &p, &token, CIDR_OPTIONAL );
-	    if ( err )
-	    {
-		comp_stat = err;
-		goto error;
-	    }
-
-	    break;
-	    
-	    
-	default:
-	    comp_stat = SPF_E_INVALID_CHAR;
-	    goto error;
-	    break;
-	}
-    }
-    
-
-    /*
-     * check for common mistakes
-     */
-    SPF_lint( spfid, c_results );
-
-
-    /*
-     * do final cleanup on the record
-     */
-
-    /* FIXME realloc (shrink) spfi buffers? */
-
-    return SPF_E_SUCCESS;
-
-
-
-    /*
-     * common error handling
-     */
-  error:
-    c_results->token = token;
-    c_results->token_len = p - token;
-    c_results->error_loc = p;
-
-    p += strcspn( p, " " );
-    while( token >= record && *token != ' ' )
-	token--;
-    token++;
-
-    c_results->expression = token;
-    c_results->expression_len = p - token;
-
-    /* reset everthing to scratch */
-    SPF_reset_id( spfid );
-
-    /* add in the "unknown" mechanism here */
-    err = SPF_c_mech_add( spfid, MECH_ALL, PREFIX_UNKNOWN );
-    if ( err )			/* this can't(?) happen		*/
-	comp_stat = err;
-
-    c_results->err = comp_stat;
-
-    /*
-     * format a nice error message
-     */
-    if ( c_results->err_msg == NULL
-	 || c_results->err_msg_len < SPF_C_ERR_MSG_SIZE )
-    {
-	char *new_err_msg;
-		
-	new_err_msg = realloc( c_results->err_msg, SPF_C_ERR_MSG_SIZE );
-	if ( new_err_msg != NULL )
-	{
-	    c_results->err_msg = new_err_msg;
-	    c_results->err_msg_len = SPF_C_ERR_MSG_SIZE;
-	}
-    }
-    
-    p2 = c_results->err_msg;
-    if ( p2 != NULL )
-    {
-	p2_end = p2 + c_results->err_msg_len - 1;
-	p2 += snprintf( p2, p2_end - p2, "%s",
-			   SPF_strerror( comp_stat ) );
-	if ( p2 > p2_end ) p2 = p2_end;
-    
-	if ( c_results->token == c_results->expression
-	     && c_results->token_len == c_results->expression_len )
-	    p2 += snprintf( p2, p2_end - p2,
-			       " in \"%.*s\".",
-			       c_results->expression_len,
-			       c_results->expression );
-	else
-	    p2 += snprintf( p2, p2_end - p2,
-			       " near \"%.*s\" in \"%.*s\"",
-			       c_results->token_len, c_results->token,
-			       c_results->expression_len,
-			       c_results->expression );
-
-	/* FIXME  if err_msg is too long, don't add in token */
-
-	SPF_sanitize( spfcid, c_results->err_msg );
-    }
-
-    return comp_stat;
-}
-
-
-void SPF_init_c_results( SPF_c_results_t *c_results )
-{
-    memset( c_results, 0, sizeof( *c_results ) );
-}
-
-
-void SPF_reset_c_results( SPF_c_results_t *c_results )
-{
-    int		i;
-
-    c_results->err = SPF_E_SUCCESS;
-    if ( c_results->err_msg ) c_results->err_msg[0] = '\0';
-
-
-    if ( c_results->err_msgs )
-    {
-	for( i = 0; i < c_results->num_errs; i++ )
-	    if ( c_results->err_msgs[i] ) c_results->err_msgs[i][0] = '\0';
-    }
-
-
-    c_results->expression = NULL;
-    c_results->expression_len = 0;
-    c_results->token = NULL;
-    c_results->token_len = 0;
-    c_results->error_loc = NULL;
-}
-
-
-SPF_c_results_t SPF_dup_c_results( SPF_c_results_t c_results )
-{
-    SPF_c_results_t new_c_results;
-    int		i;
-
-    SPF_init_c_results( &new_c_results );
-
-
-    if ( c_results.spfid )
-	new_c_results.spfid = SPF_dup_id( c_results.spfid );
-    new_c_results.err = c_results.err;
-    if ( c_results.err_msg )
-    {
-	new_c_results.err_msg = strdup( c_results.err_msg );
-	new_c_results.err_msg_len = strlen( c_results.err_msg );
-    }
-
-    if ( c_results.err_msgs )
-    {
-	new_c_results.num_errs = c_results.num_errs;
-	new_c_results.err_msgs = malloc( c_results.num_errs * sizeof( c_results.err_msgs ) );
-
-	if ( new_c_results.err_msgs )
-	{
-	    for( i = 0; i < c_results.num_errs; i++ )
-		if ( c_results.err_msgs[i] )
-		{
-		    new_c_results.err_msgs[i] = strdup( c_results.err_msgs[i] );
-		    new_c_results.err_msgs_len[i] = strlen( c_results.err_msgs[i] );
-		}
+		return SPF_response_add_error(spf_response,
+						SPF_E_INTERNAL_ERROR,
+						"Response has errors but can't find one!");
 	}
 
-    }
-
-    return new_c_results;
+	return SPF_E_SUCCESS;
 }
 
-
-void SPF_free_c_results( SPF_c_results_t *c_results )
+SPF_errcode_t
+SPF_record_compile_macro(SPF_server_t *spf_server,
+								SPF_response_t *spf_response, 
+								SPF_macro_t **spf_macrop,
+								const char *record)
 {
-    int		i;
+	char			 buf[SPF_RECORD_BUFSIZ];
+	SPF_macro_t		*spf_macro = (SPF_macro_t *)buf;
+	SPF_data_t		*data;
+	SPF_errcode_t	 err;
+	const char		*end;
+	size_t			 size;
+	
+	data = SPF_macro_data(spf_macro);
+	spf_macro->macro_len = 0;
 
-    if ( c_results->spfid ) SPF_destroy_id( c_results->spfid );
-    if ( c_results->err_msg ) free( c_results->err_msg );
+	end = record + strlen(record);
 
-    if ( c_results->err_msgs )
-    {
-	for( i = 0; i < c_results->num_errs; i++ )
-	    if ( c_results->err_msgs[i] ) free( c_results->err_msgs[i] );
+	err = SPF_c_parse_macro(spf_server, spf_response,
+					data, &spf_macro->macro_len,
+					&record, &end,
+					SPF_MAX_MOD_LEN, SPF_E_BIG_MOD, TRUE);
+	if (err != SPF_E_SUCCESS)
+		return err;
 
-	free( c_results->err_msgs );
-    }
+	/* XXX TODO: Tidy this up? */
+	size = sizeof(SPF_macro_t) + spf_macro->macro_len;
+	*spf_macrop = (SPF_macro_t *)malloc(size);
+	memcpy(*spf_macrop, buf, size);
 
-    SPF_init_c_results( c_results );
+	return SPF_E_SUCCESS;
 }
-
-
-

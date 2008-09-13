@@ -66,17 +66,17 @@
  * generated the output.
  */
  
-SPF_dns_config_t SPF_dns_create_config_zone( SPF_dns_config_t layer_below, const char *name );
-void SPF_dns_reset_config_zone( SPF_dns_config_t spfdc );
-void SPF_dns_destroy_config_zone( SPF_dns_config_t spfdc );
-
+SPF_dns_server_t	*SPF_dns_zone_new(SPF_dns_server_t *layer_below,
+				const char *name, int debug);
 
 /*
  * If a given domain name has multiple records of a given RR type, you
  * can call the add routine multiple times to add to the RR set.
  */
 
-SPF_dns_rr_t *SPF_dns_zone_add_str( SPF_dns_config_t spfdcid, const char *domain, ns_type rr_type, SPF_dns_stat_t herrno, const char *data );
+SPF_errcode_t		 SPF_dns_zone_add_str(SPF_dns_server_t *spf_dns_server,
+				const char *domain, ns_type rr_type,
+				SPF_dns_stat_t herrno, const char *data);
 
 
 #endif

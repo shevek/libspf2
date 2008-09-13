@@ -1,229 +1,285 @@
+#!/usr/bin/perl
+
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.pl'
 
+# Shevek rewrote this. It still isn't elegant, but it'll do.
+# This script is now far more Perlish. It:
+#   * Performs all tests using ok() or like(), not skip().
+#   * Doesn't require a fixed set of tests per query.
+#   * Unifies multiple preexisting parsers.
+#   * Contains much less code.
+#   * Implements --todo
+
+# Examples of --todo:
+# ./test.pl -todo 65="not yet implemented"
+#   Marks all output of execution 65 as 'todo'
+# ./test.pl -todo 65.err-msg="this is wrong"
+#   Marks the err-msg step of execution 65 as 'todo'
+
 #########################
 
-use Test;
 use strict;
-
+use warnings;
+use Test::More;
 use Getopt::Long;
+use IPC::Open2;
+use Text::ParseWords;
 
 my $HELP = 0;
-my $SPFIMPL = "any";
-my $SPFPROG = "./spfquery";
-my $SPFDATA = "test.txt";
+my $SPFTEST = "./spftest";
+$SPFTEST = "../src/spftest/spftest_static" unless -f $SPFTEST;
+$SPFTEST = "../win32/spftest/Debug/spftest.exe" unless -f $SPFTEST;
+my @SPFTEST_OUTPUT = ('rec-in', 'err-msg', 'spf-header', 'rec-out');
+my $SPFQUERY = "./spfquery";
+$SPFQUERY = "../src/spfquery/spfquery_static" unless -f $SPFQUERY;
+$SPFQUERY = "../win32/spfquery/Debug/spfquery.exe" unless -f $SPFQUERY;
+my @SPFQUERY_OUTPUT = ('result', 'smtp-comment', 'header-comment',
+				'received-spf');
+my $TESTFILE = "test_parser.txt";
+my $TESTOPTS = "";
+my $VALGRIND = join(" ", qw(
+		valgrind
+			--logfile=.valgrind/log
+			--tool=memcheck
+			--leak-check=yes
+			--show-reachable=yes
+			--num-callers=8
+				));
 my %TODO = ();
-my $QUERY_OPT = "";
-my $PIPE_OUT = 0;
-my $PIPE_IN = 0;
+my $PIPE = undef;
 
-my $result = GetOptions('help'          => \$HELP,
-			'impl=s'        => \$SPFIMPL,
-			'query-opt=s'   => \$QUERY_OPT,
-			'program=s'     => \$SPFPROG,
-			'data=s'        => \$SPFDATA,
-			'todo=i'        => \%TODO,
-			'-pipe-out'     => \$PIPE_OUT,
-			'-pipe-in'      => \$PIPE_IN,
-		       );
+my $IMPLNAME = "libspf2";
+my $run_valgrind;
+
+my $result = GetOptions(
+				'help'          => \$HELP,
+				'test-opt=s'    => \$TESTOPTS,
+				'spftest=s'     => \$SPFTEST,
+				'spfquery=s'    => \$SPFQUERY,
+				'data=s'        => \$TESTFILE,
+				'todo=s'		=> \%TODO,
+				'impl=s'		=> \$IMPLNAME,
+				'valgrind=s'	=> \$run_valgrind,
+				'pipe'			=> \$PIPE,
+					);
 
 if ($HELP  || !$result) {
-  print <<EOF;
-Usage: test.pl [options]
+	print <<"EOH";
+Usage: test_parser.pl [options]
 
-      -help	Help on the options.
+      --help                     Help on the options.
 
-      -impl=pascal              Set the SPF implemenation.
-      -program=/path/program    Use an alternate spfquery command.
-      -query-opt=-read-my-mind  Additional spfquery options
-      -data=/path/test.txt      Use an alternate test data set.
-      -todo=[1-4,99]            TODO list
-      -pipe-out                 Do not check answers, send spfquery output
-                                to stdout.  Only one spfquery process is
-                                used, so this tests the implementation's
-                                handling of multiple queries.
-      -pipe-in                  Check the answers sent via stdin.
-EOF
+      --impl=pascal              Set the SPF implemenation.
+      --spftest=/path/program    Use an alternate spftest command.
+      --spfquery=/path/program   Use an alternate spfquery command.
+      --test-opt=-read-my-mind   Additional spftest options
+      --data=/path/test.txt      Use an alternate test data set.
+	  --valgrind=[1|/path/to/vg] Run valgrind underneath programs
+	  --todo=<cmdnum>[.<test>]   Mark a test as TODO and ignore fails
+EOH
 
     exit(0);
 }
 
-local *SPFQUERY;
-my $spfquery_init = 0;
-
-my @test_table;
-
-open(TESTFILE, $SPFDATA) || die "Could not open $SPFDATA: $!\n";
-@test_table = <TESTFILE>;
-chomp @test_table;
-close TESTFILE;
-
-
-# this is supposed to be in a BEGIN clause, but I don't know perl
-# well enough to get the -data option to work that way.  -wayne
-my @tests = grep { /^\s*spfquery / } @test_table;
-
-if ( $SPFIMPL eq "libspf2" ) {
-  plan tests => 1 + @tests*3, todo => [362 .. 364, 503 .. 508];
-} else {
-  plan tests => 1 + @tests*3;
-
-# the TODO option doesn't work, and I don't understand why   -wayne
-#  plan tests => 1 + @tests*3, %TODO;
+VALGRIND: {
+	# We ditch the flag and just set up $VALGRIND
+	if ($run_valgrind) {
+		$VALGRIND = $run_valgrind if $run_valgrind =~ m,/,;
+		mkdir(".valgrind") unless -d ".valgrind";
+		system("rm -f .valgrind/*");
+	}
+	else {
+		$VALGRIND = "";	# Clobber it!
+	}
 }
 
+my @TESTDATA;
 
-# 1: did the library load okay?
-ok(1);
+READ: {
+	local *FH;
+	open(FH, $TESTFILE) or die "Could not open $TESTFILE: $!\n";
+	@TESTDATA = <FH>;
+	chomp @TESTDATA;
+	close FH;
+}
+
+PLAN: {
+	my @tests = grep { /^\s*[a-z]/ } @TESTDATA;
+	plan tests => scalar(@tests);
+}
 
 #########################
 
-sub check_last_command {
-  my ($ok, $default, $options, $result, $smtp_comment, $header_comment, $received_spf ) = @_;
-
-  if (!$ok && !$Test::todo{$Test::ntest - 1})
-  {
-    print "$SPFPROG $default $options $QUERY_OPT\n";
-
-    printf "Result:         %s\n", $result;
-    printf "SMTP comment:   %s\n", $smtp_comment;
-    printf "Header comment: %s\n", $header_comment;
-    printf "Received-SPF:   %s\n", $received_spf;
-
-    open( SPFQUERY_DEBUG, "$SPFPROG $default $options $QUERY_OPT -debug=1 |" );
-    while (<SPFQUERY_DEBUG>) {
-      print $_;
-    }
-    close( SPFQUERY_DEBUG );
-    if ($@) {
-      print "  trapped error: $@\n";
-      next;
-    }
-  }
-}
-
-
-my $default;
+my $default = '';
 my $options;
-my ($result, $smtp_comment, $header_comment, $received_spf);
-my ($found_result, $found_smtp_comment, $found_header_comment, $found_received_spf);
-my $command_checked = 1;
 my $ok = 1;
+my $record;
+my %output = ();
+my %checked = ();
 
-if ( $PIPE_IN ) {
-  *SPFQUERY = \*STDIN;
+local *RDFH;
+local *WRFH;
+my $command;
+my $cmdcounter = 0;
 
-  while (<SPFQUERY>) {
-    print "skipping: $_";
-    last if $_ eq "ok 1\n";
-  }
+
+sub read_result {
+	my @params = @_;
+
+	my $result = <RDFH>;
+	if (defined $result) {
+		ok(1, "Command $cmdcounter: '$command'");
+		chomp($output{shift(@params)}   = $result);
+		print "<-- $result\n";
+		foreach (@params) {
+			chomp($output{$_}   = <RDFH>);
+			redo if
+				($_ ne 'err-msg') &&
+				($output{$_} =~ /^(?:Error|Warning):/); 
+			print "$_ <-- $output{$_}\n";
+		}
+	}
+	else {
+		fail("Failed on command $cmdcounter: '$command'");
+	}
 }
 
-foreach my $line (@test_table) {
+sub execute_command {
+	my ($program, $options, $answers) = @_;
 
-  $line =~ s/^\s*//;
+	%output = ();
+	%checked = ();
 
-  next if $line =~ /^$/;
-  next if $line =~ /^#/;
+	$cmdcounter++;
 
-  my ($command, $implre, $matchre) = split( ' ', $line, 3 );
+	TODO: {
+		local $TODO = $TODO{$cmdcounter};
+		$TODO = $TODO{$cmdcounter.exec} unless $TODO;
 
-  if ( $command eq "default" ) {
-    $default = $implre . " " . $matchre;
-  }
-  elsif ( $command eq "spfquery" ) {
+		$command = "$VALGRIND $program $default $options $TESTOPTS";
+		$command =~ s/^\s*//g;
+		my @command = shellwords($command);
+		open(RDFH, "-|", @command)
+				or die "Failed to execute command " .
+						"$cmdcounter: '$command'";
 
-    my $prev_options = $options;
-    $options = $implre . " " . $matchre;
+		read_result(@$answers);
 
-    if ( $PIPE_OUT ) {
-
-      next if $options =~ /-local=/;
-
-      if ( !$spfquery_init ) {
-	open( SPFQUERY, "| $SPFPROG $default $QUERY_OPT -file -" );
-	$spfquery_init = 1;
-      }
-
-      my ($ip, $sender, $helo, $rcpt_to);
-
-      ($ip) = ($options =~ m/-ip=([^ ][^ ]*)/);
-      ($sender) = ($options =~ m/-sender=([^ ][^ ]*)/);
-      ($helo) = ($options =~ m/-helo=([^ ][^ ]*)/);
-      ($rcpt_to) = ($options =~ m/-rcpt-to=\"([^ ][^ ]*)\"/);
-      printf SPFQUERY "$ip $sender $helo $rcpt_to\n";
-
-    } else {
-
-      $found_result = $found_smtp_comment = $found_header_comment = $found_received_spf = 0;
-
-      if ( !$command_checked ) {
-	check_last_command($ok, $default, $prev_options, $result, $smtp_comment, $header_comment, $received_spf);
-	$command_checked = 1;
-      }
-
-      next if $PIPE_IN && $options =~ /-local=/;
-
-      open( SPFQUERY, "$SPFPROG $default $options $QUERY_OPT |" ) if ( !$PIPE_IN );
-
-      $ok = 1;
-
-      chomp( $result = <SPFQUERY> );
-      chomp( $smtp_comment = <SPFQUERY> );
-      chomp( $header_comment = <SPFQUERY> );
-      chomp( $received_spf = <SPFQUERY> );
-      close( SPFQUERY ) if !$PIPE_IN;
-
-      $command_checked = 0;
-    }
-
-  } else {
-
-    next if $PIPE_OUT;
-
-    if ( $implre =~ m,^/.*/$, ) {
-      $implre =~ s,^/(.*)/$,$1,;
-      next if $SPFIMPL !~ /$implre/;
-    } else {
-      next if $SPFIMPL ne $implre;
-    }
-
-    my $skip_test = !$ok || ($PIPE_IN && $options =~ /-local=/);
-
-
-    if ( $command eq "result" ) {
-      if ( !$found_result ) {
-	$ok &= skip($skip_test, $result, $matchre);
-      }
-      $found_result = 1;
-    } elsif ( $command eq "smtp-comment" ) {
-      if ( !$found_smtp_comment ) {
-	$ok &= skip($skip_test, $smtp_comment, $matchre);
-      }
-      $found_smtp_comment = 1;
-    } elsif ( $command eq "header-comment" ) {
-      if ( !$found_header_comment ) {
-	$ok &= skip($skip_test, $header_comment, $matchre);
-      }
-      $found_header_comment = 1;
-    } elsif ( $command eq "received-spf" ) {
-      if ( !$found_received_spf ) {
-	# $ok &= skip($skip_test, $received_spf, $matchre);
-	# $ok &= skip($skip_test, $received_spf, "/^Received-SPF:  *$result \\($header_comment\\)/" );
-      }
-      $found_received_spf = 1;
-    } else {
-      $ok &= ok( $command, "", "invalid test command" );
-    }
-
-  }
-
+		close(RDFH);
+	}
 }
 
-if ( !$command_checked ) {
-  check_last_command($ok, $default, $options, $result, $smtp_comment, $header_comment, $received_spf);
-  $command_checked = 1;
+sub pipe_command {
+	my ($program, $options, $answers) = @_;
+
+	%output = ();
+	%checked = ();
+
+	$cmdcounter++;
+
+	TODO: {
+		local $TODO = $TODO{$cmdcounter};
+		$TODO = $TODO{$cmdcounter.exec} unless $TODO;
+
+		if ($cmdcounter == 1) {
+			$command = "$VALGRIND $program $default -file - $TESTOPTS";
+			$command =~ s/^\s*//g;
+			my @command = shellwords($command);
+			open2(\*RDFH, \*WRFH, @command)
+					or die "Failed to execute command " .
+							"$cmdcounter: '$command'";
+		}
+		my ($ip, $sender, $helo, $rcpt_to) = ('', '', '', '');
+		$options =~ m/-ip=([^ ][^ ]*)/          and $ip = $1;
+		$options =~ m/-sender=([^ ][^ ]*)/      and $sender = $1;
+		$options =~ m/-helo=([^ ][^ ]*)/        and $helo = $1;
+		$options =~ m/-rcpt-to=\"([^ ][^ ]*)\"/ and $rcpt_to = $1;
+		# print "--> $ip $sender $helo $rcpt_to\n";
+		print WRFH "$ip $sender $helo $rcpt_to\n";
+
+		read_result(@$answers);
+	}
 }
 
-close( SPFQUERY ) if $PIPE_OUT;
+foreach (@TESTDATA) {
+	s/^\s*//;
+	next if /^$/;
+	next if /^#/;
 
+	if (s/^default\s+//) {
+		$default = $_;
+		ok(1, 'Found "default" line.');
+	}
+	elsif (s/^spftest\s+//) {
+		$record = $_;
+		execute_command($SPFTEST, $record, \@SPFTEST_OUTPUT);
+	}
+	elsif (s/^spfquery\s+//) {
+		$record = $_;
+		if ($PIPE) {
+			pipe_command($SPFQUERY, $record, \@SPFQUERY_OUTPUT);
+		}
+		else {
+			execute_command($SPFQUERY, $record, \@SPFQUERY_OUTPUT);
+		}
+
+	}
+	elsif (s/^rec-out-auto\s+//) {
+		SKIP: {
+			skip('Failed to execute command', 1) unless scalar %output;
+		}
+		# Check rec-in eq rec-out
+		my $in = $output{'rec-in'};
+		$in =~ s/record in:/record:/;
+		is($output{'rec-out'}, $in, "rec-out-auto (equality)");
+	}
+	else {
+		my ($command, $implre, $matchre) = split(/\s+/, $_, 3);
+
+		SKIP: {
+			if ($implre =~ s,^/(.*)/$,$1,) {
+				skip("Not a $IMPLNAME test (=~ /$implre/)", 1)
+								if $IMPLNAME !~ /$implre/;
+			}
+			elsif ($IMPLNAME ne $implre) {
+				skip("Not a $IMPLNAME test (eq '$implre')", 1);
+			}
+
+			skip("Already checked $command for $checked{$command}",
+							1) if exists $checked{$command};
+
+			skip('Failed to execute command', 1) unless scalar %output;
+
+			# print "TEST: $output{$command}\n";
+			# print "GOOD: $matchre\n";
+
+			TODO: {
+				local $TODO = $TODO{$cmdcounter};
+				$TODO = $TODO{"$cmdcounter.$command"} unless $TODO;
+
+				if ($matchre =~ s,^/(.*)/$,$1,) {
+					like($output{$command}, qr/$matchre/,
+							"$cmdcounter.$command check (regex)");
+				}
+				else {
+					is($output{$command}, $matchre,
+							"$cmdcounter.$command check (equality)");
+				}
+				$checked{$command} = $implre;
+			}
+		}
+	}
+}
+
+if ($run_valgrind) {
+	foreach (<.valgrind/log.pid*>) {
+		local *FH;
+		open(FH, "<$_") or die "Failed to open logfile $_";
+		my @data = <FH>;
+		close(FH);
+		@data = grep { /== ERROR SUMMARY/ } @data;
+		@data = grep { $_ !~ /0 errors from 0 contexts/ } @data;
+		print @data;
+	}
+}

@@ -52,9 +52,8 @@
  * If debugging is turned on, information about cache hits and misses
  * will be generated.
  */
-SPF_dns_config_t SPF_dns_create_config_cache( SPF_dns_config_t layer_below, int cache_bits, int debug );
-void SPF_dns_reset_config_cache( SPF_dns_config_t spfdc );
-void SPF_dns_destroy_config_cache( SPF_dns_config_t spfdc );
+SPF_dns_server_t	*SPF_dns_cache_new(SPF_dns_server_t *layer_below,
+				const char *name, int debug, int cache_bits);
 
 
 /*
@@ -94,9 +93,9 @@ void SPF_dns_destroy_config_cache( SPF_dns_config_t spfdc );
  * 
  */
 
-void SPF_dns_set_ttl_cache( SPF_dns_config_t spfdcid, time_t min_ttl,
-			    time_t err_ttl, time_t txt_ttl,
-			    time_t rdns_ttl );
+void	 SPF_dns_cache_set_ttl( SPF_dns_server_t *spf_dns_server,
+				time_t min_ttl, time_t err_ttl,
+				time_t txt_ttl, time_t rdns_ttl );
 
 /*
  * The caching DNS layer can try to conserve it's cache to only those
@@ -114,6 +113,7 @@ void SPF_dns_set_ttl_cache( SPF_dns_config_t spfdcid, time_t min_ttl,
  * you get from the particular DNS records you query are.
  */
 
-void SPF_dns_set_conserve_cache( SPF_dns_config_t spfdcid, int conserve_cache );
+void	 SPF_dns_set_conserve_cache( SPF_dns_server_t *spf_dns_server,
+				int conserve_cache );
 
 #endif

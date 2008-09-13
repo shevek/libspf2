@@ -1,0 +1,5 @@
+#!/bin/sh
+[ -z "$srcdir" ] && srcdir=.
+echo
+echo "Running single tests using data from the RFC examples..."
+exec $srcdir/test test_rfc_examples

@@ -47,16 +47,16 @@
 
 typedef struct
 {
-    const char	*domain;
-    int		rr_type;
-    SPF_dns_stat_t herrno;
-    const char	*data;
+    const char		*domain;
+    int				 rr_type;
+    SPF_dns_stat_t	 herrno;
+    const char		*data;
 } SPF_dns_test_data_t;
     
 
 
 
-static SPF_dns_test_data_t SPF_dns_db[] = {
+static const SPF_dns_test_data_t SPF_dns_db[] = {
     { "localhost",
       ns_t_a,   NETDB_SUCCESS, "127.0.0.1" },
 
@@ -433,35 +433,25 @@ static SPF_dns_test_data_t SPF_dns_db[] = {
 
 
 
-SPF_dns_config_t SPF_dns_create_config_test( SPF_dns_config_t layer_below )
+SPF_dns_server_t *
+SPF_dns_test_new(SPF_dns_server_t *layer_below,
+				const char *name, int debug)
 {
-    SPF_dns_config_t	spfdcid;
-    SPF_dns_rr_t	*spfrr;
-    int			i;
+	SPF_dns_server_t	*spf_dns_server;
+    int					 i;
     
-    
-    spfdcid = SPF_dns_create_config_zone( layer_below, "test" );
+	if (name == NULL)
+		name = "test";
+    spf_dns_server = SPF_dns_zone_new(layer_below, name, debug);
 
-    for( i = 0; i < array_elem( SPF_dns_db ); i++ )
-    {
-	spfrr = SPF_dns_zone_add_str( spfdcid,
-				      SPF_dns_db[i].domain,
-				      SPF_dns_db[i].rr_type, 
-				      SPF_dns_db[i].herrno, 
-				      SPF_dns_db[i].data );
-	if ( spfrr == NULL )
-	    SPF_error( "Could not create test zone" );
-    }
+	for( i = 0; i < array_elem( SPF_dns_db ); i++ ) {
+		if (SPF_dns_zone_add_str(spf_dns_server,
+						  SPF_dns_db[i].domain,
+						  SPF_dns_db[i].rr_type, 
+						  SPF_dns_db[i].herrno, 
+						  SPF_dns_db[i].data) != SPF_E_SUCCESS)
+			SPF_error( "Could not create test zone" );
+	}
 
-    return spfdcid;
-}
-
-void SPF_dns_reset_config_test( SPF_dns_config_t spfdcid )
-{
-    SPF_dns_reset_config_zone( spfdcid );
-}
-
-void SPF_dns_destroy_config_test( SPF_dns_config_t spfdcid )
-{
-    SPF_dns_destroy_config_zone( spfdcid );
+    return spf_dns_server;
 }

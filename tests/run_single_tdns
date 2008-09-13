@@ -1,0 +1,5 @@
+#!/bin/sh
+[ -z "$srcdir" ] && srcdir=.
+echo
+echo "Running single tests using static test dns zone file..."
+exec $srcdir/run_many_live -test-opt="-dns=test"

@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# This is a shell wrapper which executes test.pl with a given
+# testfile and specified arguments. It logs the output, counts the
+# errors, and returns either true or false, depending on whether
+# any tests failed.
+#
+# It might be better in the long run to replace this with something
+# using Test::Harness, which produces a far better error format.
+#
+# Shevek wrote this from Wayne's original code.
+
+TESTFILE=$1
+shift
+
+echo "Running tests from $TESTFILE.txt (with args '$@')..."
+
+perl test.pl \
+		--impl=libspf2 \
+		--data=$TESTFILE.txt \
+		"$@" \
+		2>&1 | grep -v "^ok [0-9][0-9]*" > $TESTFILE.out
+#		2>&1 | grep -v "^ok [0-9][0-9]*" | tee $TESTFILE.out
+
+num_errors=$(grep "^not ok [0-9][0-9]*" $TESTFILE.out |\
+		sed /TODO/d |\
+		wc -l)
+num_errors=$(expr $num_errors + 0)
+
+if [ "$num_errors" -ne 0 ]
+then
+    echo "Error:  $num_errors tests failed"
+else
+    echo "All regression tests passed"
+fi
+
+if [ "$1" = "-val" ]
+then
+    sleep 1
+    grep -n "== ERROR SUMMARY: " .valgrind/log* | grep -v "0 errors from 0 contexts" | head
+fi
+
+[ $num_errors -ne 0 ] && exit 1
+
+exit 0

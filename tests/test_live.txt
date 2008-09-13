@@ -68,7 +68,7 @@ default -default-explanation=explanation -sanitize=1
 spfquery -ip=127.0.0.1 -sender=localhost.localdomain -helo=localhost.localdomain
 result          /.*/ pass
 smtp-comment    perl localhost is always allowed.
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  libspf spfquery: domain of localhost.localdomain designates 127.0.0.1 as permitted sender
 header-comment  /.*/ spfquery: localhost is always allowed.
@@ -77,7 +77,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: localhost is always allowed.)
 spfquery -ip=127.1.2.3 -sender=my.domain -helo=my.domain
 result          /.*/ pass
 smtp-comment    perl localhost is always allowed.
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  libspf domain of localhost.localdomain designates 127.1.2.3 as permitted sender
 header-comment  /.*/ spfquery: localhost is always allowed.
@@ -86,7 +86,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: localhost is always allowed.)
 spfquery -ip=1.2.3.4 -sender=localhost -helo=localhost
 result          /.*/ none
 #smtp-comment    perl localhost is always allowed.
-#smtp-comment    libspf explanation
+#smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  libspf domain of localhost.localdomain designates 127.1.2.3 as permitted sender
 header-comment  /.*/ spfquery: 1.2.3.4 is neither permitted nor denied by domain of localhost
@@ -94,39 +94,39 @@ received-spf    /.*/ Received-SPF: none (spfquery: 1.2.3.4 is neither permitted 
 
 spfquery -ip=192.0.2.1 -sender=01.spf1-test.mailzone.com -helo=01.spf1-test.mailzone.com
 result          /.*/ neutral
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: 192.0.2.1 is neither permitted nor denied by domain of 01.spf1-test.mailzone.com
 received-spf    /.*/ Received-SPF: neutral (spfquery: 192.0.2.1 is neither permitted nor denied by domain of 01.spf1-test.mailzone.com) client-ip=192.0.2.1; envelope-from=postmaster@01.spf1-test.mailzone.com; helo=01.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=02.spf1-test.mailzone.com -helo=02.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 02.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 02.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@02.spf1-test.mailzone.com; helo=02.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=03.spf1-test.mailzone.com -helo=03.spf1-test.mailzone.com
 result          /.*/ softfail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: transitioning domain of 03.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: softfail (spfquery: transitioning domain of 03.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@03.spf1-test.mailzone.com; helo=03.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=05.spf1-test.mailzone.com -helo=05.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 05.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 05.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@05.spf1-test.mailzone.com; helo=05.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=06.spf1-test.mailzone.com -helo=06.spf1-test.mailzone.com
 result          /.*/ neutral
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: 192.0.2.1 is neither permitted nor denied by domain of 06.spf1-test.mailzone.com
 received-spf    /.*/ Received-SPF: neutral (spfquery: 192.0.2.1 is neither permitted nor denied by domain of 06.spf1-test.mailzone.com) client-ip=192.0.2.1; envelope-from=postmaster@06.spf1-test.mailzone.com; helo=06.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=07.spf1-test.mailzone.com -helo=07.spf1-test.mailzone.com
 result          /.*/ none
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /^(perl|libspf)$/ spfquery: domain of 07.spf1-test.mailzone.com does not designate permitted sender hosts
 header-comment  /.*/ spfquery: 192.0.2.1 is neither permitted nor denied by domain of 07.spf1-test.mailzone.com
@@ -134,20 +134,20 @@ received-spf    /.*/ Received-SPF: none (spfquery: 192.0.2.1 is neither permitte
 
 spfquery -ip=192.0.2.1 -sender=08.spf1-test.mailzone.com -helo=08.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 08.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
-received-spf    /.*/ Received-SPF: fail (spfquery: domain of 08.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@08.spf1-test.mailzone.com; helo=08.spf1-test.mailzone.com; problem=Mechanisms found after the "all:" mechanism will be ignored;
+received-spf    /.*/ Received-SPF: fail (spfquery: domain of 08.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@08.spf1-test.mailzone.com; helo=08.spf1-test.mailzone.com; problem=Warning: Mechanisms found after the "all:" mechanism will be ignored;
 
 spfquery -ip=192.0.2.1 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 10.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.10 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.10
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender) client-ip=192.0.2.10; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -155,7 +155,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.11 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.11
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.11 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.11 as permitted sender) client-ip=192.0.2.11; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -163,7 +163,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.12 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.12
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.12 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.12 as permitted sender) client-ip=192.0.2.12; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -171,7 +171,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.13 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.13
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.13 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.13 as permitted sender) client-ip=192.0.2.13; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -179,7 +179,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.20 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx02.spf1-test.mailzone.com A 192.0.2.20
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.20 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.20 as permitted sender) client-ip=192.0.2.20; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -187,7 +187,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.21 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx02.spf1-test.mailzone.com A 192.0.2.21
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.21 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.21 as permitted sender) client-ip=192.0.2.21; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -195,7 +195,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.22 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx02.spf1-test.mailzone.com A 192.0.2.22
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.22 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.22 as permitted sender) client-ip=192.0.2.22; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -203,7 +203,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.23 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx02.spf1-test.mailzone.com A 192.0.2.23
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.23 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.23 as permitted sender) client-ip=192.0.2.23; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -211,7 +211,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.30 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx03.spf1-test.mailzone.com A 192.0.2.30
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.30 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.30 as permitted sender) client-ip=192.0.2.30; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -219,7 +219,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.31 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx03.spf1-test.mailzone.com A 192.0.2.31
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.31 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.31 as permitted sender) client-ip=192.0.2.31; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -227,7 +227,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.32 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx03.spf1-test.mailzone.com A 192.0.2.32
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.32 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.32 as permitted sender) client-ip=192.0.2.32; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
@@ -235,27 +235,27 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzo
 spfquery -ip=192.0.2.33 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 10.spf1-test.mailzone.com MX mx03.spf1-test.mailzone.com A 192.0.2.33
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 10.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.34 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com does not designate 192.0.2.34 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 10.spf1-test.mailzone.com does not designate 192.0.2.34 as permitted sender) client-ip=192.0.2.34; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=11.spf1-test.mailzone.com -helo=11.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 11.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 11.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@11.spf1-test.mailzone.com; helo=11.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.10 -sender=11.spf1-test.mailzone.com -helo=11.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.10
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 11.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 11.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender) client-ip=192.0.2.10; envelope-from=postmaster@11.spf1-test.mailzone.com; helo=11.spf1-test.mailzone.com;
@@ -263,21 +263,21 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 11.spf1-test.mailzo
 spfquery -ip=192.0.2.33 -sender=11.spf1-test.mailzone.com -helo=11.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: spf1-test.mailzone.com MX mx03.spf1-test.mailzone.com A 192.0.2.33
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 11.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 11.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@11.spf1-test.mailzone.com; helo=11.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=12.spf1-test.mailzone.com -helo=12.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 12.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 12.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@12.spf1-test.mailzone.com; helo=12.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.10 -sender=12.spf1-test.mailzone.com -helo=12.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 12.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.10
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 12.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 12.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender) client-ip=192.0.2.10; envelope-from=postmaster@12.spf1-test.mailzone.com; helo=12.spf1-test.mailzone.com;
@@ -285,27 +285,27 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 12.spf1-test.mailzo
 spfquery -ip=192.0.2.33 -sender=12.spf1-test.mailzone.com -helo=12.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 12.spf1-test.mailzone.com MX mx03.spf1-test.mailzone.com A 192.0.2.33
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 12.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 12.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@12.spf1-test.mailzone.com; helo=12.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.192 -sender=12.spf1-test.mailzone.com -helo=12.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 12.spf1-test.mailzone.com does not designate 208.210.124.192 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 12.spf1-test.mailzone.com does not designate 208.210.124.192 as permitted sender) client-ip=208.210.124.192; envelope-from=postmaster@12.spf1-test.mailzone.com; helo=12.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=13.spf1-test.mailzone.com -helo=13.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 13.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 13.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@13.spf1-test.mailzone.com; helo=13.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.10 -sender=13.spf1-test.mailzone.com -helo=13.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.10
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 13.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 13.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender) client-ip=192.0.2.10; envelope-from=postmaster@13.spf1-test.mailzone.com; helo=13.spf1-test.mailzone.com;
@@ -313,35 +313,35 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 13.spf1-test.mailzo
 spfquery -ip=192.0.2.33 -sender=13.spf1-test.mailzone.com -helo=13.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: spf1-test.mailzone.com MX mx03.spf1-test.mailzone.com A 192.0.2.33
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 13.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 13.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@13.spf1-test.mailzone.com; helo=13.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.192 -sender=13.spf1-test.mailzone.com -helo=13.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 13.spf1-test.mailzone.com does not designate 208.210.124.192 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 13.spf1-test.mailzone.com does not designate 208.210.124.192 as permitted sender) client-ip=208.210.124.192; envelope-from=postmaster@13.spf1-test.mailzone.com; helo=13.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.40 -sender=13.spf1-test.mailzone.com -helo=13.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: fallback-relay.spf1-test.mailzone.com MX mx04.spf1-test.mailzone.com A 192.0.2.40
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 13.spf1-test.mailzone.com designates 192.0.2.40 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 13.spf1-test.mailzone.com designates 192.0.2.40 as permitted sender) client-ip=192.0.2.40; envelope-from=postmaster@13.spf1-test.mailzone.com; helo=13.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=14.spf1-test.mailzone.com -helo=14.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 14.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 14.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@14.spf1-test.mailzone.com; helo=14.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.10 -sender=14.spf1-test.mailzone.com -helo=14.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 14.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.10
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 14.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 14.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender) client-ip=192.0.2.10; envelope-from=postmaster@14.spf1-test.mailzone.com; helo=14.spf1-test.mailzone.com;
@@ -349,69 +349,69 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 14.spf1-test.mailzo
 spfquery -ip=192.0.2.33 -sender=14.spf1-test.mailzone.com -helo=14.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 14.spf1-test.mailzone.com MX mx03.spf1-test.mailzone.com A 192.0.2.33
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 14.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 14.spf1-test.mailzone.com designates 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@14.spf1-test.mailzone.com; helo=14.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.192 -sender=14.spf1-test.mailzone.com -helo=14.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 14.spf1-test.mailzone.com does not designate 208.210.124.192 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 14.spf1-test.mailzone.com does not designate 208.210.124.192 as permitted sender) client-ip=208.210.124.192; envelope-from=postmaster@14.spf1-test.mailzone.com; helo=14.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.40 -sender=14.spf1-test.mailzone.com -helo=14.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: fallback-relay.spf1-test.mailzone.com MX mx04.spf1-test.mailzone.com A 192.0.2.40
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 14.spf1-test.mailzone.com designates 192.0.2.40 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 14.spf1-test.mailzone.com designates 192.0.2.40 as permitted sender) client-ip=192.0.2.40; envelope-from=postmaster@14.spf1-test.mailzone.com; helo=14.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.120 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 20.spf1-test.mailzone.com A 192.0.2.120
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com designates 192.0.2.120 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 20.spf1-test.mailzone.com designates 192.0.2.120 as permitted sender) client-ip=192.0.2.120; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=21.spf1-test.mailzone.com -helo=21.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 21.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 21.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@21.spf1-test.mailzone.com; helo=21.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.121 -sender=21.spf1-test.mailzone.com -helo=21.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 21.spf1-test.mailzone.com does not designate 192.0.2.121 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 21.spf1-test.mailzone.com does not designate 192.0.2.121 as permitted sender) client-ip=192.0.2.121; envelope-from=postmaster@21.spf1-test.mailzone.com; helo=21.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=21.spf1-test.mailzone.com -helo=21.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: spf1-test.mailzone.com A 192.0.2.200
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 21.spf1-test.mailzone.com designates 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 21.spf1-test.mailzone.com designates 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@21.spf1-test.mailzone.com; helo=21.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=22.spf1-test.mailzone.com -helo=22.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 22.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 22.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@22.spf1-test.mailzone.com; helo=22.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.122 -sender=22.spf1-test.mailzone.com -helo=22.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 22.spf1-test.mailzone.com A 192.0.2.122
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 22.spf1-test.mailzone.com designates 192.0.2.122 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 22.spf1-test.mailzone.com designates 192.0.2.122 as permitted sender) client-ip=192.0.2.122; envelope-from=postmaster@22.spf1-test.mailzone.com; helo=22.spf1-test.mailzone.com;
@@ -419,35 +419,35 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 22.spf1-test.mailzo
 spfquery -ip=192.0.2.200 -sender=22.spf1-test.mailzone.com -helo=22.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: spf1-test.mailzone.com A 192.0.2.200
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 22.spf1-test.mailzone.com designates 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 22.spf1-test.mailzone.com designates 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@22.spf1-test.mailzone.com; helo=22.spf1-test.mailzone.com;
 
 spfquery -ip=64.236.24.4 -sender=30.spf1-test.mailzone.com -helo=30.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 30.spf1-test.mailzone.com does not designate 64.236.24.4 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 30.spf1-test.mailzone.com does not designate 64.236.24.4 as permitted sender) client-ip=64.236.24.4; envelope-from=postmaster@30.spf1-test.mailzone.com; helo=30.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.130 -sender=30.spf1-test.mailzone.com -helo=30.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 208.210.124.130 PTR 30.spf1-test.mailzone.com matches 30.spf1-test.mailzone.com
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 30.spf1-test.mailzone.com designates 208.210.124.130 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 30.spf1-test.mailzone.com designates 208.210.124.130 as permitted sender) client-ip=208.210.124.130; envelope-from=postmaster@30.spf1-test.mailzone.com; helo=30.spf1-test.mailzone.com;
 
 spfquery -ip=64.236.24.4 -sender=31.spf1-test.mailzone.com -helo=31.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 31.spf1-test.mailzone.com does not designate 64.236.24.4 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 31.spf1-test.mailzone.com does not designate 64.236.24.4 as permitted sender) client-ip=64.236.24.4; envelope-from=postmaster@31.spf1-test.mailzone.com; helo=31.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.130 -sender=31.spf1-test.mailzone.com -helo=31.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 208.210.124.130 PTR 30.spf1-test.mailzone.com matches spf1-test.mailzone.com
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 31.spf1-test.mailzone.com designates 208.210.124.130 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 31.spf1-test.mailzone.com designates 208.210.124.130 as permitted sender) client-ip=208.210.124.130; envelope-from=postmaster@31.spf1-test.mailzone.com; helo=31.spf1-test.mailzone.com;
@@ -455,21 +455,21 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 31.spf1-test.mailzo
 spfquery -ip=208.210.124.192 -sender=31.spf1-test.mailzone.com -helo=31.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 208.210.124.192 PTR spf1-test.mailzone.com matches spf1-test.mailzone.com
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 31.spf1-test.mailzone.com designates 208.210.124.192 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 31.spf1-test.mailzone.com designates 208.210.124.192 as permitted sender) client-ip=208.210.124.192; envelope-from=postmaster@31.spf1-test.mailzone.com; helo=31.spf1-test.mailzone.com;
 
 spfquery -ip=64.236.24.4 -sender=32.spf1-test.mailzone.com -helo=32.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 32.spf1-test.mailzone.com does not designate 64.236.24.4 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 32.spf1-test.mailzone.com does not designate 64.236.24.4 as permitted sender) client-ip=64.236.24.4; envelope-from=postmaster@32.spf1-test.mailzone.com; helo=32.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.130 -sender=32.spf1-test.mailzone.com -helo=32.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 208.210.124.130 PTR 30.spf1-test.mailzone.com matches spf1-test.mailzone.com
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 32.spf1-test.mailzone.com designates 208.210.124.130 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 32.spf1-test.mailzone.com designates 208.210.124.130 as permitted sender) client-ip=208.210.124.130; envelope-from=postmaster@32.spf1-test.mailzone.com; helo=32.spf1-test.mailzone.com;
@@ -477,7 +477,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 32.spf1-test.mailzo
 spfquery -ip=208.210.124.131 -sender=32.spf1-test.mailzone.com -helo=32.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 208.210.124.131 PTR 31.spf1-test.mailzone.com matches spf1-test.mailzone.com
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 32.spf1-test.mailzone.com designates 208.210.124.131 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 32.spf1-test.mailzone.com designates 208.210.124.131 as permitted sender) client-ip=208.210.124.131; envelope-from=postmaster@32.spf1-test.mailzone.com; helo=32.spf1-test.mailzone.com;
@@ -485,7 +485,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 32.spf1-test.mailzo
 spfquery -ip=208.210.124.192 -sender=32.spf1-test.mailzone.com -helo=32.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 208.210.124.192 PTR spf1-test.mailzone.com matches spf1-test.mailzone.com
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 32.spf1-test.mailzone.com designates 208.210.124.192 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 32.spf1-test.mailzone.com designates 208.210.124.192 as permitted sender) client-ip=208.210.124.192; envelope-from=postmaster@32.spf1-test.mailzone.com; helo=32.spf1-test.mailzone.com;
@@ -493,7 +493,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 32.spf1-test.mailzo
 spfquery -ip=192.0.2.100 -sender=40.spf1-test.mailzone.com -helo=40.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 100.2.0.192.in-addr._spf.40.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 40.spf1-test.mailzone.com designates 192.0.2.100 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 40.spf1-test.mailzone.com designates 192.0.2.100 as permitted sender) client-ip=192.0.2.100; envelope-from=postmaster@40.spf1-test.mailzone.com; helo=40.spf1-test.mailzone.com;
@@ -501,27 +501,27 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 40.spf1-test.mailzo
 spfquery -ip=192.0.2.101 -sender=40.spf1-test.mailzone.com -helo=40.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 101.2.0.192.in-addr._spf.40.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 40.spf1-test.mailzone.com designates 192.0.2.101 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 40.spf1-test.mailzone.com designates 192.0.2.101 as permitted sender) client-ip=192.0.2.101; envelope-from=postmaster@40.spf1-test.mailzone.com; helo=40.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.102 -sender=40.spf1-test.mailzone.com -helo=40.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 40.spf1-test.mailzone.com does not designate 192.0.2.102 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 40.spf1-test.mailzone.com does not designate 192.0.2.102 as permitted sender) client-ip=192.0.2.102; envelope-from=postmaster@40.spf1-test.mailzone.com; helo=40.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.100 -sender=41.spf1-test.mailzone.com -helo=41.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 41.spf1-test.mailzone.com does not designate 192.0.2.100 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 41.spf1-test.mailzone.com does not designate 192.0.2.100 as permitted sender) client-ip=192.0.2.100; envelope-from=postmaster@41.spf1-test.mailzone.com; helo=41.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=41.spf1-test.mailzone.com -helo=41.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 110.2.0.192.in-addr._spf.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 41.spf1-test.mailzone.com designates 192.0.2.110 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 41.spf1-test.mailzone.com designates 192.0.2.110 as permitted sender) client-ip=192.0.2.110; envelope-from=postmaster@41.spf1-test.mailzone.com; helo=41.spf1-test.mailzone.com;
@@ -529,21 +529,21 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 41.spf1-test.mailzo
 spfquery -ip=192.0.2.111 -sender=41.spf1-test.mailzone.com -helo=41.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 111.2.0.192.in-addr._spf.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 41.spf1-test.mailzone.com designates 192.0.2.111 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 41.spf1-test.mailzone.com designates 192.0.2.111 as permitted sender) client-ip=192.0.2.111; envelope-from=postmaster@41.spf1-test.mailzone.com; helo=41.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.100 -sender=42.spf1-test.mailzone.com -helo=42.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 42.spf1-test.mailzone.com does not designate 192.0.2.100 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 42.spf1-test.mailzone.com does not designate 192.0.2.100 as permitted sender) client-ip=192.0.2.100; envelope-from=postmaster@42.spf1-test.mailzone.com; helo=42.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=42.spf1-test.mailzone.com -helo=42.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 110.2.0.192.in-addr._spf.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 42.spf1-test.mailzone.com designates 192.0.2.110 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 42.spf1-test.mailzone.com designates 192.0.2.110 as permitted sender) client-ip=192.0.2.110; envelope-from=postmaster@42.spf1-test.mailzone.com; helo=42.spf1-test.mailzone.com;
@@ -551,7 +551,7 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 42.spf1-test.mailzo
 spfquery -ip=192.0.2.130 -sender=42.spf1-test.mailzone.com -helo=42.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 130.2.0.192.in-addr._spf.42.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 42.spf1-test.mailzone.com designates 192.0.2.130 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 42.spf1-test.mailzone.com designates 192.0.2.130 as permitted sender) client-ip=192.0.2.130; envelope-from=postmaster@42.spf1-test.mailzone.com; helo=42.spf1-test.mailzone.com;
@@ -559,14 +559,14 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 42.spf1-test.mailzo
 spfquery -ip=192.0.2.131 -sender=42.spf1-test.mailzone.com -helo=42.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 131.2.0.192.in-addr._spf.42.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 42.spf1-test.mailzone.com designates 192.0.2.131 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 42.spf1-test.mailzone.com designates 192.0.2.131 as permitted sender) client-ip=192.0.2.131; envelope-from=postmaster@42.spf1-test.mailzone.com; helo=42.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.140 -sender=45.spf1-test.mailzone.com -helo=45.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 45.spf1-test.mailzone.com does not designate 192.0.2.140 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 45.spf1-test.mailzone.com does not designate 192.0.2.140 as permitted sender) client-ip=192.0.2.140; envelope-from=postmaster@45.spf1-test.mailzone.com; helo=45.spf1-test.mailzone.com;
 
@@ -590,14 +590,14 @@ received-spf    /.*/ Received-SPF: fail (spfquery: domain of 45.spf1-test.mailzo
 
 spfquery -ip=192.0.2.148 -sender=45.spf1-test.mailzone.com -helo=45.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 45.spf1-test.mailzone.com does not designate 192.0.2.148 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 45.spf1-test.mailzone.com does not designate 192.0.2.148 as permitted sender) client-ip=192.0.2.148; envelope-from=postmaster@45.spf1-test.mailzone.com; helo=45.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.192 -sender=45.spf1-test.mailzone.com -helo=45.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: spf1-test.mailzone.com A 208.210.124.192
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 45.spf1-test.mailzone.com designates 208.210.124.192 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 45.spf1-test.mailzone.com designates 208.210.124.192 as permitted sender) client-ip=208.210.124.192; envelope-from=postmaster@45.spf1-test.mailzone.com; helo=45.spf1-test.mailzone.com;
@@ -605,56 +605,56 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 45.spf1-test.mailzo
 spfquery -ip=192.0.2.200 -sender=45.spf1-test.mailzone.com -helo=45.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: spf1-test.mailzone.com A 192.0.2.200
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 45.spf1-test.mailzone.com designates 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 45.spf1-test.mailzone.com designates 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@45.spf1-test.mailzone.com; helo=45.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=50.spf1-test.mailzone.com -helo=50.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 50.spf1-test.mailzone.com: Required option is missing
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 50.spf1-test.mailzone.com: Required option is missing) client-ip=192.0.2.200; envelope-from=postmaster@50.spf1-test.mailzone.com; helo=50.spf1-test.mailzone.com; problem=Required option is missing near "" in "                                    -all";
 
 spfquery -ip=192.0.2.200 -sender=51.spf1-test.mailzone.com -helo=51.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 51.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 51.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@51.spf1-test.mailzone.com; helo=51.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.130 -sender=51.spf1-test.mailzone.com -helo=51.spf1-test.mailzone.com
 result          /.*/ pass
 smtp-comment    perl explanation: 130.2.0.192.in-addr._spf.42.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 51.spf1-test.mailzone.com designates 192.0.2.130 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 51.spf1-test.mailzone.com designates 192.0.2.130 as permitted sender) client-ip=192.0.2.130; envelope-from=postmaster@51.spf1-test.mailzone.com; helo=51.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=52.spf1-test.mailzone.com -helo=52.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 52.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 52.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@52.spf1-test.mailzone.com; helo=52.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.130 -sender=52.spf1-test.mailzone.com -helo=52.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 130.2.0.192.in-addr._spf.42.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 130.2.0.192.in-addr._spf.42.spf1-test.mailzone.com found
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 52.spf1-test.mailzone.com designates 192.0.2.130 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 52.spf1-test.mailzone.com designates 192.0.2.130 as permitted sender) client-ip=192.0.2.130; envelope-from=postmaster@52.spf1-test.mailzone.com; helo=52.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=55.spf1-test.mailzone.com -helo=55.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 55.spf1-test.mailzone.com: Could not find a valid SPF record
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 55.spf1-test.mailzone.com: Could not find a valid SPF record) client-ip=192.0.2.200; envelope-from=postmaster@55.spf1-test.mailzone.com; helo=55.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.130 -sender=55.spf1-test.mailzone.com -helo=55.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 55.spf1-test.mailzone.com: Could not find a valid SPF record
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 55.spf1-test.mailzone.com: Could not find a valid SPF record) client-ip=192.0.2.130; envelope-from=postmaster@55.spf1-test.mailzone.com; helo=55.spf1-test.mailzone.com;
@@ -667,313 +667,313 @@ received-spf    /.*/ Received-SPF: none (spfquery: 192.0.2.200 is neither permit
 
 spfquery -ip=192.0.2.200 -sender=57.spf1-test.mailzone.com -helo=57.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 57.spf1-test.mailzone.com: Could not find a valid SPF record
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 57.spf1-test.mailzone.com: Could not find a valid SPF record) client-ip=192.0.2.200; envelope-from=postmaster@57.spf1-test.mailzone.com; helo=57.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.130 -sender=57.spf1-test.mailzone.com -helo=57.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 57.spf1-test.mailzone.com: Could not find a valid SPF record
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 57.spf1-test.mailzone.com: Could not find a valid SPF record) client-ip=192.0.2.130; envelope-from=postmaster@57.spf1-test.mailzone.com; helo=57.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=58.spf1-test.mailzone.com -helo=58.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 58.spf1-test.mailzone.com: Mechanisms used too many DNS lookups
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 58.spf1-test.mailzone.com: Mechanisms used too many DNS lookups) client-ip=192.0.2.200; envelope-from=postmaster@58.spf1-test.mailzone.com; helo=58.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.130 -sender=59.spf1-test.mailzone.com -helo=59.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 59.spf1-test.mailzone.com: Mechanisms used too many DNS lookups
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 59.spf1-test.mailzone.com: Mechanisms used too many DNS lookups) client-ip=192.0.2.130; envelope-from=postmaster@59.spf1-test.mailzone.com; helo=59.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.103 -sender=droid@70.spf1-test.mailzone.com -helo=70.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 70.spf1-test.mailzone.com does not designate 192.0.2.103 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 70.spf1-test.mailzone.com does not designate 192.0.2.103 as permitted sender) client-ip=192.0.2.103; envelope-from=droid@70.spf1-test.mailzone.com; helo=70.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.103 -sender=bob+1@70.spf1-test.mailzone.com -helo=70.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 1.bob.lp._spf.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 1.bob.lp._spf.spf1-test.mailzone.com found
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 70.spf1-test.mailzone.com designates 192.0.2.103 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 70.spf1-test.mailzone.com designates 192.0.2.103 as permitted sender) client-ip=192.0.2.103; envelope-from=bob+1@70.spf1-test.mailzone.com; helo=70.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.103 -sender=bob+2@70.spf1-test.mailzone.com -helo=70.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 2.bob.lp._spf.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 2.bob.lp._spf.spf1-test.mailzone.com found
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 70.spf1-test.mailzone.com designates 192.0.2.103 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 70.spf1-test.mailzone.com designates 192.0.2.103 as permitted sender) client-ip=192.0.2.103; envelope-from=bob+2@70.spf1-test.mailzone.com; helo=70.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.103 -sender=bob@70.spf1-test.mailzone.com -helo=70.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: bob.lp._spf.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: bob.lp._spf.spf1-test.mailzone.com found
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 70.spf1-test.mailzone.com designates 192.0.2.103 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 70.spf1-test.mailzone.com designates 192.0.2.103 as permitted sender) client-ip=192.0.2.103; envelope-from=bob@70.spf1-test.mailzone.com; helo=70.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.103 -sender=joe+1@70.spf1-test.mailzone.com -helo=70.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 70.spf1-test.mailzone.com does not designate 192.0.2.103 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 70.spf1-test.mailzone.com does not designate 192.0.2.103 as permitted sender) client-ip=192.0.2.103; envelope-from=joe+1@70.spf1-test.mailzone.com; helo=70.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.103 -sender=joe-2@70.spf1-test.mailzone.com -helo=70.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 70.spf1-test.mailzone.com does not designate 192.0.2.103 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 70.spf1-test.mailzone.com does not designate 192.0.2.103 as permitted sender) client-ip=192.0.2.103; envelope-from=joe-2@70.spf1-test.mailzone.com; helo=70.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.103 -sender=moe-1@70.spf1-test.mailzone.com -helo=70.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 70.spf1-test.mailzone.com does not designate 192.0.2.103 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 70.spf1-test.mailzone.com does not designate 192.0.2.103 as permitted sender) client-ip=192.0.2.103; envelope-from=moe-1@70.spf1-test.mailzone.com; helo=70.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.103 -sender=70.spf1-test.mailzone.com -helo=70.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: postmaster.lp._spf.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: postmaster.lp._spf.spf1-test.mailzone.com found
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 70.spf1-test.mailzone.com designates 192.0.2.103 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 70.spf1-test.mailzone.com designates 192.0.2.103 as permitted sender) client-ip=192.0.2.103; envelope-from=postmaster@70.spf1-test.mailzone.com; helo=70.spf1-test.mailzone.com;
 
 spfquery -ip=64.236.24.4 -sender=80.spf1-test.mailzone.com -helo=80.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 80.spf1-test.mailzone.com does not designate 64.236.24.4 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 80.spf1-test.mailzone.com does not designate 64.236.24.4 as permitted sender) client-ip=64.236.24.4; envelope-from=postmaster@80.spf1-test.mailzone.com; helo=80.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.180 -sender=80.spf1-test.mailzone.com -helo=80.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 80.spf1-test.mailzone.com A 208.210.124.180
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 80.spf1-test.mailzone.com A 208.210.124.180
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 80.spf1-test.mailzone.com designates 208.210.124.180 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 80.spf1-test.mailzone.com designates 208.210.124.180 as permitted sender) client-ip=208.210.124.180; envelope-from=postmaster@80.spf1-test.mailzone.com; helo=80.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.80 -sender=80.spf1-test.mailzone.com -helo=80.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 80.2.0.192.in-addr._spf.80.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 80.2.0.192.in-addr._spf.80.spf1-test.mailzone.com found
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 80.spf1-test.mailzone.com designates 192.0.2.80 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 80.spf1-test.mailzone.com designates 192.0.2.80 as permitted sender) client-ip=192.0.2.80; envelope-from=postmaster@80.spf1-test.mailzone.com; helo=80.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=90.spf1-test.mailzone.com -helo=90.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 90.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 90.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@90.spf1-test.mailzone.com; helo=90.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.127 -sender=90.spf1-test.mailzone.com -helo=90.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 90.spf1-test.mailzone.com does not designate 192.0.2.127 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 90.spf1-test.mailzone.com does not designate 192.0.2.127 as permitted sender) client-ip=192.0.2.127; envelope-from=postmaster@90.spf1-test.mailzone.com; helo=90.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.129 -sender=90.spf1-test.mailzone.com -helo=90.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 192.0.2.128/25 contains 192.0.2.129
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 192.0.2.128/25 contains 192.0.2.129
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 90.spf1-test.mailzone.com designates 192.0.2.129 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 90.spf1-test.mailzone.com designates 192.0.2.129 as permitted sender) client-ip=192.0.2.129; envelope-from=postmaster@90.spf1-test.mailzone.com; helo=90.spf1-test.mailzone.com;
 
 spfquery -ip=192.168.1.1 -sender=91.spf1-test.mailzone.com -helo=91.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 91.spf1-test.mailzone.com does not designate 192.168.1.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 91.spf1-test.mailzone.com does not designate 192.168.1.1 as permitted sender) client-ip=192.168.1.1; envelope-from=postmaster@91.spf1-test.mailzone.com; helo=91.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.127 -sender=91.spf1-test.mailzone.com -helo=91.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 192.0.2.0/24 contains 192.0.2.127
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 192.0.2.0/24 contains 192.0.2.127
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 91.spf1-test.mailzone.com designates 192.0.2.127 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 91.spf1-test.mailzone.com designates 192.0.2.127 as permitted sender) client-ip=192.0.2.127; envelope-from=postmaster@91.spf1-test.mailzone.com; helo=91.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.129 -sender=91.spf1-test.mailzone.com -helo=91.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ /^explanation/
+smtp-comment    /.*/ /^/explanation .*//
 header-comment  /.*/ spfquery: domain of 91.spf1-test.mailzone.com does not designate 192.0.2.129 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 91.spf1-test.mailzone.com does not designate 192.0.2.129 as permitted sender) client-ip=192.0.2.129; envelope-from=postmaster@91.spf1-test.mailzone.com; helo=91.spf1-test.mailzone.com;
 
 spfquery -ip=192.168.2.1 -sender=92.spf1-test.mailzone.com -helo=92.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 92.spf1-test.mailzone.com does not designate 192.168.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 92.spf1-test.mailzone.com does not designate 192.168.2.1 as permitted sender) client-ip=192.168.2.1; envelope-from=postmaster@92.spf1-test.mailzone.com; helo=92.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=92.spf1-test.mailzone.com -helo=92.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ /^explanation/
+smtp-comment    /.*/ /^/explanation .*//
 header-comment  /.*/ spfquery: domain of 92.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 92.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@92.spf1-test.mailzone.com; helo=92.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.129 -sender=92.spf1-test.mailzone.com -helo=92.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 192.0.2.128/25 contains 192.0.2.129
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 192.0.2.128/25 contains 192.0.2.129
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 92.spf1-test.mailzone.com designates 192.0.2.129 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 92.spf1-test.mailzone.com designates 192.0.2.129 as permitted sender) client-ip=192.0.2.129; envelope-from=postmaster@92.spf1-test.mailzone.com; helo=92.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.193 -sender=92.spf1-test.mailzone.com -helo=92.spf1-test.mailzone.com
 result          /.*/ neutral
-smtp-comment    perl explanation: 192.0.2.192/26 contains 192.0.2.193
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 192.0.2.192/26 contains 192.0.2.193
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: 192.0.2.193 is neither permitted nor denied by domain of 92.spf1-test.mailzone.com
 received-spf    /.*/ Received-SPF: neutral (spfquery: 192.0.2.193 is neither permitted nor denied by domain of 92.spf1-test.mailzone.com) client-ip=192.0.2.193; envelope-from=postmaster@92.spf1-test.mailzone.com; helo=92.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.180 -sender=95.spf1-test.mailzone.com -helo=95.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 80.spf1-test.mailzone.com.whitelist.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 80.spf1-test.mailzone.com.whitelist.spf1-test.mailzone.com found
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 95.spf1-test.mailzone.com designates 208.210.124.180 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 95.spf1-test.mailzone.com designates 208.210.124.180 as permitted sender) client-ip=208.210.124.180; envelope-from=postmaster@95.spf1-test.mailzone.com; helo=95.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.1 -sender=95.spf1-test.mailzone.com -helo=95.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 95.spf1-test.mailzone.com does not designate 208.210.124.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 95.spf1-test.mailzone.com does not designate 208.210.124.1 as permitted sender) client-ip=208.210.124.1; envelope-from=postmaster@95.spf1-test.mailzone.com; helo=95.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.193 -sender=96.spf1-test.mailzone.com -helo=96.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ /^explanation/
+smtp-comment    /.*/ /^/explanation .*//
 header-comment  /.*/ spfquery: domain of 96.spf1-test.mailzone.com does not designate 192.0.2.193 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 96.spf1-test.mailzone.com does not designate 192.0.2.193 as permitted sender) client-ip=192.0.2.193; envelope-from=postmaster@96.spf1-test.mailzone.com; helo=96.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.180 -sender=97.spf1-test.mailzone.com -helo=97.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 80.spf1-test.mailzone.com.whitelist.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 80.spf1-test.mailzone.com.whitelist.spf1-test.mailzone.com found
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 97.spf1-test.mailzone.com designates 208.210.124.180 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 97.spf1-test.mailzone.com designates 208.210.124.180 as permitted sender) client-ip=208.210.124.180; envelope-from=postmaster@97.spf1-test.mailzone.com; helo=97.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=98.spf1-test.mailzone.com -helo=98.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 98.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 98.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@98.spf1-test.mailzone.com; helo=98.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.98 -sender=98.spf1-test.mailzone.com -helo=98.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 98.spf1-test.mailzone.com A 192.0.2.98
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 98.spf1-test.mailzone.com A 192.0.2.98
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 98.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 98.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender) client-ip=192.0.2.98; envelope-from=postmaster@98.spf1-test.mailzone.com; helo=98.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.99 -sender=98.spf1-test.mailzone.com -helo=98.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 98.spf1-test.mailzone.com A 192.0.2.98 /26 contains 192.0.2.99
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 98.spf1-test.mailzone.com A 192.0.2.98 /26 contains 192.0.2.99
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 98.spf1-test.mailzone.com designates 192.0.2.99 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 98.spf1-test.mailzone.com designates 192.0.2.99 as permitted sender) client-ip=192.0.2.99; envelope-from=postmaster@98.spf1-test.mailzone.com; helo=98.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.180 -sender=98.spf1-test.mailzone.com -helo=98.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 98.spf1-test.mailzone.com MX 80.spf1-test.mailzone.com A 208.210.124.180
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 98.spf1-test.mailzone.com MX 80.spf1-test.mailzone.com A 208.210.124.180
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 98.spf1-test.mailzone.com designates 208.210.124.180 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 98.spf1-test.mailzone.com designates 208.210.124.180 as permitted sender) client-ip=208.210.124.180; envelope-from=postmaster@98.spf1-test.mailzone.com; helo=98.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.1 -sender=98.spf1-test.mailzone.com -helo=98.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 98.spf1-test.mailzone.com does not designate 208.210.124.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 98.spf1-test.mailzone.com does not designate 208.210.124.1 as permitted sender) client-ip=208.210.124.1; envelope-from=postmaster@98.spf1-test.mailzone.com; helo=98.spf1-test.mailzone.com;
 
 spfquery -ip=208.210.124.181 -sender=98.spf1-test.mailzone.com -helo=98.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 98.spf1-test.mailzone.com MX 80.spf1-test.mailzone.com A 208.210.124.180 /26 contains 208.210.124.181
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 98.spf1-test.mailzone.com MX 80.spf1-test.mailzone.com A 208.210.124.180 /26 contains 208.210.124.181
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 98.spf1-test.mailzone.com designates 208.210.124.181 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 98.spf1-test.mailzone.com designates 208.210.124.181 as permitted sender) client-ip=208.210.124.181; envelope-from=postmaster@98.spf1-test.mailzone.com; helo=98.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=08.spf1-test.mailzone.com -helo=08.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 08.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
-received-spf    /.*/ Received-SPF: fail (spfquery: domain of 08.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@08.spf1-test.mailzone.com; helo=08.spf1-test.mailzone.com; problem=Mechanisms found after the "all:" mechanism will be ignored;
+received-spf    /.*/ Received-SPF: fail (spfquery: domain of 08.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@08.spf1-test.mailzone.com; helo=08.spf1-test.mailzone.com; problem=Warning: Mechanisms found after the "all:" mechanism will be ignored;
 
 spfquery -ip=192.0.2.1 -sender=09.spf1-test.mailzone.com -helo=09.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 09.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 09.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@09.spf1-test.mailzone.com; helo=09.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=99.spf1-test.mailzone.com -helo=99.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 99.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 99.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@99.spf1-test.mailzone.com; helo=99.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=100.spf1-test.mailzone.com -helo=100.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 100.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 100.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@100.spf1-test.mailzone.com; helo=100.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.98 -sender=100.spf1-test.mailzone.com -helo=100.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 98.spf1-test.mailzone.com A 192.0.2.98
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 98.spf1-test.mailzone.com A 192.0.2.98
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 100.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 100.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender) client-ip=192.0.2.98; envelope-from=postmaster@100.spf1-test.mailzone.com; helo=100.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.98 -sender=101.spf1-test.mailzone.com -helo=101.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 101.spf1-test.mailzone.com does not designate 192.0.2.98 as permitted sender
-received-spf    /.*/ Received-SPF: fail (spfquery: domain of 101.spf1-test.mailzone.com does not designate 192.0.2.98 as permitted sender) client-ip=192.0.2.98; envelope-from=postmaster@101.spf1-test.mailzone.com; helo=101.spf1-test.mailzone.com; problem=Mechanisms found after the "all:" mechanism will be ignored;
+received-spf    /.*/ Received-SPF: fail (spfquery: domain of 101.spf1-test.mailzone.com does not designate 192.0.2.98 as permitted sender) client-ip=192.0.2.98; envelope-from=postmaster@101.spf1-test.mailzone.com; helo=101.spf1-test.mailzone.com; problem=Warning: Mechanisms found after the "all:" mechanism will be ignored;
 
 spfquery -ip=192.0.2.98 -sender=102.spf1-test.mailzone.com -helo=102.spf1-test.mailzone.com
 result          /.*/ neutral
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: 192.0.2.98 is neither permitted nor denied by domain of 102.spf1-test.mailzone.com
-received-spf    /.*/ Received-SPF: neutral (spfquery: 192.0.2.98 is neither permitted nor denied by domain of 102.spf1-test.mailzone.com) client-ip=192.0.2.98; envelope-from=postmaster@102.spf1-test.mailzone.com; helo=102.spf1-test.mailzone.com; problem=Mechanisms found after the "all:" mechanism will be ignored;
+received-spf    /.*/ Received-SPF: neutral (spfquery: 192.0.2.98 is neither permitted nor denied by domain of 102.spf1-test.mailzone.com) client-ip=192.0.2.98; envelope-from=postmaster@102.spf1-test.mailzone.com; helo=102.spf1-test.mailzone.com; problem=Warning: Mechanisms found after the "all:" mechanism will be ignored;
 
 spfquery -ip=192.0.2.98 -sender=103.spf1-test.mailzone.com -helo=103.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation: 98.spf1-test.mailzone.com A 192.0.2.98
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 98.spf1-test.mailzone.com A 192.0.2.98
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 103.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 103.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender) client-ip=192.0.2.98; envelope-from=postmaster@103.spf1-test.mailzone.com; helo=103.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.98 -sender=droid@104.spf1-test.mailzone.com -helo=104.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 104.spf1-test.mailzone.com: Mechanisms used too many DNS lookups
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 104.spf1-test.mailzone.com: Mechanisms used too many DNS lookups) client-ip=192.0.2.98; envelope-from=droid@104.spf1-test.mailzone.com; helo=104.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.98 -sender=droid@110.spf1-test.mailzone.com -helo=110.spf1-test.mailzone.com
 result          /.*/ /^unknown/
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  perl spfquery: encountered unrecognized mechanism during SPF processing of domain of droid@110.spf1-test.mailzone.com
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 110.spf1-test.mailzone.com: Unknown mechanism found
@@ -981,13 +981,13 @@ received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during
 
 spfquery -ip=192.0.2.33 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="foo@bar.com,foo@spf1-test.mailzone.com"
 result          /.*/ fail,fail,fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.33 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="foo@spf1-test.mailzone.com,foo@bar.com"
 result          /.*/ pass,fail,fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
@@ -995,24 +995,24 @@ spfquery -ip=192.0.2.33 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mai
 result          /.*/ pass,pass
 smtp-comment    /.*/ 
 header-comment  /.*/ /spfquery: message received from 192\.0\.2\.33 which is an MX secondary for (foo@)?spf1-test\.mailzone\.com/
-received-spf    /.*/ /Received-SPF: pass \(spfquery: message received from 192\.0\.2\.33 which is an MX secondary for (foo@)?spf1-test\.mailzone\.com\) client-ip=192\.0\.2\.33; envelope-from=postmaster@20\.spf1-test\.mailzone\.com; helo=20\.spf1-test\.mailzone\.com;/
+received-spf    /.*/ /Received-SPF: pass \(spfquery: message received from 192\.0\.2\.33 which is an MX secondary for (foo@)?spf1-test\.mailzone\.com.?\) client-ip=192\.0\.2\.33; envelope-from=postmaster@20\.spf1-test\.mailzone\.com; helo=20\.spf1-test\.mailzone\.com;/
 
 spfquery -ip=192.0.2.33 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="foo@bar.com"
 result          /.*/ fail,fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.34 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="foo@spf1-test.mailzone.com,foo@bar.com"
 result          /.*/ fail,fail,fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.34 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.34 as permitted sender) client-ip=192.0.2.34; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.120 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="dog@cat.com,foo@bar.com"
 result          /.*/ pass,pass,pass
-smtp-comment    perl explanation: 20.spf1-test.mailzone.com A 192.0.2.120
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 20.spf1-test.mailzone.com A 192.0.2.120
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com designates 192.0.2.120 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 20.spf1-test.mailzone.com designates 192.0.2.120 as permitted sender) client-ip=192.0.2.120; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
@@ -1020,8 +1020,8 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 20.spf1-test.mailzo
 spfquery -ip=192.0.2.120 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="dog@cat.com;foo@bar.com"
 result          libspf2 pass,pass,pass
 result          /.*/ pass,pass
-smtp-comment    perl explanation: 20.spf1-test.mailzone.com A 192.0.2.120
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 20.spf1-test.mailzone.com A 192.0.2.120
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com designates 192.0.2.120 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 20.spf1-test.mailzone.com designates 192.0.2.120 as permitted sender) client-ip=192.0.2.120; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
@@ -1029,245 +1029,245 @@ received-spf    /.*/ Received-SPF: pass (spfquery: domain of 20.spf1-test.mailzo
 spfquery -ip=192.0.2.33 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="foo@spf1-test.mailzone.com;foo@bar.com"
 result          libspf2 pass,fail,fail
 result          /.*/ fail,fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.33 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -rcpt-to="foo@bar.com;foo@spf1-test.mailzone.com"
 result          libspf2 fail,fail,fail
 result          /.*/ fail,fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.33 as permitted sender) client-ip=192.0.2.33; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.98 -sender=103.spf1-test.mailzone.com -helo=103.spf1-test.mailzone.com -local="-all"
 result          /.*/ pass
-smtp-comment    perl explanation: 98.spf1-test.mailzone.com A 192.0.2.98
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 98.spf1-test.mailzone.com A 192.0.2.98
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 103.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 103.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender) client-ip=192.0.2.98; envelope-from=postmaster@103.spf1-test.mailzone.com; helo=103.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -local="+all"
 result          /.*/ pass
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -local="+ip4:192.0.2.1"
 result          /.*/ pass
-smtp-comment    perl explanation: 192.0.2.1 contains 192.0.2.1
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 192.0.2.1 contains 192.0.2.1
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=20.spf1-test.mailzone.com -helo=20.spf1-test.mailzone.com -local="+ip4:192.0.2.2"
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 20.spf1-test.mailzone.com does not designate 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@20.spf1-test.mailzone.com; helo=20.spf1-test.mailzone.com;
 
 spfquery -ip=192.168.1.1 -sender=91.spf1-test.mailzone.com -helo=91.spf1-test.mailzone.com -local="ip4:192.168.1.0/24"
 result          /.*/ pass
-smtp-comment    perl explanation: 192.168.1.0/24 contains 192.168.1.1
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 192.168.1.0/24 contains 192.168.1.1
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.168.1.1 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.168.1.1 as permitted sender) client-ip=192.168.1.1; envelope-from=postmaster@91.spf1-test.mailzone.com; helo=91.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.127 -sender=91.spf1-test.mailzone.com -helo=91.spf1-test.mailzone.com -local="-ip4:192.0.0.0/8"
 result          /.*/ pass
-smtp-comment    perl explanation: 192.0.2.0/24 contains 192.0.2.127
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 192.0.2.0/24 contains 192.0.2.127
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 91.spf1-test.mailzone.com designates 192.0.2.127 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 91.spf1-test.mailzone.com designates 192.0.2.127 as permitted sender) client-ip=192.0.2.127; envelope-from=postmaster@91.spf1-test.mailzone.com; helo=91.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.129 -sender=91.spf1-test.mailzone.com -helo=91.spf1-test.mailzone.com -local="ip4:192.0.0.0/8"
 result          /.*/ fail
-smtp-comment    /.*/ /^explanation/
+smtp-comment    /.*/ /^/explanation .*//
 header-comment  /.*/ spfquery: domain of 91.spf1-test.mailzone.com does not designate 192.0.2.129 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 91.spf1-test.mailzone.com does not designate 192.0.2.129 as permitted sender) client-ip=192.0.2.129; envelope-from=postmaster@91.spf1-test.mailzone.com; helo=91.spf1-test.mailzone.com;
 
 spfquery -ip=192.168.2.1 -sender=92.spf1-test.mailzone.com -helo=92.spf1-test.mailzone.com -local="+all"
 result          /.*/ pass
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.168.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.168.2.1 as permitted sender) client-ip=192.168.2.1; envelope-from=postmaster@92.spf1-test.mailzone.com; helo=92.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=92.spf1-test.mailzone.com -helo=92.spf1-test.mailzone.com -local="+all"
 result          /.*/ pass
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@92.spf1-test.mailzone.com; helo=92.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.129 -sender=92.spf1-test.mailzone.com -helo=92.spf1-test.mailzone.com -local="-all"
 result          /.*/ pass
-smtp-comment    perl explanation: 192.0.2.128/25 contains 192.0.2.129
+smtp-comment    perl /explanation .*/: 192.0.2.128/25 contains 192.0.2.129
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 92.spf1-test.mailzone.com designates 192.0.2.129 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 92.spf1-test.mailzone.com designates 192.0.2.129 as permitted sender) client-ip=192.0.2.129; envelope-from=postmaster@92.spf1-test.mailzone.com; helo=92.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.193 -sender=92.spf1-test.mailzone.com -helo=92.spf1-test.mailzone.com -local="-all"
 result          /.*/ neutral
-smtp-comment    perl explanation: 192.0.2.192/26 contains 192.0.2.193
+smtp-comment    perl /explanation .*/: 192.0.2.192/26 contains 192.0.2.193
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: 192.0.2.193 is neither permitted nor denied by domain of 92.spf1-test.mailzone.com
 received-spf    /.*/ Received-SPF: neutral (spfquery: 192.0.2.193 is neither permitted nor denied by domain of 92.spf1-test.mailzone.com) client-ip=192.0.2.193; envelope-from=postmaster@92.spf1-test.mailzone.com; helo=92.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.1 -sender=100.spf1-test.mailzone.com -helo=100.spf1-test.mailzone.com -local="+all"
 result          /.*/ pass
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.0.2.1 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.0.2.1 as permitted sender) client-ip=192.0.2.1; envelope-from=postmaster@100.spf1-test.mailzone.com; helo=100.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.98 -sender=100.spf1-test.mailzone.com -helo=100.spf1-test.mailzone.com -local="-all"
 result          /.*/ pass
-smtp-comment    perl explanation: 98.spf1-test.mailzone.com A 192.0.2.98
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 98.spf1-test.mailzone.com A 192.0.2.98
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 100.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 100.spf1-test.mailzone.com designates 192.0.2.98 as permitted sender) client-ip=192.0.2.98; envelope-from=postmaster@100.spf1-test.mailzone.com; helo=100.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.98 -sender=101.spf1-test.mailzone.com -helo=101.spf1-test.mailzone.com -local="+all"
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 101.spf1-test.mailzone.com does not designate 192.0.2.98 as permitted sender
-received-spf    /.*/ Received-SPF: fail (spfquery: domain of 101.spf1-test.mailzone.com does not designate 192.0.2.98 as permitted sender) client-ip=192.0.2.98; envelope-from=postmaster@101.spf1-test.mailzone.com; helo=101.spf1-test.mailzone.com; problem=Mechanisms found after the "all:" mechanism will be ignored;
+received-spf    /.*/ Received-SPF: fail (spfquery: domain of 101.spf1-test.mailzone.com does not designate 192.0.2.98 as permitted sender) client-ip=192.0.2.98; envelope-from=postmaster@101.spf1-test.mailzone.com; helo=101.spf1-test.mailzone.com; problem=Warning: Mechanisms found after the "all:" mechanism will be ignored;
 
 spfquery -ip=192.0.2.98 -sender=102.spf1-test.mailzone.com -helo=102.spf1-test.mailzone.com -local="+all"
 result          /.*/ neutral
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: 192.0.2.98 is neither permitted nor denied by domain of 102.spf1-test.mailzone.com
-received-spf    /.*/ Received-SPF: neutral (spfquery: 192.0.2.98 is neither permitted nor denied by domain of 102.spf1-test.mailzone.com) client-ip=192.0.2.98; envelope-from=postmaster@102.spf1-test.mailzone.com; helo=102.spf1-test.mailzone.com; problem=Mechanisms found after the "all:" mechanism will be ignored;
+received-spf    /.*/ Received-SPF: neutral (spfquery: 192.0.2.98 is neither permitted nor denied by domain of 102.spf1-test.mailzone.com) client-ip=192.0.2.98; envelope-from=postmaster@102.spf1-test.mailzone.com; helo=102.spf1-test.mailzone.com; problem=Warning: Mechanisms found after the "all:" mechanism will be ignored;
 
 spfquery -ip=192.0.2.200 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:42.%{d3}"
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 10.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 10.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:42.%{d3} +all"
 result          /.*/ pass
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:42.%{d3} +all"
 result          /.*/ pass
-smtp-comment    perl explanation: 110.2.0.192.in-addr._spf.spf1-test.mailzone.com found
-smtp-comment    libspf explanation
+smtp-comment    perl /explanation .*/: 110.2.0.192.in-addr._spf.spf1-test.mailzone.com found
+smtp-comment    libspf /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.0.2.110 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.0.2.110 as permitted sender) client-ip=192.0.2.110; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=42-27@10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:%{l1r-}.%{d3} +all"
 result          /.*/ pass
-smtp-comment    perl explanation: 110.2.0.192.in-addr._spf.spf1-test.mailzone.com found
+smtp-comment    perl /explanation .*/: 110.2.0.192.in-addr._spf.spf1-test.mailzone.com found
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.0.2.110 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.0.2.110 as permitted sender) client-ip=192.0.2.110; envelope-from=42-27@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=42-27@10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:%{l1r0-9}.%{d3} +all"
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of local policy: Unknown mechanism found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of local policy: Unknown mechanism found) client-ip=192.0.2.110; envelope-from=42-27@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=42-27@10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:%{l1r^-}.%{d3} +all"
 result          /.*/ unknown
-smtp-comment    perl explanation : Reason: local policy
+smtp-comment    perl /explanation .*/ : Reason: local policy
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of local policy: Unknown mechanism found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of local policy: Unknown mechanism found) client-ip=192.0.2.110; envelope-from=42-27@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=42di27@10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:%{l1r:digit:}.%{d3} +all"
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of local policy: Unknown mechanism found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of local policy: Unknown mechanism found) client-ip=192.0.2.110; envelope-from=42di27@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=42:27@10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:%{l1r:digit:}.%{d3} +all"
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of local policy: Unknown mechanism found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of local policy: Unknown mechanism found) client-ip=192.0.2.110; envelope-from=42:27@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=42:27@10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:%{l1r:}.%{d3} +all"
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of local policy: Unknown mechanism found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of local policy: Unknown mechanism found) client-ip=192.0.2.110; envelope-from=42:27@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=4227@10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:%{l1ro:}.%{d3} +all"
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of local policy: Unknown mechanism found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of local policy: Unknown mechanism found) client-ip=192.0.2.110; envelope-from=4227@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=42-27@10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:%{l1r-[]}.%{d3} +all"
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of local policy: Unknown mechanism found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of local policy: Unknown mechanism found) client-ip=192.0.2.110; envelope-from=42-27@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=42327@10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:%{l1r-[]3}.%{d3} +all"
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of local policy: Unknown mechanism found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of local policy: Unknown mechanism found) client-ip=192.0.2.110; envelope-from=42327@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.110 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:01.%{d3} include:02.%{d3} include:06.%{d3} +all"
 result          /.*/ pass
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: local policy designates 192.0.2.110 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: local policy designates 192.0.2.110 as permitted sender) client-ip=192.0.2.110; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="include:servfail.%{d3}"
 result          /.*/ error
-smtp-comment    /.*/ /^explanation/
+smtp-comment    /.*/ /^/explanation .*//
 header-comment  perl spfquery: encountered temporary error during SPF processing of domain of 10.spf1-test.mailzone.com
 header-comment  /.*/ spfquery: encountered temporary error during SPF processing of local policy
 received-spf    /.*/ Received-SPF: error (spfquery: encountered temporary error during SPF processing of local policy) client-ip=192.0.2.200; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=10.spf1-test.mailzone.com -helo=10.spf1-test.mailzone.com -local="~all"
 result          /.*/ softfail
-smtp-comment    /^(perl|libspf)$/ explanation
-smtp-comment    /.*/ explanation : Reason: local policy
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
+smtp-comment    /.*/ /explanation .*/ : Reason: local policy
 header-comment  /.*/ spfquery: transitioning local policy does not designate 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: softfail (spfquery: transitioning local policy does not designate 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@10.spf1-test.mailzone.com; helo=10.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.10 -sender=111.spf1-test.mailzone.com -helo=111.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation text: 111.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.10
+smtp-comment    perl /explanation .*/ text: 111.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.10
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 111.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 111.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender) client-ip=192.0.2.10; envelope-from=postmaster@111.spf1-test.mailzone.com; helo=111.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=111.spf1-test.mailzone.com -helo=111.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ /^explanation text/
+smtp-comment    /.*/ /^/explanation .*/ text/
 header-comment  /.*/ spfquery: domain of 111.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 111.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@111.spf1-test.mailzone.com; helo=111.spf1-test.mailzone.com;
 
 spfquery -ip=1.2.3.4 -sender=111.spf1-test.mailzone.com -helo=111.spf1-test.mailzone.com
 result          /.*/ /^unknown/
-smtp-comment    perl explanation text: unrecognized mechanism gpg
+smtp-comment    perl /explanation .*/ text: unrecognized mechanism gpg
 smtp-comment    /.*/ 
 header-comment  perl spfquery: encountered unrecognized mechanism during SPF processing of domain of 111.spf1-test.mailzone.com
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 111.spf1-test.mailzone.com: Unknown mechanism found
@@ -1275,87 +1275,199 @@ received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during
 
 spfquery -ip=192.0.2.200 -sender=112.spf1-test.mailzone.com -helo=112.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 112.spf1-test.mailzone.com: Invalid character found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 112.spf1-test.mailzone.com: Invalid character found) client-ip=192.0.2.200; envelope-from=postmaster@112.spf1-test.mailzone.com; helo=112.spf1-test.mailzone.com; problem=Invalid character found near "mp" in "mp3";
 
 spfquery -ip=1.2.3.4 -sender=112.spf1-test.mailzone.com -helo=112.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 112.spf1-test.mailzone.com: Invalid character found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 112.spf1-test.mailzone.com: Invalid character found) client-ip=1.2.3.4; envelope-from=postmaster@112.spf1-test.mailzone.com; helo=112.spf1-test.mailzone.com; problem=Invalid character found near "mp" in "mp3";
 
 spfquery -ip=192.0.2.200 -sender=113.spf1-test.mailzone.com -helo=113.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 113.spf1-test.mailzone.com: Invalid character found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 113.spf1-test.mailzone.com: Invalid character found) client-ip=192.0.2.200; envelope-from=postmaster@113.spf1-test.mailzone.com; helo=113.spf1-test.mailzone.com; problem=Invalid character found near "mp" in "mp3:";
 
 spfquery -ip=1.2.3.4 -sender=113.spf1-test.mailzone.com -helo=113.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 113.spf1-test.mailzone.com: Invalid character found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 113.spf1-test.mailzone.com: Invalid character found) client-ip=1.2.3.4; envelope-from=postmaster@113.spf1-test.mailzone.com; helo=113.spf1-test.mailzone.com; problem=Invalid character found near "mp" in "mp3:";
 
 spfquery -ip=192.0.2.10 -sender=114.spf1-test.mailzone.com -helo=114.spf1-test.mailzone.com
 result          /.*/ pass
-smtp-comment    perl explanation text: 114.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.10
+smtp-comment    perl /explanation .*/ text: 114.spf1-test.mailzone.com MX mx01.spf1-test.mailzone.com A 192.0.2.10
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: domain of 114.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender
 received-spf    /.*/ Received-SPF: pass (spfquery: domain of 114.spf1-test.mailzone.com designates 192.0.2.10 as permitted sender) client-ip=192.0.2.10; envelope-from=postmaster@114.spf1-test.mailzone.com; helo=114.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=114.spf1-test.mailzone.com -helo=114.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ /^explanation text/
+smtp-comment    /.*/ /^/explanation .*/ text/
 header-comment  /.*/ spfquery: domain of 114.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender
 received-spf    /.*/ Received-SPF: fail (spfquery: domain of 114.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@114.spf1-test.mailzone.com; helo=114.spf1-test.mailzone.com;
 
 spfquery -ip=1.2.3.4 -sender=114.spf1-test.mailzone.com -helo=114.spf1-test.mailzone.com
 result          /.*/ softfail
-smtp-comment    /.*/ explanation text
+smtp-comment    /.*/ /explanation .*/ text
 header-comment  /.*/ spfquery: transitioning domain of 114.spf1-test.mailzone.com does not designate 1.2.3.4 as permitted sender
 received-spf    /.*/ Received-SPF: softfail (spfquery: transitioning domain of 114.spf1-test.mailzone.com does not designate 1.2.3.4 as permitted sender) client-ip=1.2.3.4; envelope-from=postmaster@114.spf1-test.mailzone.com; helo=114.spf1-test.mailzone.com;
 
 spfquery -ip=192.0.2.200 -sender=115.spf1-test.mailzone.com -helo=115.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    perl explanation: 115.spf1-test.mailzone.com A 192.0.2.200
+smtp-comment    perl /explanation .*/: 115.spf1-test.mailzone.com A 192.0.2.200
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 115.spf1-test.mailzone.com: Invalid character found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 115.spf1-test.mailzone.com: Invalid character found) client-ip=192.0.2.200; envelope-from=postmaster@115.spf1-test.mailzone.com; helo=115.spf1-test.mailzone.com; problem=Invalid character found near "mp" in "mp3=yes";
 
 spfquery -ip=1.2.3.4 -sender=115.spf1-test.mailzone.com -helo=115.spf1-test.mailzone.com
 result          /.*/ unknown
-smtp-comment    /^(perl|libspf)$/ explanation
+smtp-comment    /^(perl|libspf)$/ /explanation .*/
 smtp-comment    /.*/ 
 header-comment  /.*/ spfquery: error in processing during lookup of domain of 115.spf1-test.mailzone.com: Invalid character found
 received-spf    /.*/ Received-SPF: unknown (spfquery: error in processing during lookup of domain of 115.spf1-test.mailzone.com: Invalid character found) client-ip=1.2.3.4; envelope-from=postmaster@115.spf1-test.mailzone.com; helo=115.spf1-test.mailzone.com; problem=Invalid character found near "mp" in "mp3=yes";
 
 spfquery -ip=192.0.2.200 -sender=116.spf1-test.mailzone.com -helo=116.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 116.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender
-received-spf    /.*/ Received-SPF: fail (spfquery: domain of 116.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@116.spf1-test.mailzone.com; helo=116.spf1-test.mailzone.com; problem=Mechanisms found after the "all:" mechanism will be ignored;
+received-spf    /.*/ Received-SPF: fail (spfquery: domain of 116.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@116.spf1-test.mailzone.com; helo=116.spf1-test.mailzone.com; problem=Warning: Mechanisms found after the "all:" mechanism will be ignored;
 
 spfquery -ip=1.2.3.4 -sender=116.spf1-test.mailzone.com -helo=116.spf1-test.mailzone.com
 result          /.*/ fail
-smtp-comment    /.*/ explanation
+smtp-comment    /.*/ /explanation .*/
 header-comment  /.*/ spfquery: domain of 116.spf1-test.mailzone.com does not designate 1.2.3.4 as permitted sender
-received-spf    /.*/ Received-SPF: fail (spfquery: domain of 116.spf1-test.mailzone.com does not designate 1.2.3.4 as permitted sender) client-ip=1.2.3.4; envelope-from=postmaster@116.spf1-test.mailzone.com; helo=116.spf1-test.mailzone.com; problem=Mechanisms found after the "all:" mechanism will be ignored;
+received-spf    /.*/ Received-SPF: fail (spfquery: domain of 116.spf1-test.mailzone.com does not designate 1.2.3.4 as permitted sender) client-ip=1.2.3.4; envelope-from=postmaster@116.spf1-test.mailzone.com; helo=116.spf1-test.mailzone.com; problem=Warning: Mechanisms found after the "all:" mechanism will be ignored;
 
 spfquery -ip=192.0.2.200 -sender=117.spf1-test.mailzone.com -helo=117.spf1-test.mailzone.com
-result          /.*/ none
-smtp-comment    /.*/ 
-header-comment  /.*/ spfquery: 192.0.2.200 is neither permitted nor denied by domain of 117.spf1-test.mailzone.com
-received-spf    /.*/ Received-SPF: none (spfquery: 192.0.2.200 is neither permitted nor denied by domain of 117.spf1-test.mailzone.com) client-ip=192.0.2.200; envelope-from=postmaster@117.spf1-test.mailzone.com; helo=117.spf1-test.mailzone.com;
+result          /.*/ StartError
+smtp-comment    /.*/ Context: Failed to query MAIL-FROM
+header-comment  /.*/ ErrorCode: (2) Could not find a valid SPF record
+received-spf    /.*/ EndError
 
-spfquery -ip=192.0.2.200 -sender=118.spf1-test.mailzone.com -helo=118.spf1-test.mailzone.com
-result          /.*/ fail
-smtp-comment    /^(perl|libspf)$/ explanation
-smtp-comment    /.*/ explanation : Required option is missing
-header-comment  /.*/ spfquery: domain of 118.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender
-received-spf    /.*/ Received-SPF: fail (spfquery: domain of 118.spf1-test.mailzone.com does not designate 192.0.2.200 as permitted sender) client-ip=192.0.2.200; envelope-from=postmaster@118.spf1-test.mailzone.com; helo=118.spf1-test.mailzone.com;
+# From bug #99
+spfquery -sender=sadsdf@standardandpoors.com -ip=198.45.26.139 -helo=corpukmr3-5.mcgraw-hill.com
+result          /.*/ pass
+smtp-comment    /.*/ 
+header-comment  /.*/ spfquery: domain of standardandpoors.com designates 198.45.26.139 as permitted sender
+received-spf    /.*/ Received-SPF: pass (spfquery: domain of standardandpoors.com designates 198.45.26.139 as permitted sender) client-ip=198.45.26.139; envelope-from=sadsdf@standardandpoors.com; helo=corpukmr3-5.mcgraw-hill.com;
+
+spfquery -sender=sadsdf@standardandpoors.com -ip=198.45.19.154 -helo=corp55wmr3.mcgraw-hill.com
+result          /.*/ pass
+smtp-comment    /.*/ 
+header-comment  /.*/ spfquery: domain of standardandpoors.com designates 198.45.19.154 as permitted sender
+received-spf    /.*/ Received-SPF: pass (spfquery: domain of standardandpoors.com designates 198.45.19.154 as permitted sender) client-ip=198.45.19.154; envelope-from=sadsdf@standardandpoors.com; helo=corp55wmr3.mcgraw-hill.com;
+
+# From bug #92 (helo guessed assuming they have a sane config)
+spfquery -ip=69.2.200.182 -sender=postmaster@test.DNSreport.com -helo=test.dnsstuff.com
+result		/.*/ pass
+smtp-comment	/.*/  
+header-comment	/.*/ spfquery: domain of test.DNSreport.com designates 69.2.200.182 as permitted sender
+received-spf	/.*/ Received-SPF: pass (spfquery: domain of test.DNSreport.com designates 69.2.200.182 as permitted sender) client-ip=69.2.200.182; envelope-from=postmaster@test.DNSreport.com; helo=test.dnsstuff.com;
+
+# From bug #103
+spfquery -ip=217.149.0.140 -sender=com@weis.es -helo=ns.weiserver.net
+result		/.*/ pass
+smtp-comment	/.*/  
+header-comment  /.*/ spfquery: domain of weis.es designates 217.149.0.140 as permitted sender
+received-spf	/.*/ Received-SPF: pass (spfquery: domain of weis.es designates 217.149.0.140 as permitted sender) client-ip=217.149.0.140; envelope-from=com@weis.es; helo=ns.weiserver.net;
+
+# From bug #89
+spfquery -ip=216.39.67.118 -sender=xxxxx@processrequest.com -helo=processrequest.com
+result		/.*/ neutral
+smtp-comment	/.*/  
+header-comment	/.*/ spfquery: 216.39.67.118 is neither permitted nor denied by domain of processrequest.com
+received-spf	/.*/ Received-SPF: neutral (spfquery: 216.39.67.118 is neither permitted nor denied by domain of processrequest.com) client-ip=216.39.67.118; envelope-from=xxxxx@processrequest.com; helo=processrequest.com;
+
+spfquery -ip=216.39.67.118 -sender=xxxxx@ProcessRequest.com -helo=ProcessRequest.com
+result		/.*/ neutral
+smtp-comment	/.*/  
+header-comment	/.*/ spfquery: 216.39.67.118 is neither permitted nor denied by domain of ProcessRequest.com
+received-spf	/.*/ Received-SPF: neutral (spfquery: 216.39.67.118 is neither permitted nor denied by domain of ProcessRequest.com) client-ip=216.39.67.118; envelope-from=xxxxx@ProcessRequest.com; helo=ProcessRequest.com;
+
+# From bug #87
+spfquery -ip=216.39.67.119 -sender=reedcommun-e2-8255345@ProcessRequest.com -helo=dal1bs060.processrequest.com
+result		/.*/ neutral
+smtp-comment	/.*/ 
+header-comment  /.*/ spfquery: 216.39.67.119 is neither permitted nor denied by domain of ProcessRequest.com
+received-spf	/.*/ Received-SPF: neutral (spfquery: 216.39.67.119 is neither permitted nor denied by domain of ProcessRequest.com) client-ip=216.39.67.119; envelope-from=reedcommun-e2-8255345@ProcessRequest.com; helo=dal1bs060.processrequest.com;
+
+# Bug 94
+# spfquery -ip=65.23.158.22 -sender=test@bytesite.com.au -helo=bytesite.com.au
+
+# From bug #57
+spfquery -ip=206.222.212.234 -sender=foo@spf2.midwestcs.com -helo=asdf
+result		/.*/ pass
+smtp-comment	/.*/ 
+header-comment	/.*/ spfquery: domain of spf2.midwestcs.com designates 206.222.212.234 as permitted sender
+received-spf	/.*/ Received-SPF: pass (spfquery: domain of spf2.midwestcs.com designates 206.222.212.234 as permitted sender) client-ip=206.222.212.234; envelope-from=foo@spf2.midwestcs.com; helo=asdf;
+
+# From bug #47
+# ../src/spfquery/spfquery_static -ip 82.88.202.36 -sender postmaster@mail.reggiochildren.it -helo mail.reggiochildren.it -guess "+a/24 +mx/24 +ptr ~all"
+
+# From bug #109
+# Guess helo based on bug #99
+spfquery -sender=xxxx@standardandpoors.com -ip=198.45.19.154 -helo=standardandpoors.com
+result          /.*/ pass
+smtp-comment    /.*/ 
+header-comment  /.*/ spfquery: domain of standardandpoors.com designates 198.45.19.154 as permitted sender
+received-spf    /.*/ Received-SPF: pass (spfquery: domain of standardandpoors.com designates 198.45.19.154 as permitted sender) client-ip=198.45.19.154; envelope-from=xxxx@standardandpoors.com; helo=standardandpoors.com;
+
+# From bug #113 (one of the PTR bugs)
+spfquery -ip=198.45.18.176 -sender=xxx@wrtv.com -helo=corp148mr3-11.mcgraw-hill.com
+result          /.*/ pass
+smtp-comment    /.*/ 
+header-comment  /.*/ spfquery: domain of wrtv.com designates 198.45.18.176 as permitted sender
+received-spf    /.*/ Received-SPF: pass (spfquery: domain of wrtv.com designates 198.45.18.176 as permitted sender) client-ip=198.45.18.176; envelope-from=xxx@wrtv.com; helo=corp148mr3-11.mcgraw-hill.com;
+
+# From bug #102 (another PTR one) (-helo guessed from record)
+# At time of testing host -t TXT businessweek.com gives
+# businessweek.com text "v=spf1 mx ptr:mcgraw-hill.com include:mcgraw-hill.com -all"
+# While the bug report says
+# businessweek.com: "v=spf1 mx include:mcgraw-hill.com -all"
+spfquery -sender=Anne_Tergesen@businessweek.com -ip=198.45.18.176 -helo=corp148mr3-11.mcgraw-hill.com 
+result          /.*/ pass
+smtp-comment    /.*/  
+header-comment  /.*/ spfquery: domain of businessweek.com designates 198.45.18.176 as permitted sender
+received-spf    /.*/ Received-SPF: pass (spfquery: domain of businessweek.com designates 198.45.18.176 as permitted sender) client-ip=198.45.18.176; envelope-from=Anne_Tergesen@businessweek.com; helo=corp148mr3-11.mcgraw-hill.com;
+
+# Trying to get include and redirect working as expected
+spfquery -ip=123.45.67.89 -helo=example.org -sender=yourmum@t0001.spftest.org
+result		/.*/ fail
+smtp-comment    /.*/ explanation : Reason: mechanism
+header-comment  /.*/ spfquery: domain of t0001.spftest.org does not designate 123.45.67.89 as permitted sender
+received-spf    /.*/ Received-SPF: fail (spfquery: domain of t0001.spftest.org does not designate 123.45.67.89 as permitted sender) client-ip=123.45.67.89; envelope-from=yourmum@t0001.spftest.org; helo=example.org;
+
+spfquery -ip=123.45.67.89 -helo=example.org -sender=yourmum@t0002.spftest.org
+result		/.*/ pass
+smtp-comment    /.*/ 
+header-comment  /.*/ spfquery: domain of t0002.spftest.org designates 123.45.67.89 as permitted sender
+received-spf    /.*/ Received-SPF: pass (spfquery: domain of t0002.spftest.org designates 123.45.67.89 as permitted sender) client-ip=123.45.67.89; envelope-from=yourmum@t0002.spftest.org; helo=example.org;
+
+spfquery -ip=123.45.67.89 -helo=example.org -sender=yourmum@t0003.spftest.org
+result		/.*/ pass
+smtp-comment    /.*/   
+header-comment  /.*/ spfquery: domain of t0003.spftest.org designates 123.45.67.89 as permitted sender
+received-spf    /.*/ Received-SPF: pass (spfquery: domain of t0003.spftest.org designates 123.45.67.89 as permitted sender) client-ip=123.45.67.89; envelope-from=yourmum@t0003.spftest.org; helo=example.org;
+
+spfquery -ip=123.45.67.89 -helo=example.org -sender=yourmum@t0004.spftest.org
+result		/.*/ pass
+smtp-comment    /.*/   
+header-comment  /.*/ spfquery: domain of t0004.spftest.org designates 123.45.67.89 as permitted sender
+received-spf    /.*/ Received-SPF: pass (spfquery: domain of t0004.spftest.org designates 123.45.67.89 as permitted sender) client-ip=123.45.67.89; envelope-from=yourmum@t0004.spftest.org; helo=example.org;
+
+# From bug #98
+# DNS is intermittant so getting a consistant answer is trick
+spfquery -ip=68.239.230.221 -sender=crwtceok@xiedayong.com -helo=pool-68-239-230-221.nwrk.east.verizon.net
+result		/.*/ pass
+smtp-comment	/.*/  
+header-comment  /.*/  
+received-spf    /.*/  
 

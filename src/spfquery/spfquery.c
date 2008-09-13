@@ -1,6 +1,6 @@
 /*
  *  spfquery - Sender Policy Framwork command line utility
- *	
+ *
  *  Author: Wayne Schlitt <wayne@midwestcs.com>
  *
  *  File:   spfquery.c
@@ -9,29 +9,29 @@
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of either:
- * 
+ *
  *   a) The GNU Lesser General Public License as published by the Free
- *      Software Foundation; either version 2.1, or (at your option) any
- *      later version,
- * 
+ *	  Software Foundation; either version 2.1, or (at your option) any
+ *	  later version,
+ *
  *   OR
- * 
+ *
  *   b) The two-clause BSD license.
  *
  *
  * The two-clause BSD license:
- * 
- * 
+ *
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ *	notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 
+ *	notice, this list of conditions and the following disclaimer in the
+ *	documentation and/or other materials provided with the distribution.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -44,8 +44,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define SPF_TEST_VERSION  "2.1"
+#define SPF_TEST_VERSION  "3.0"
 
+#include "libreplace/win32_config.h"
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -53,11 +54,11 @@
 
 #ifdef STDC_HEADERS
 # include <stdio.h>
-# include <stdlib.h>       /* malloc / free */
+# include <stdlib.h>	   /* malloc / free */
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>    /* types (u_char .. etc..) */
+#include <sys/types.h>	/* types (u_char .. etc..) */
 #endif
 
 #ifdef HAVE_INTTYPES_H
@@ -65,10 +66,10 @@
 #endif
 
 #ifdef HAVE_STRING_H
-# include <string.h>       /* strstr / strdup */
+# include <string.h>	   /* strstr / strdup */
 #else
 # ifdef HAVE_STRINGS_H
-#  include <strings.h>       /* strstr / strdup */
+#  include <strings.h>	   /* strstr / strdup */
 # endif
 #endif
 
@@ -79,41 +80,118 @@
 # include <netinet/in.h>   /* inet_ functions / structs */
 #endif
 
-#if 0
 #ifdef HAVE_ARPA_NAMESER_H
 # include <arpa/nameser.h> /* DNS HEADER struct */
 #endif
-#endif
 
 #ifdef HAVE_ARPA_INET_H
-# include <arpa/inet.h>    /* in_addr struct */
+# include <arpa/inet.h>	/* in_addr struct */
 #endif
 
 #ifdef HAVE_GETOPT_LONG_ONLY
 #define _GNU_SOURCE
 #include <getopt.h>
 #else
-#include "replace/getopt.h"
+#include "libreplace/getopt.h"
 #endif
 
-
+#ifdef _WIN32
+#include "spf_win32.h"
+#endif
 
 #include "spf.h"
 #include "spf_dns.h"
 #include "spf_dns_null.h"
-#include "spf_dns_resolv.h"
 #include "spf_dns_test.h"
 #include "spf_dns_cache.h"
+#ifndef _WIN32
+#include "spf_dns_resolv.h"
+#else
+#include "spf_dns_windns.h"
+#endif
 
 
 
 #define TRUE 1
 #define FALSE 0
 
+#define FREE(x, f) do { if ((x)) (f)((x)); (x) = NULL; } while(0)
+#define FREE_REQUEST(x) FREE((x), SPF_request_free)
+#define FREE_RESPONSE(x) FREE((x), SPF_response_free)
 
-static void usage()
+#define CONTINUE_ERROR do { res = 255; continue; } while(0)
+#define WARN_ERROR do { res = 255; } while(0)
+#define FAIL_ERROR do { res = 255; goto error; } while(0)
+
+#define RESIZE_RESULT(n) do { \
+	if (result == NULL) { \
+		result_len = 256 + n; \
+		result = malloc(result_len); \
+		result[0] = '\0'; \
+	} \
+	else if (strlen(result) + n >= result_len) { \
+		result_len = result_len + (result_len >> 1) + 8 + n; \
+		result = realloc(result, result_len); \
+	} \
+} while(0)
+#define APPEND_RESULT(n) do { \
+	partial_result = SPF_strresult(n); \
+	RESIZE_RESULT(strlen(partial_result)); \
+	strcat(result, partial_result); \
+} while(0)
+
+#define X_OR_EMPTY(x) ((x) ? (x) : "")
+
+static struct option long_options[] = {
+	{"file", 1, 0, 'f'},
+
+	{"ip", 1, 0, 'i'},
+	{"sender", 1, 0, 's'},
+	{"helo", 1, 0, 'h'},
+	{"rcpt-to", 1, 0, 'r'},
+
+	{"debug", 2, 0, 'd'},
+	{"local", 1, 0, 'l'},
+	{"trusted", 1, 0, 't'},
+	{"guess", 1, 0, 'g'},
+	{"default-explanation", 1, 0, 'e'},
+	{"max-lookup", 1, 0, 'm'},
+	{"sanitize", 1, 0, 'c'},
+	{"name", 1, 0, 'n'},
+	{"override", 1, 0, 'a'},
+	{"fallback", 1, 0, 'z'},
+
+	{"keep-comments", 0, 0, 'k'},
+	{"version", 0, 0, 'v'},
+	{"help", 0, 0, '?'},
+
+	{0, 0, 0, 0}
+};
+
+static void
+unimplemented(const char flag)
 {
-    fprintf(
+	struct option	*opt;
+	int				 i;
+
+	i = 0;
+	opt = &long_options[i];
+	while (opt->name) {
+		if (flag == opt->val) {
+			fprintf(stderr, "Unimplemented option: -%s or -%c\n",
+							opt->name, flag);
+			return;
+		}
+	}
+
+	fprintf(stderr, "Unimplemented option: -%c\n", flag);
+}
+
+
+static void
+usage()
+{
+	fprintf(
 	stderr,
 	"Usage:\n"
 	"\n"
@@ -123,53 +201,52 @@ static void usage()
 	);
 }
 
-static void help()
+static void
+help()
 {
-    fprintf(
+	fprintf(
 	stderr,
 	"Usage:\n"
 	"\n"
 	"spfquery [control options | data options] ...\n"
 	"\n"
 	"Valid data options are:\n"
-	"    -file <filename>           read spf data from a file.  Use '-'\n"
-	"                               to read from stdin.\n"
+	"	-file <filename>		   read spf data from a file.  Use '-'\n"
+	"							   to read from stdin.\n"
 	"\n"
-	"    -ip <IP address>           The IP address that is sending email\n"
-	"    -sender <email address>    The email address used as the\n"
-	"                               envelope-from.  If no username (local\n"
-	"                               part) is given, 'postmaster' will be\n"
-	"                               assumed.\n"
-	"    -helo <domain name>        The domain name given on the SMTP HELO\n"
-	"                               command.  This is only needed if the\n"
-	"                               -sender option is not given.\n"
-	"    -rcpt-to <email addresses> A comma separated lists of email addresses\n"
-	"                               that will have email from their secondary\n"
-	"                               MXes automatically allowed.\n"
+	"	-ip <IP address>		   The IP address that is sending email\n"
+	"	-sender <email address>	The email address used as the\n"
+	"							   envelope-from.  If no username (local\n"
+	"							   part) is given, 'postmaster' will be\n"
+	"							   assumed.\n"
+	"	-helo <domain name>		The domain name given on the SMTP HELO\n"
+	"							   command.  This is only needed if the\n"
+	"							   -sender option is not given.\n"
+	"	-rcpt-to <email addresses> A comma separated lists of email addresses\n"
+	"							   that will have email from their secondary\n"
+	"							   MXes automatically allowed.\n"
 	"\n"
 	"The data options are required.  The -file option conflicts with all\n"
 	"the other data options.  The -helo and -rcpt-to are optional.\n"
-	"\n" 
+	"\n"
 	"\n"
 	"Valid control options are:\n"
-	"    -debug [debug level]       debug level.\n"
-	"    -local <SPF mechanisms>    Local policy for whitelisting.\n"
-	"    -trusted <0|1>             Should trusted-forwarder.org be checked?\n"
-	"    -guess <SPF mechanisms>    Default checks if no SPF record is found.\n"
-	"    -default-explanation <str> Default explanation string to use.\n"
-	"    -max-lookup <number>       Maximum number of DNS lookups to allow\n"
-	"    -sanitize <0|1>            Clean up invalid characters in output?\n"
-	"    -name <domain name>        The name of the system doing the SPF\n"
-	"                               checking\n"
-	"    -override <...>            Override SPF records for domains\n"
-	"    -fallback <...>            Fallback SPF records for domains\n"
-	"    -dns <dns layers>          Comma seperated list of DNS layers\n"
-	"                               to use.\n"
+	"	-debug [debug level]	   debug level.\n"
+	"	-local <SPF mechanisms>	Local policy for whitelisting.\n"
+	"	-trusted <0|1>			 Should trusted-forwarder.org be checked?\n"
+	"	-guess <SPF mechanisms>	Default checks if no SPF record is found.\n"
+	"	-default-explanation <str> Default explanation string to use.\n"
+	"	-max-lookup <number>	   Maximum number of DNS lookups to allow\n"
+	"	-sanitize <0|1>			Clean up invalid characters in output?\n"
+	"	-name <domain name>		The name of the system doing the SPF\n"
+	"							   checking\n"
+	"	-override <...>			Override SPF records for domains\n"
+	"	-fallback <...>			Fallback SPF records for domains\n"
 	"\n"
-	"    -keep-comments             Print comments found when reading\n"
-	"                               from a file.\n"
-	"    -version                   Print version of spfquery.\n"
-	"    -help                      Print out these options.\n"
+	"	-keep-comments			 Print comments found when reading\n"
+	"							   from a file.\n"
+	"	-version				   Print version of spfquery.\n"
+	"	-help					  Print out these options.\n"
 	"\n"
 	"Examples:\n"
 	"\n"
@@ -180,604 +257,456 @@ static void help()
 }
 
 
+static void
+response_print_errors(const char *context,
+				SPF_response_t *spf_response, SPF_errcode_t err)
+{
+	SPF_error_t		*spf_error;;
+	int				 i;
+
+	printf("StartError\n");
+
+	if (context != NULL)
+		printf("Context: %s\n", context);
+	if (err != SPF_E_SUCCESS)
+		printf("ErrorCode: (%d) %s\n", err, SPF_strerror(err));
+
+	if (spf_response != NULL) {
+		for (i = 0; i < SPF_response_messages(spf_response); i++) {
+			spf_error = SPF_response_message(spf_response, i);
+			printf( "%s: %s%s\n",
+					SPF_error_errorp(spf_error) ? "Error" : "Warning",
+					// SPF_error_code(spf_error),
+					// SPF_strerror(SPF_error_code(spf_error)),
+					((SPF_error_errorp(spf_error) && (!err))
+							? "[UNRETURNED] "
+							: ""),
+					SPF_error_message(spf_error) );
+		}
+	}
+	else {
+		printf("libspf2 gave a NULL spf_response\n");
+	}
+	printf("EndError\n");
+}
+
+static void
+response_print(const char *context, SPF_response_t *spf_response)
+{
+	printf("--vv--\n");
+	printf("Context: %s\n", context);
+	if (spf_response == NULL) {
+		printf("NULL RESPONSE!\n");
+	}
+	else {
+		printf("Response result: %s\n",
+					SPF_strresult(SPF_response_result(spf_response)));
+		printf("Response reason: %s\n",
+					SPF_strreason(SPF_response_reason(spf_response)));
+		printf("Response err: %s\n",
+					SPF_strerror(SPF_response_errcode(spf_response)));
+		response_print_errors(NULL, spf_response,
+						SPF_response_errcode(spf_response));
+	}
+	printf("--^^--\n");
+}
+
+typedef
+struct SPF_client_options_struct {
+	// void		*hook;
+	char		*localpolicy;
+	const char	*explanation;
+	const char	*fallback;
+	const char	*rec_dom;
+	int 		 use_trusted;
+	int			 max_lookup;
+	int			 sanitize;
+	int			 debug;
+} SPF_client_options_t;
+
+typedef
+struct SPF_client_request_struct {
+	char		*ip;
+	char		*sender;
+	char		*helo;
+	char		*rcpt_to;
+} SPF_client_request_t;
+
 int main( int argc, char *argv[] )
 {
-    int c;
-    int	res = 0;
+	SPF_client_options_t	*opts;
+	SPF_client_request_t	*req;
 
-    char *opt_file = NULL;
+	SPF_server_t	*spf_server = NULL;
+	SPF_request_t	*spf_request = NULL;
+	SPF_response_t	*spf_response = NULL;
+	SPF_response_t	*spf_response_2mx = NULL;
+	SPF_errcode_t	 err;
 
-    char *opt_ip = NULL;
-    char *opt_sender = NULL;
-    char *opt_helo = NULL;
-    char *opt_rcpt_to = NULL;
+	char			*opt_file = NULL;
+	int  			 opt_keep_comments = 0;
 
-    char *opt_local = NULL;
-    int   opt_trusted = 0;
-    const char *opt_guess = NULL;
-    const char *opt_exp = NULL;
-    const char *opt_max_lookup = NULL;
-    const char *opt_sanitize = NULL;
-    const char *opt_name = "spfquery";
-    int   opt_debug = 0;
-    const char *opt_dns = "resolv,cache";
-    char *opt_fallback = NULL;
-    char *opt_override = NULL;
+	FILE			*fin;
+	char			 in_line[4096];
+	char			*p, *p_end;
+	int 			 done_once;
+	int				 major, minor, patch;
 
-    int   opt_keep_comments = 0;
-    
+	int				 res = 0;
+	int				 c;
 
-    char in_line[4096];
-    const char *p, *p_end;
-    char *p2;
-    const char *prev_p, *prev_p_end;
-    size_t len;
-    int	 i;
-    int  done_once;
-    int	 major, minor, patch;
+	const char		*partial_result;
+	char			*result = NULL;
+	int				 result_len = 0;
 
-    SPF_id_t		spfid = NULL;
-    SPF_config_t	spfcid = NULL;
-    SPF_dns_config_t	spfdcid = NULL;
-#define MAX_DNS_LAYERS 10
-    SPF_dns_config_t	spfdcid_opt[MAX_DNS_LAYERS] = { NULL };
-    char		*spfdcid_name[MAX_DNS_LAYERS] = { NULL };
-    SPF_dns_config_t	prev_dns = NULL;
-    SPF_output_t	spf_output;
-    SPF_c_results_t	local_policy;
-    SPF_c_results_t	exp;
-    SPF_c_results_t	best_guess;
-    SPF_err_t		err;
-    
-    FILE		*fin;
+	opts = (SPF_client_options_t *)malloc(sizeof(SPF_client_options_t));
+	memset(opts, 0, sizeof(SPF_client_options_t));
 
-    char		*result;
-    
-
-
-    SPF_init_c_results( &local_policy );
-    SPF_init_c_results( &exp );
-    SPF_init_c_results( &best_guess );
-
-
-    /*
-     * check the arguments
-     */
-
-    while (1)
-    {
-	int option_index = 0;
-
-	static struct option long_options[] = {
-	    {"file", 1, 0, 'f'},
-
-	    {"ip", 1, 0, 'i'},
-	    {"sender", 1, 0, 's'},
-	    {"helo", 1, 0, 'h'},
-	    {"rcpt-to", 1, 0, 'r'},
-
-	    {"debug", 2, 0, 'd'},
-	    {"local", 1, 0, 'l'},
-	    {"trusted", 1, 0, 't'},
-	    {"guess", 1, 0, 'g'},
-	    {"default-explanation", 1, 0, 'e'},
-	    {"max-lookup", 1, 0, 'm'},
-	    {"sanitize", 1, 0, 'c'},
-	    {"name", 1, 0, 'n'},
-	    {"override", 1, 0, 'a'},
-	    {"fallback", 1, 0, 'z'},
-	    {"dns", 1, 0, 'D'},
-
-	    {"keep-comments", 0, 0, 'k'},
-	    {"version", 0, 0, 'v'},
-	    {"help", 0, 0, '?'},
-
-	    {0, 0, 0, 0}
-	};
-
-	c = getopt_long_only (argc, argv, "f:i:s:h:r:lt::gemcnd::D:kz:a:v",
-			      long_options, &option_index);
-
-	if (c == -1)
-	    break;
-
-	switch (c)
-	{
-	case 'f':
-	    opt_file = optarg;
-	    break;
-
-
-	case 'i':
-	    opt_ip = optarg;
-	    break;
-
-	case 's':
-	    opt_sender = optarg;
-	    break;
-
-	case 'h':
-	    opt_helo = optarg;
-	    break;
-
-	case 'r':
-	    opt_rcpt_to = optarg;
-	    break;
-
-
-	case 'l':
-	    opt_local = optarg;
-	    break;
-
-	case 't':
-	    if (optarg == NULL)
-		opt_trusted = 1;
-	    else
-		opt_trusted = atoi( optarg );
-	    break;
-
-	case 'g':
-	    opt_guess = optarg;
-	    break;
-
-	case 'e':
-	    opt_exp = optarg;
-	    break;
-
-	case 'm':
-	    opt_max_lookup = optarg;
-	    break;
-
-	case 'c':			/* "clean"			*/
-	    opt_sanitize = optarg;
-	    break;
-
-	case 'n':			/* name of host doing SPF checking */
-	    opt_name = optarg;
-	    break;
-
-	case 'a':
-	    opt_override = optarg;
-	    fprintf( stderr, "Unimplemented option: -override\n" );
-	    break;
-
-	case 'z':
-	    opt_fallback = optarg;
-	    fprintf( stderr, "Unimplemented option: -fallback\n" );
-	    break;
-
-	case 'D':			/* DNS layers to use              */
-	    opt_dns = optarg;
-	    break;
-
-
-	case 'v':
-	    fprintf( stderr, "spfquery version information:\n" );
-	    fprintf( stderr, "SPF test system version: %s\n",
-		     SPF_TEST_VERSION );
-	    fprintf( stderr, "Compiled with SPF library version: %d.%d.%d\n",
-		     SPF_LIB_VERSION_MAJOR, SPF_LIB_VERSION_MINOR,
-		     SPF_LIB_VERSION_PATCH );
-	    SPF_get_lib_version( &major, &minor, &patch );
-	    fprintf( stderr, "Running with SPF library version: %d.%d.%d\n",
-		     major, minor, patch );
-	    fprintf( stderr, "\n" );
-	    usage();
-	    res = 255;
-	    goto error;
-	    break;
-	    
-	case 0:
-	case '?':
-	    help();
-	    res = 255;
-	    goto error;
-	    break;
-
-	case 'k':
-	    opt_keep_comments = 1;
-	    break;
-	    
-	case 'd':
-	    if (optarg == NULL)
-		opt_debug = 1;
-	    else
-		opt_debug = atoi( optarg );
-	    break;
-
-	default:
-	    fprintf( stderr, "Error: getopt returned character code 0%o ??\n", c);
-	}
-    }
-
-    if (optind != argc)
-    {
-	help();
-	res = 255;
-	goto error;
-    }
-
-    /*
-     * set up the SPF configuration
-     */
-
-    spfcid = SPF_create_config();
-    if ( spfcid == NULL )
-    {
-	fprintf( stderr, "SPF_create_config failed.\n" );
-	res = 255;
-	goto error;
-    }
-
-    SPF_set_debug( spfcid, 1 );		/* flush err msgs from init	*/
-    SPF_set_debug( spfcid, opt_debug );
-    if ( opt_name )
-	SPF_set_rec_dom( spfcid, opt_name );
-    if ( opt_sanitize )
-	SPF_set_sanitize( spfcid, atoi( opt_sanitize ) );
-    if ( opt_max_lookup )
-	SPF_set_max_dns_mech( spfcid, atoi( opt_max_lookup ) );
-    
-    err = SPF_compile_local_policy( spfcid, opt_local, opt_trusted,
-				    &local_policy );
-    if ( err )
-    {
-	fprintf( stderr, "Error compiling local policy:\n%s\n",
-		 local_policy.err_msg );
-#if 0
-	res = 255;
-	goto error;
-#endif
-    }
-    SPF_set_local_policy( spfcid, local_policy );
-
+	req = (SPF_client_request_t *)malloc(sizeof(SPF_client_request_t));
+	memset(req, 0, sizeof(SPF_client_request_t));
 	
-    if ( opt_exp )
-    {
-	err = SPF_compile_exp( spfcid, opt_exp, &exp );
-	if ( err )
-	{
-	    fprintf( stderr, "Error compiling default explanation:\n%s\n",
-		     exp.err_msg );
-#if 0
-	    res = 255;
-	    goto error;
+	opts->rec_dom = "spfquery";
+
+#ifdef _WIN32
+	if (SPF_win32_startup() == 0) {
+		fprintf( stderr, "Could not startup WinSock, wrong version." );
+		FAIL_ERROR;
+	}
 #endif
+
+	/*
+	 * check the arguments
+	 */
+
+	for (;;) {
+		int option_index;	/* Largely unused */
+
+		c = getopt_long_only (argc, argv, "f:i:s:h:r:lt::gemcnd::kz:a:v",
+				  long_options, &option_index);
+
+		if (c == -1)
+			break;
+
+		switch (c) {
+			case 'f':
+				opt_file = optarg;
+				break;
+
+
+			case 'i':
+				req->ip = optarg;
+				break;
+
+			case 's':
+				req->sender = optarg;
+				break;
+
+			case 'h':
+				req->helo = optarg;
+				break;
+
+			case 'r':
+				req->rcpt_to = optarg;
+				break;
+
+
+			case 'l':
+				opts->localpolicy = optarg;
+				break;
+
+			case 't':
+				if (optarg == NULL)
+					opts->use_trusted = 1;
+				else
+					opts->use_trusted = atoi(optarg);
+				break;
+
+			case 'g':
+				opts->fallback = optarg;
+				break;
+
+			case 'e':
+				opts->explanation = optarg;
+				break;
+
+			case 'm':
+				opts->max_lookup = atoi(optarg);
+				break;
+
+			case 'c':		/* "clean"		*/
+				opts->sanitize = atoi(optarg);
+				break;
+
+			case 'n':		/* name of host doing SPF checking */
+				opts->rec_dom = optarg;
+				break;
+
+			case 'a':
+				unimplemented('a');
+				break;
+
+			case 'z':
+				unimplemented('z');
+				break;
+
+
+			case 'v':
+				fprintf( stderr, "spfquery version information:\n" );
+				fprintf( stderr, "SPF test system version: %s\n",
+				 SPF_TEST_VERSION );
+				fprintf( stderr, "Compiled with SPF library version: %d.%d.%d\n",
+				 SPF_LIB_VERSION_MAJOR, SPF_LIB_VERSION_MINOR,
+				 SPF_LIB_VERSION_PATCH );
+				SPF_get_lib_version( &major, &minor, &patch );
+				fprintf( stderr, "Running with SPF library version: %d.%d.%d\n",
+				 major, minor, patch );
+				fprintf( stderr, "\n" );
+				usage();
+				FAIL_ERROR;
+				break;
+
+			case 0:
+			case '?':
+				help();
+				FAIL_ERROR;
+				break;
+
+			case 'k':
+				opt_keep_comments = 1;
+				break;
+
+			case 'd':
+				if (optarg == NULL)
+					opts->debug = 1;
+				else
+					opts->debug = atoi( optarg );
+				break;
+
+			default:
+				fprintf( stderr, "Error: getopt returned character code 0%o ??\n", c);
+				FAIL_ERROR;
+		}
 	}
-	SPF_set_exp( spfcid, exp );
-    }
 
-    if ( opt_guess )
-    {
-	err = SPF_compile_local_policy( spfcid, opt_guess,
-					opt_trusted, &best_guess );
-	if ( err )
-	{
-	    fprintf( stderr, "Error compiling best guess mechanisms:\n%s",
-		     best_guess.err_msg );
-#if 0
-	    res = 255;
-	    goto error;
-#endif
-	}
-    }
-
-
-    /*
-     * set up dns layers to use
-     */
-    p = opt_dns;
-    prev_dns = NULL;
-    prev_p = p;
-    prev_p_end = p;
-    memset( spfdcid_opt, 0, sizeof( spfdcid ) );
-    for( i = 0; i < MAX_DNS_LAYERS; i++ )
-    {
-	p_end = p + strcspn( p, "," );
-	if ( p_end - p == sizeof( "null" ) - 1
-	     && strncmp( "null", p, p_end - p ) == 0 )
-	{
-	    len = prev_p_end - prev_p + sizeof( "pre-" );
-	    if ( len > sizeof( "pre-" ) )
-	    {
-		spfdcid_name[i] = malloc( len + 1 );
-		if ( spfdcid_name[i] )
-		    snprintf( spfdcid_name[i], len, "pre-%.*s", len, prev_p );
-	    }
-	    else
-		spfdcid_name[i] = strdup( "null" );
-
-	    spfdcid_opt[i] = SPF_dns_create_config_null(prev_dns, opt_debug,
-							spfdcid_name[i] );
-	}
-	else if ( p_end - p == sizeof( "resolv" ) - 1
-		  && strncmp( "resolv", p, p_end - p ) == 0 )
-	{
-	    spfdcid_opt[i] = SPF_dns_create_config_resolv( prev_dns,
-							   opt_debug );
-	}
-	else if ( p_end - p == sizeof( "test" ) - 1
-		  && strncmp( "test", p, p_end - p ) == 0 )
-	{
-	    spfdcid_opt[i] = SPF_dns_create_config_test( prev_dns );
-	}
-	else if ( p_end - p == sizeof( "cache" ) - 1
-		  && strncmp( "cache", p, p_end - p ) == 0 )
-	{
-	    spfdcid_opt[i] = SPF_dns_create_config_cache( prev_dns, 8,
-							  opt_debug );
-	    SPF_dns_set_conserve_cache( spfdcid_opt[i], FALSE );
-	}
-
-	if ( spfdcid_opt[i] == NULL )
-	{
-	    fprintf( stderr, "Could not create DNS layer: %.*s\n",
-		     p_end - p, p );
-	    res = 255;
-	    goto error;
-	}
-
-	prev_dns = spfdcid_opt[i];
-	prev_p = p;
-	prev_p_end = p_end;
-	if ( *p_end == '\0' )
-	    break;
-	p = p_end + 1;
-    }
-    
-    if ( i < MAX_DNS_LAYERS-1 ) 
-    {
-	i++;
-	len = prev_p_end - prev_p + sizeof( "pre-" );
-	if ( len > 0 )
-	{
-	    spfdcid_name[i] = malloc( len + 1 );
-	    if ( spfdcid_name[i] )
-		snprintf( spfdcid_name[i], len, "pre-%.*s", len, prev_p );
-	}
-	    
-
-	spfdcid_opt[i] = SPF_dns_create_config_null(prev_dns, opt_debug,
-						    spfdcid_name[i] );
-    }
-
-    spfdcid = spfdcid_opt[i];
-	
-
-    /*
-     * process the SPF request
-     */
-
-    if (opt_ip == NULL || (opt_sender == NULL && opt_helo == NULL) )
-    {
-	if (opt_file == NULL ||
-	    opt_ip || opt_sender || opt_helo)
-	{
-	    usage();
-	    res = 255;
-	    goto error;
+	if (optind != argc) {
+		help();
+		FAIL_ERROR;
 	}
 
 	/*
-	 * the requests are on STDIN
+	 * set up the SPF configuration
 	 */
 
-	if (strcmp( opt_file, "-" ) == 0) 
-	    fin = stdin;
-	else
-	    fin = fopen( opt_file, "r" );
+	spf_server = SPF_server_new(SPF_DNS_CACHE, opts->debug);
 
-	if (!fin) 
-	{
-	    fprintf( stderr, "Could not open: %s\n", opt_file );
-	    res = 255;
-	    goto error;
-	}
-    } else {
-	if (opt_file)
-	{
-	    usage();
-	    res = 255;
-	    goto error;
-	}
+	if ( opts->rec_dom )
+		SPF_server_set_rec_dom( spf_server, opts->rec_dom );
+	if ( opts->sanitize )
+		SPF_server_set_sanitize( spf_server, opts->sanitize );
+	if ( opts->max_lookup )
+		SPF_server_set_max_dns_mech(spf_server, opts->max_lookup);
 
-
-	fin = NULL;
-    }
-    
-
-
-    done_once = FALSE;
-    
-    while ( TRUE )
-    {
-	if ( fin )
-	{
-	    if ( fgets( in_line, sizeof( in_line ), fin ) == NULL )
-		break;
-
-	    p2 = strchr( in_line, '\n' );
-
-	    if ( p2 )
-		*p2 = '\0';
-
-	    p2 = in_line;
-
-	    p2 += strspn( p2, " \t\n" );
-	    if ( *p2 == '\0' || *p2 == '#' )
-	    {
-		if ( opt_keep_comments )
-		    printf( "%s\n", in_line );
-		
-		continue;
-	    }
-
-	    opt_ip = p2;
-	    p2 += strcspn( p2, " \t\n" );
-	    *p2++ = '\0';
-
-	    p2 += strspn( p2, " \t\n" );
-	    opt_sender = p2;
-	    p2 += strcspn( p2, " \t\n" );
-	    *p2++ = '\0';
-
-	    p2 += strspn( p2, " \t\n" );
-	    opt_helo = p2;
-	    p2 += strcspn( p2, " \t\n" );
-	    *p2++ = '\0';
-
-	    p2 += strspn( p2, " \t\n" );
-	    opt_rcpt_to = p2;
-	    p2 += strcspn( p2, " \t\n" );
-	    *p2++ = '\0';
-	} else {
-	    if ( done_once )
-		break;
-	}
-	done_once = TRUE;
-	
-	    
-	if ( SPF_set_ip_str( spfcid, opt_ip ) )
-	{
-	    printf( "Invalid IP address.\n" );
-	    res = 255;
-	    continue;
-	}
-	
-	if ( SPF_set_helo_dom( spfcid, opt_helo ) )
-	{
-	    printf( "Invalid HELO domain.\n" );
-	    res = 255;
-	    continue;
-	}
-	
-	if ( SPF_set_env_from( spfcid, opt_sender ) )
-	{
-	    printf( "Invalid envelope from address.\n" );
-	    res = 255;
-	    continue;
-	}
-	
-
-	if ( opt_rcpt_to == NULL  || *opt_rcpt_to == '\0' )
-	{
-	    spf_output = SPF_result( spfcid, spfdcid );
-	    result = strdup( SPF_strresult( spf_output.result ) );
-	}
-	else
-	{
-	    const char	*per_result;
-	    char	*p, *next_p;
-	    size_t	len;
-
-	    result = NULL;
-	    
-	    /* SPF_result_2mxdoesn't support multiple rcpt-to's */
-	    for( p = opt_rcpt_to; (p = strchr( p, ';' )) != NULL; )
-		*p = ',';
-
-	    for( p = next_p = opt_rcpt_to; p != NULL; p = next_p )
-	    {
-		next_p = strchr( p, ',' );
-		if ( next_p != NULL )
-		    *next_p = '\0';
-	    
-		spf_output = SPF_result_2mx( spfcid, spfdcid, p );
-		
-		per_result = SPF_strresult( spf_output.result );
-
-		SPF_free_output( &spf_output );
-		
-		if ( result == NULL )
-		{
-		    result = strdup( per_result );
-
-		} else {
-
-		    len = strlen( result ) + sizeof( "," ) + strlen( per_result );
-		    result = realloc( result, len );
-
-		    strcat( result, "," );
-		    strcat( result, per_result );
+	if (opts->localpolicy) {
+		err = SPF_server_set_localpolicy( spf_server, opts->localpolicy, opts->use_trusted, &spf_response);
+		if ( err ) {
+			response_print_errors("Error setting local policy",
+							spf_response, err);
+			WARN_ERROR;
 		}
-	    }
-
-	    spf_output = SPF_result_2mx_msg( spfcid, spfdcid );
-
-	    per_result = SPF_strresult( spf_output.result );
-
-	    if ( result == NULL ) {
-		result = strdup( per_result );
-	    }
-	    else {
-		len = strlen( result ) + sizeof( "," ) + strlen( per_result );
-		result = realloc( result, len );
-
-		strcat( result, "," );
-		strcat( result, per_result );
-	    }
-	}
-	
-	if ( opt_debug > 0 )
-	{
-	    printf ( "err = %s (%d)\n",
-		     SPF_strerror( spf_output.err ), spf_output.err );
-	    printf ( "err_msg = %s\n", spf_output.err_msg ? spf_output.err_msg : "" );
+		FREE_RESPONSE(spf_response);
 	}
 
-	printf( "%s\n%s\n%s\n%s\n",
-		result,
-		spf_output.smtp_comment ? spf_output.smtp_comment : "",
-		spf_output.header_comment ? spf_output.header_comment : "",
-		spf_output.received_spf ? spf_output.received_spf : "" );
 
-	free( result );
-
-	if ( opt_guess )
-	{
-	    SPF_free_output( &spf_output );
-
-	    printf( "\nBest guess:\n" );
-	    
-	    spf_output = SPF_eval_id( spfcid, best_guess.spfid, spfdcid, TRUE, FALSE, NULL );
-	    SPF_result_comments( spfcid, spfdcid, best_guess, &spf_output );
-	    
-	    if ( opt_debug > 0 )
-	    {
-		printf ( "result = %s (%d)\n",
-			 SPF_strresult( spf_output.result ), spf_output.result );
-		printf ( "err = %s (%d)\n",
-			 SPF_strerror( spf_output.err ), spf_output.err );
-		printf ( "err_msg = %s\n", spf_output.err_msg ? spf_output.err_msg : "" );
-	    }
-
-	    printf( "%s\n%s\n%s\n%s\n",
-		    SPF_strresult( spf_output.result ),
-		    spf_output.smtp_comment ? spf_output.smtp_comment : "",
-		    spf_output.header_comment ? spf_output.header_comment : "",
-		    spf_output.received_spf ? spf_output.received_spf : "" );
+	if ( opts->explanation ) {
+		err = SPF_server_set_explanation( spf_server, opts->explanation, &spf_response );
+		if ( err ) {
+			response_print_errors("Error setting default explanation",
+							spf_response, err);
+			WARN_ERROR;
+		}
+		FREE_RESPONSE(spf_response);
 	}
-	
-	res = spf_output.result;
 
-	SPF_free_output( &spf_output );
+	/*
+	 * process the SPF request
+	 */
 
-    }
+	if (opt_file) {
+		/*
+		 * the requests are on STDIN
+		 */
+		if (strcmp(opt_file, "-" ) == 0)
+			fin = stdin;
+		else
+			fin = fopen( opt_file, "r" );
+
+		if (!fin) {
+			fprintf( stderr, "Could not open: %s\n", opt_file );
+			FAIL_ERROR;
+		}
+	}
+	else {
+		fin = NULL;
+
+		if ((req->ip == NULL) ||
+			(req->sender == NULL && req->helo == NULL) ) {
+			usage();
+			FAIL_ERROR;
+		}
+	}
+
+	done_once = FALSE;
+
+	while ( TRUE ) {
+		if ( fin ) {
+			if ( fgets( in_line, sizeof( in_line ), fin ) == NULL )
+				break;
+
+			in_line[strcspn(in_line, "\r\n")] = '\0';
+			p = in_line;
+
+			p += strspn( p, " \t\n" );
+			{
+				if ( *p == '\0' || *p == '#' ) {
+					if ( opt_keep_comments )
+						printf( "%s\n", in_line );
+					continue;
+				}
+			}
+			req->ip = p;
+			p += strcspn( p, " \t\n" );
+			*p++ = '\0';
+
+			p += strspn( p, " \t\n" );
+			req->sender = p;
+			p += strcspn( p, " \t\n" );
+			*p++ = '\0';
+
+			p += strspn( p, " \t\n" );
+			req->helo = p;
+			p += strcspn( p, " \t\n" );
+			*p++ = '\0';
+
+			p += strspn( p, " \t\n" );
+			req->rcpt_to = p;
+			p += strcspn( p, " \t\n" );
+			*p++ = '\0';
+		}
+		else {
+			if ( done_once )
+				break;
+			done_once = TRUE;
+		}
+
+		/* We have to do this here else we leak on CONTINUE_ERROR */
+		FREE_REQUEST(spf_request);
+		FREE_RESPONSE(spf_response);
+
+		spf_request = SPF_request_new(spf_server);
+
+		if (SPF_request_set_ipv4_str(spf_request, req->ip)) {
+			printf( "Invalid IP address.\n" );
+			CONTINUE_ERROR;
+		}
+
+	if (req->helo) {
+		if (SPF_request_set_helo_dom( spf_request, req->helo ) ) {
+			printf( "Invalid HELO domain.\n" );
+			CONTINUE_ERROR;
+		}
+	}
+
+		if (SPF_request_set_env_from( spf_request, req->sender ) ) {
+			printf( "Invalid envelope from address.\n" );
+			CONTINUE_ERROR;
+		}
+
+		err = SPF_request_query_mailfrom(spf_request, &spf_response);
+		if (opts->debug)
+			response_print("Main query", spf_response);
+		if (err) {
+			response_print_errors("Failed to query MAIL-FROM",
+							spf_response, err);
+			CONTINUE_ERROR;
+		}
+
+		if (result != NULL)
+			result[0] = '\0';
+		APPEND_RESULT(SPF_response_result(spf_response));
+		
+		if (req->rcpt_to != NULL  && *req->rcpt_to != '\0' ) {
+			p = req->rcpt_to;
+			p_end = p + strcspn(p, ",;");
+
+			/* This is some incarnation of 2mx mode. */
+			while (SPF_response_result(spf_response)!=SPF_RESULT_PASS) {
+				if (*p_end)
+					*p_end = '\0';
+				else
+					p_end = NULL;	/* Note this is last rcpt */
+
+				err = SPF_request_query_rcptto(spf_request,
+								&spf_response_2mx, p);
+				if (opts->debug)
+					response_print("2mx query", spf_response_2mx);
+				if (err) {
+					response_print_errors("Failed to query RCPT-TO",
+									spf_response, err);
+					CONTINUE_ERROR;
+				}
+
+				/* append the result */
+				APPEND_RESULT(SPF_response_result(spf_response_2mx));
+
+				spf_response = SPF_response_combine(spf_response,
+								spf_response_2mx);
+
+				if (!p_end)
+					break;
+				p = p_end + 1;
+			}
+		}
+
+		/* We now have an option to call SPF_request_query_fallback */
+		if (opts->fallback) {
+			err = SPF_request_query_fallback(spf_request,
+							&spf_response, opts->fallback);
+			if (opts->debug)
+				response_print("fallback query", spf_response_2mx);
+			if (err) {
+				response_print_errors("Failed to query best-guess",
+								spf_response, err);
+				CONTINUE_ERROR;
+			}
+
+			/* append the result */
+			APPEND_RESULT(SPF_response_result(spf_response_2mx));
+
+			spf_response = SPF_response_combine(spf_response,
+							spf_response_2mx);
+		}
+
+		printf( "%s\n%s\n%s\n%s\n",
+			result,
+			X_OR_EMPTY(SPF_response_get_smtp_comment(spf_response)),
+			X_OR_EMPTY(SPF_response_get_header_comment(spf_response)),
+			X_OR_EMPTY(SPF_response_get_received_spf(spf_response))
+			);
+
+		res = SPF_response_result(spf_response);
+
+		fflush(stdout);
+	}
 
   error:
-    if ( spfid ) SPF_destroy_id( spfid );
-    for( i = MAX_DNS_LAYERS-1; i >= 0; i-- )
-    {
-	if ( spfdcid_opt[i] != NULL )
-	    SPF_dns_destroy_config( spfdcid_opt[i] );
-	if ( spfdcid_name[i] != NULL )
-	    free( spfdcid_name[i] );
-    }
-    if ( spfcid ) SPF_destroy_config( spfcid );
-    SPF_free_c_results( &local_policy );
-    SPF_free_c_results( &exp );
-    SPF_free_c_results( &best_guess );
-    SPF_destroy_default_config();
-    
-    return res;
+	FREE(result, free);
+	FREE_RESPONSE(spf_response);
+	FREE_REQUEST(spf_request);
+	FREE(spf_server, SPF_server_free);
+
+#ifdef _WIN32
+	SPF_win32_cleanup();
+#endif
+
+	return res;
 }

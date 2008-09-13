@@ -26,11 +26,11 @@
 
 #ifdef STDC_HEADERS
 # include <stdio.h>
-# include <stdlib.h>       /* malloc / free */
+# include <stdlib.h>	   /* malloc / free */
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>    /* types (u_char .. etc..) */
+#include <sys/types.h>	/* types (u_char .. etc..) */
 #endif
 
 #ifdef HAVE_INTTYPES_H
@@ -38,10 +38,10 @@
 #endif
 
 #ifdef HAVE_STRING_H
-# include <string.h>       /* strstr / strdup */
+# include <string.h>	   /* strstr / strdup */
 #else
 # ifdef HAVE_STRINGS_H
-#  include <strings.h>       /* strstr / strdup */
+#  include <strings.h>	   /* strstr / strdup */
 # endif
 #endif
 
@@ -52,12 +52,21 @@
 # include <netinet/in.h>   /* inet_ functions / structs */
 #endif
 #ifdef HAVE_ARPA_INET_H
-# include <arpa/inet.h>    /* in_addr struct */
+# include <arpa/inet.h>	/* in_addr struct */
+#endif
+
+#ifdef HAVE_ARPA_NAMESER_H
+# include <arpa/nameser.h> /* DNS HEADER struct */
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
+
 
 
 /*
@@ -66,9 +75,6 @@
  */
 
 #include "spf.h"
-#include "spf_dns_resolv.h"
-#include "spf_dns_cache.h"
-
 
 
 /*
@@ -76,22 +82,25 @@
  */
 static void usage()
 {
-    fprintf(
+	fprintf(
 	stderr,
 	"Usage:\n"
 	"\n"
 	"spf_example [options]\n"
 	"\n"
 	"Valid data options are:\n"
-	"    -i <IP address>            The IP address that is sending email\n"
-	"    -s <email address>         The email address used as the\n"
-	"                               envelope-from.  If no username (local\n"
-	"                               part) is given, 'postmaster' will be\n"
-	"                               assumed.\n"
-	"    -h <domain name>           The domain name given on the SMTP HELO\n"
-	"                               command.  This is only needed if the\n"
-	"                               -sender option is not given.\n"
-	"    -debug [debug level]       debug level.\n"
+	"	-i <IP address>			The IP address that is sending email\n"
+	"	-s <email address>		 The email address used as the\n"
+	"							   envelope-from.  If no username (local\n"
+	"							   part) is given, 'postmaster' will be\n"
+	"							   assumed.\n"
+	"	-r <email address>		 [optional] The email address used as\n"
+	"							   the envelope-to email address, for\n"
+	"							   secondary-MX checking.\n"
+	"	-h <domain name>		   The domain name given on the SMTP HELO\n"
+	"							   command.  This is only needed if the\n"
+	"							   -sender option is not given.\n"
+	"	-d [debug level]		   debug level.\n"
 	);
 }
 
@@ -104,72 +113,83 @@ static void usage()
 
 int main( int argc, char *argv[] )
 {
-    int c;
-    int	res = 0;
+	int c;
+	int	res = 0;
+	int	i;
 
-    char *opt_ip = NULL;
-    char *opt_sender = NULL;
-    char *opt_helo = NULL;
-    int   opt_debug = 0;
+	char *opt_ip = NULL;
+	char *opt_sender = NULL;
+	char *opt_helo = NULL;
+	char *opt_rcpt_to = NULL;
+	int   opt_debug = 0;
 
-    SPF_config_t	spfcid = NULL;
-    SPF_dns_config_t	spfdcid_resolv = NULL;
-    SPF_dns_config_t	spfdcid = NULL;
-    SPF_output_t	spf_output;
-    
+	/* You should not indirect on any of these structures, as their
+	 * layout may change between versions of the library. Use the
+	 * accessor functions instead. Definitions of the structs may not
+	 * even be provided. */
 
-    /*
-     * check the arguments
-     */
+	SPF_server_t		*spf_server = NULL;
+	SPF_request_t		*spf_request = NULL;
+	SPF_response_t		*spf_response = NULL;
+	SPF_response_t		*spf_response_2mx = NULL;
+	
 
-    while (1)
-    {
-	c = getopt(argc, argv, "i:s:h:d::" );
+	/*
+	 * check the arguments
+	 */
+
+	while (1)
+	{
+	c = getopt(argc, argv, "i:s:h:r:d::" );
 
 	if (c == -1)
-	    break;
+		break;
 
 	switch (c)
 	{
 	case 'i':
-	    opt_ip = optarg;
-	    break;
+		opt_ip = optarg;
+		break;
 
 	case 's':
-	    opt_sender = optarg;
-	    break;
+		opt_sender = optarg;
+		break;
 
 	case 'h':
-	    opt_helo = optarg;
-	    break;
+		opt_helo = optarg;
+		break;
+
+	case 'r':
+		opt_rcpt_to = optarg;
+		break;
 
 	case 0:
 	case '?':
-	    usage();
-	    res = 255;
-	    goto error;
-	    break;
+		usage();
+		res = 255;
+		goto error;
+		break;
 
 	case 'd':
-	    if (optarg == NULL)
+		if (optarg == NULL)
 		opt_debug = 1;
-	    else
+		else
 		opt_debug = atoi( optarg );
-	    break;
+		break;
 
 	default:
-	    fprintf( stderr, "Error: getopt returned character code 0%o ??\n", c);
+		fprintf( stderr, "Error: getopt returned character code 0%o ??\n", c);
 	}
-    }
+	}
 
-    if (optind != argc
+	if (optind != argc
 	|| opt_ip == NULL
 	|| (opt_helo == NULL && opt_sender == NULL))
-    {
+	{
 	usage();
 	res = 255;
 	goto error;
-    }
+	}
 
 /*
  * Configure the SPF system.
@@ -179,43 +199,33 @@ int main( int argc, char *argv[] )
  * session or in different SMTP sessions.
  */
 
-    /*
-     * set up the SPF configuration
-     *
-     * The SPF configuration contains all the data needed to process
-     * the SPF check.  Configurations contain malloc so it must be
-     * destroyed when you are finished with it. In a multi-threaded
-     * environment, you need one per thread.
-     */
+	/*
+	 * set up the SPF server
+	 *
+	 * Configurations contain malloc'd data so must be
+	 * destroyed when you are finished.
+	 */
 
-    spfcid = SPF_create_config();
-    if ( spfcid == NULL )
-    {
-	fprintf( stderr, "SPF_create_config failed.\n" );
-	res = 255;
-	goto error;
-    }
+	spf_server = SPF_server_new(SPF_DNS_CACHE, 1);
 
+	if (spf_server == NULL) {
+		fprintf( stderr, "SPF_create_config failed.\n" );
+		res = 255;
+		goto error;
+	}
 
-    SPF_set_debug( spfcid, opt_debug );
+	/*
+	 * Create a new request.
+	 *
+	 * The SPF request contains all the data needed to process
+	 * the SPF check. Requests are malloc'd so it must be
+	 * destroyed when you are finished with it.
+	 */
 
-    /* The domain name of the receiving MTA will default to gethostname() */
-    /* SPF_set_rec_dom( spfcid, opt_name ); */
-    
+	spf_request = SPF_request_new(spf_server);
 
-    /*
-     * set up dns layers to use
-     *
-     * The SPF DNS configuration layers contains data needed to do the
-     * DNS lookups and to return the results.  Configurations contain
-     * malloc so it must be destroyed when you are finished with
-     * it. In a multi-threaded environment, you need one per thread.
-     * 
-     * Even a small DNS cache can reduce the CPU usage compared with
-     * even a local caching name server.
-     */
-    spfdcid_resolv = SPF_dns_create_config_resolv( NULL, opt_debug );
-    spfdcid = SPF_dns_create_config_cache( spfdcid_resolv, 8, opt_debug );
+	/* The domain name of the receiving MTA will default to gethostname() */
+	/* SPF_request_set_rec_dom( spf_request, opt_name ); */
 	
 
 /*
@@ -230,95 +240,135 @@ int main( int argc, char *argv[] )
  * envelope from.
  */
 
-    /*
-     * record the IP address of the client (sending) MTA.
-     *
-     * There are other SPF_set_ip*() functionx if you have a structure
-     * instead of a string.
-     */
+	/*
+	 * record the IP address of the client (sending) MTA.
+	 *
+	 * There are other SPF_set_ip*() functionx if you have a structure
+	 * instead of a string.
+	 */
 
-    if ( SPF_set_ip_str( spfcid, opt_ip ) )
-    {
-	printf( "Invalid IP address.\n" );
-	res = 255;
-	goto error;
-    }
+	if ( SPF_request_set_ipv4_str( spf_request, opt_ip ) ) {
+		printf( "Invalid IP address.\n" );
+		res = 255;
+		goto error;
+	}
 	
 
-    /*
-     * record the HELO domain name of the client (sending) MTA from
-     * the SMTP HELO or EHLO commands
-     *
-     * This domain name will be used if the envelope from address is
-     * null (e.g. MAIL FROM:<>).  This happens when a bounce is being
-     * sent and, in effect, it is the client MTA that is sending the
-     * message.
-     */
+	/*
+	 * record the HELO domain name of the client (sending) MTA from
+	 * the SMTP HELO or EHLO commands
+	 *
+	 * This domain name will be used if the envelope from address is
+	 * null (e.g. MAIL FROM:<>).  This happens when a bounce is being
+	 * sent and, in effect, it is the client MTA that is sending the
+	 * message.
+	 */
 
-    if ( SPF_set_helo_dom( spfcid, opt_helo ) )
-    {
-	printf( "Invalid HELO domain.\n" );
-	res = 255;
-	goto error;
-    }
-	
+	if ( SPF_request_set_helo_dom( spf_request, opt_helo ) ) {
+		printf( "Invalid HELO domain.\n" );
+		res = 255;
+		goto error;
+	}
 
-    /*
-     * record the envelope from email address from the SMTP MAIL FROM:
-     * command.
-     */
+	/*
+	 * record the envelope from email address from the SMTP MAIL FROM:
+	 * command.
+	 */
 
-    if ( SPF_set_env_from( spfcid, opt_sender ) )
-    {
-	printf( "Invalid envelope from address.\n" );
-	res = 255;
-	goto error;
-    }
-	
+	if ( SPF_request_set_env_from( spf_request, opt_sender ) ) {
+		printf( "Invalid envelope from address.\n" );
+		res = 255;
+		goto error;
+	}
 
-    /*
-     * now that we have all the information, see what the result of
-     * the SPF check is.
-     */
+	/*
+	 * now that we have all the information, see what the result of
+	 * the SPF check is.
+	 */
 
-    spf_output = SPF_result( spfcid, spfdcid );
+	SPF_request_query_mailfrom(spf_request, &spf_response);
 
-    if ( opt_debug > 0 )
-    {
-	printf ( "result = %s (%d)\n",
-		 SPF_strresult( spf_output.result ), spf_output.result );
-	printf ( "err = %s (%d)\n",
-		 SPF_strerror( spf_output.err ), spf_output.err );
-	printf ( "err_msg = %s\n", spf_output.err_msg ? spf_output.err_msg : "" );
-    }
+	/*
+	 * If the sender MAIL FROM check failed, then for each SMTP RCPT TO
+	 * command, the mail might have come from a secondary MX for that
+	 * domain.
+	 *
+	 * Note that most MTAs will also check the RCPT TO command to make sure
+	 * that it is ok to accept. This SPF check won't give a free pass
+	 * to all secondary MXes from all domains, just the one specified by
+	 * the rcpt_to address. It is assumed that the MTA checks (at some
+	 * point) that we are also a valid primary or secondary for the domain.
+	 */
+	if (SPF_response_result(spf_response) != SPF_RESULT_PASS) {
+		SPF_request_query_rcptto(spf_request, &spf_response_2mx, opt_rcpt_to);
+		/*
+		 * We might now have a PASS if the mail came from a client which
+		 * is a secondary MX from the domain specified in opt_rcpt_to.
+		 *
+		 * If not, then the RCPT TO: address must have been a domain for
+		 * which the client is not a secondary MX, AND the MAIL FROM: domain
+		 * doesn't doesn't return 'pass' from SPF_result()
+		 */
+		if (SPF_response_result(spf_response_2mx) == SPF_RESULT_PASS) {
+		}
+	}
 
-    printf( "%s\n%s\n%s\n%s\n",
-	    SPF_strresult( spf_output.result ),
-	    spf_output.smtp_comment ? spf_output.smtp_comment : "",
-	    spf_output.header_comment ? spf_output.header_comment : "",
-	    spf_output.received_spf ? spf_output.received_spf : "" );
-	
-    res = spf_output.result;
+	/*
+	 * If the result is something like 'neutral', you probably
+	 * want to accept the email anyway, just like you would
+	 * when SPF_result() returns 'neutral'.
+	 *
+	 * It is possible that you will completely ignore the results
+	 * until the SMPT DATA command.
+	 */
+
+	if ( opt_debug > 0 ) {
+		printf ( "result = %s (%d)\n",
+			SPF_strresult(SPF_response_result(spf_response)),
+				SPF_response_result(spf_response));
+		printf ( "err = %s (%d)\n",
+			SPF_strerror(SPF_response_errcode(spf_response)),
+				SPF_response_errcode(spf_response));
+		for (i = 0; i < SPF_response_messages(spf_response); i++) {
+			SPF_error_t	*err = SPF_response_message(spf_response, i);
+			printf ( "%s_msg = (%d) %s\n",
+				(SPF_error_errorp(err) ? "warn" : "err"),
+				SPF_error_code(err),
+				SPF_error_message(err));
+		}
+	}
+
+#define VALID_STR(x) (x ? x : "")
+
+	printf( "%s\n%s\n%s\n%s\n",
+		SPF_strresult( SPF_response_result(spf_response) ),
+		VALID_STR(SPF_response_get_smtp_comment(spf_response)),
+		VALID_STR(SPF_response_get_header_comment(spf_response)),
+		VALID_STR(SPF_response_get_received_spf(spf_response))
+		);
+
+	res = SPF_response_result(spf_response);
 
 
-    /*
-     * the ouput from the SPF check contains malloced data, so make sure
-     * we free it.
-     */
+	/*
+	 * The response from the SPF check contains malloced data, so
+	 * make sure we free it.
+	 */
 
-    SPF_free_output( &spf_output );
+	SPF_response_free(spf_response);
+	if (spf_response_2mx)
+		SPF_response_free(spf_response_2mx);
 
   error:
 
-    /*
-     * the SPF configuration variables contain malloced data, so we
-     * have to vfree them also.
-     */
+	/*
+	 * the SPF configuration variables contain malloced data, so we
+	 * have to vfree them also.
+	 */
 
-    if ( spfcid ) SPF_destroy_config( spfcid );
-    if ( spfdcid ) SPF_dns_destroy_config_cache( spfdcid );
-    if ( spfdcid_resolv ) SPF_dns_destroy_config_resolv( spfdcid_resolv );
-    SPF_destroy_default_config();
-    
-    return res;
+	if (spf_request)
+		SPF_request_free(spf_request);
+	if (spf_server)
+		SPF_server_free(spf_server);
+	return res;
 }

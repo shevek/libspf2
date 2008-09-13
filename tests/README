@@ -1,4 +1,4 @@
-                        
+
 SPF Testing System
 
 
@@ -12,6 +12,18 @@ added in the future.
 
 
 
+
+**** Test harness ****
+
+Programs:
+
+test.pl                 This is the perl program that does the actual
+                        checking for all data sets. Run test.pl -h
+						to find out how to make further use of
+						test.pl
+
+test                    This is a shell script wrapper around
+                        test.pl which simply abbreviates the output.
 
 **** Parser/verification tests ****
 
@@ -41,17 +53,14 @@ test_adopt_roll.txt     This datafile contains (munged) SPF records
                         the real-world garbage that can be found in
                         SPF records.
 
-                        
+
 
 Programs:
 
-test_parser.pl          This is the perl program that does the actual
-                        checking.
-
-tests_parser            This is a shell script that checks the
+run_single_parser       This is a shell script that checks the
                         test_parser.txt datafile.
 
-tests_adopt_roll        This is a shell script that checks the
+run_single_adopt_roll   This is a shell script that checks the
                         test_adopt_roll.txt datafile.
 
 
@@ -69,18 +78,18 @@ test.txt
 
 Datafiles:
 
-test.txt                This datafile contains constructed SPF queries
+test_live.txt           This datafile contains constructed SPF queries
                         that designed to test the implementation's
                         ability to correctly evaluate SPF records.  It
                         contains tests to make sure the implementation
                         conforms to the SPF specification, and the
                         common SPF API.  (Yes, these two should be
-                        separated.) 
+                        separated.)
 
 test_rfc_examples.txt   This datafile contains SPF queries that are
                         found in the SPF specification document.  The
                         "Expanded Examples" are currently not in this
-                        dataset.  Currently, only the libspf2
+                        dataset.  Currently, only the libspf-alt
                         implementation can run this test because it
                         requires overriding SPF information for
                         example.{com,org,net}.
@@ -88,15 +97,14 @@ test_rfc_examples.txt   This datafile contains SPF queries that are
 
 Programs:
 
-test.pl                 This is the perl program that does the actual
-                        checking.
+run_single_live         This is a shell script that checks the
+                        test_live.txt datafile, one query at a time.
 
-tests_single            This is a shell script that checks the
-                        test.txt datafile, one query at a time. 
-
-tests_many              This is a shell script that checks the
-                        test.txt datafile sending many queries to
+run_many_live           This is a shell script that checks the
+                        test_live.txt datafile sending many queries to
                         spfquery.  This tests to make sure that the
                         SPF implementation correctly cleans up after
                         each individual query.
 
+run_single_rfc_examples This shell script checks the tests from the
+                        rfc_examples.txt datafile, one query at a time.

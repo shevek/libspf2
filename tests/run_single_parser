@@ -1,0 +1,5 @@
+#!/bin/sh
+[ -z "$srcdir" ] && srcdir=.
+echo
+echo "Running single tests on the parser..."
+exec $srcdir/test test_parser

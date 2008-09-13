@@ -1,0 +1,32 @@
+#!/bin/sh
+[ -z "$srcdir" ] && srcdir=.
+echo
+echo "Running piped tests using live data..."
+exec $srcdir/test test_live -pipe "$@" \
+	--todo=121='FIXME' \
+	--todo=135.result='FIXME' \
+	--todo=136.result='FIXME' \
+	--todo=137.result='FIXME' \
+	--todo=139='Persistent_data_error?' \
+	--todo=140='Persistent_data_error?' \
+	--todo=142='Persistent_data_error?' \
+	--todo=145='Persistent_data_error?' \
+	--todo=146='Persistent_data_error?' \
+	--todo=149='Persistent_data_error?' \
+	--todo=154='Persistent_data_error?' \
+	--todo=155='Persistent_data_error?' \
+	--todo=156='Persistent_data_error?' \
+	--todo=157='Persistent_data_error?' \
+	--todo=158='Persistent_data_error?' \
+	--todo=159='Persistent_data_error?' \
+	--todo=160='Persistent_data_error?' \
+	--todo=161='Persistent_data_error?' \
+	--todo=162='Persistent_data_error?' \
+	--todo=163='Persistent_data_error?' \
+	--todo=164='Persistent_data_error?' \
+	--todo=165='Persistent_data_error?' \
+	--todo=166='Persistent_data_error?' \
+	--todo=167='Persistent_data_error?' \
+	--todo=168='FIXME' \
+	--todo=169='FIXME'
+

@@ -36,6 +36,7 @@
 
 
 
+#if 0
 char *SPF_smtp_comment( SPF_config_t spfcid, SPF_id_t spfid, SPF_dns_config_t spfdcid, SPF_output_t output )
 {
     SPF_iconfig_t	*spfic = SPF_cid2spfic(spfcid);
@@ -338,10 +339,11 @@ void SPF_result_comments( SPF_config_t spfcid, SPF_dns_config_t spfdcid,
     }
 
 }
+#endif
 
 
 
-
+#if 0
 SPF_output_t SPF_result( SPF_config_t spfcid, SPF_dns_config_t spfdcid )
 {
     SPF_iconfig_t	*spfic = SPF_cid2spfic(spfcid);
@@ -404,8 +406,10 @@ SPF_output_t SPF_result( SPF_config_t spfcid, SPF_dns_config_t spfdcid )
     SPF_free_c_results( &c_results );
     return output;
 }
+#endif
 
 
+#ifdef REALCODE
 SPF_output_t SPF_result_helo( SPF_config_t spfcid, SPF_dns_config_t spfdcid )
 {
     SPF_iconfig_t	*spfic = SPF_cid2spfic(spfcid);
@@ -580,86 +584,13 @@ SPF_output_t SPF_result_2mx_msg( SPF_config_t spfcid, SPF_dns_config_t spfdcid )
 
     return SPF_dup_output( spfic->output_2mx );
 }
-
-
-
-const char *SPF_strresult( SPF_result_t result )
-{
-    switch( result )
-    {
-    case SPF_RESULT_PASS:		/* +				*/
-	return "pass";
-	break;
-
-    case SPF_RESULT_FAIL:		/* -				*/
-	return "fail";
-	break;
-
-    case SPF_RESULT_SOFTFAIL:		/* ~				*/
-	return "softfail";
-	break;
-
-    case SPF_RESULT_NEUTRAL:		/* ?				*/
-	return "neutral";
-	break;
-
-    case SPF_RESULT_UNKNOWN:		/* permanent error		*/
-	return "unknown";
-	break;
-
-    case SPF_RESULT_ERROR:		/* temporary error		*/
-	return "error";
-	break;
-
-    case SPF_RESULT_NONE:		/* no SPF record found		*/
-	return "none";
-	break;
-
-    default:
-	return "(invalid-result)";
-	break;
-    }
-}
-
-
-const char *SPF_strreason( SPF_reason_t reason )
-{
-    switch( reason )
-    {
-    case SPF_REASON_NONE:
-	return "none";
-	break;
-	
-    case SPF_REASON_LOCALHOST:
-	return "localhost";
-	break;
-	
-    case SPF_REASON_LOCAL_POLICY:
-	return "local policy";
-	break;
-	
-    case SPF_REASON_MECH:
-	return "mechanism";
-	break;
-	
-    case SPF_REASON_DEFAULT:
-	return "default";
-	break;
-	
-    case SPF_REASON_2MX:
-	return "secondary MX";
-	break;
-	
-    default:
-	return "(invalid reason)";
-	break;
-	
-    }
-}
+#endif
 
 
 
 
+
+#if 0
 void SPF_init_output( SPF_output_t *output )
 {
     memset( output, 0, sizeof( *output ) );
@@ -722,6 +653,4 @@ void SPF_free_output( SPF_output_t *output )
 
     SPF_init_output( output );
 }
-
-
-
+#endif

@@ -2,10 +2,10 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(libspf2, 1.0.0, wayne@midwestcs.com)
-AM_INIT_AUTOMAKE(libspf2, $PACKAGE_VERSION)
-AC_CONFIG_SRCDIR([src/libspf2/spf.c])
+AC_INIT(libspf2, 1.2.5, libspf2@rt.anarres.org)
 AC_CONFIG_AUX_DIR(config)
+AM_INIT_AUTOMAKE(libspf2, $PACKAGE_VERSION)
+AC_CONFIG_SRCDIR([src/libspf2/spf_server.c])
 AM_CONFIG_HEADER(config.h)
 
 # remember the version info for later
@@ -58,31 +58,16 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([],[])],
 LDFLAGS=$SAVEDLDFLAGS
 AC_MSG_RESULT([$ldrpath])
 
-AC_ARG_WITH(bind,
-        [  --with-bind=DIR  Find BIND resolver in DIR],
-        [AC_CHECK_FILE([$withval/include/bind/resolv.h],
-                [CFLAGS="$CFLAGS -I$withval/include/bind"],
-                [CFLAGS="$CFLAGS -I$withval/include"])
-         LDFLAGS="$LDFLAGS -L$withval/lib -Wl,$rpath$withval/lib"
-         AC_CHECK_LIB([bind], [res_query], [LIBS="$LIBS -lbind"],
-                [AC_CHECK_LIB([resolv],
-                        [res_query],
-                        [LIBS="$LIBS -lresolv"],
-                        [echo "cannot find resolver library"; exit 1;])
-                ])
-        ], [AC_CHECK_LIB(resolv, res_query)])
-
-
-# Checks for libraries.
-AC_CHECK_LIB(nsl, inet_pton)
-AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(intl, gettext)
-
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
+AC_CHECK_SIZEOF([int])
+AC_CHECK_HEADERS([limits.h])
+AC_CHECK_HEADERS([sys/param.h])
 AC_CHECK_HEADERS([netinet/in.h sys/socket.h syslog.h sys/time.h errno.h sys/types.h])
+AC_CHECK_HEADERS([fcntl.h malloc.h nmemory.h stddef.h inttypes.h stdlib.h string.h syslog.h unistd.h stdarg.h])
+AC_CHECK_HEADERS([pthread.h pwd.h grp.h])
 AC_CHECK_HEADERS([netdb.h arpa/inet.h arpa/nameser.h])
 AC_CHECK_HEADERS([syslog.h])
 AC_CHECK_HEADERS([resolv.h], [], [],
@@ -99,14 +84,59 @@ AC_CHECK_HEADERS([resolv.h], [], [],
 	#  include <sys/socket.h> /* DNS HEADER struct */
 	#endif
      ]])
-AC_CHECK_HEADERS([fcntl.h malloc.h nmemory.h stddef.h inttypes.h stdlib.h string.h syslog.h unistd.h stdarg.h])
-AC_CHECK_HEADERS([libintl.h ])
-AC_CHECK_HEADERS([getopt.h ])
+AC_CHECK_HEADERS([libintl.h])
+AC_CHECK_HEADERS([getopt.h])
+
+AC_CHECK_HEADER(pthread.h, , [
+	echo "pthread.h is required to build this program."
+	exit 1;
+])
+
+dnl Moved to after header checks by Shevek
+AC_ARG_WITH(bind,
+        [  --with-bind=DIR  Find BIND resolver in DIR],
+        [AC_CHECK_FILE([$withval/include/bind/resolv.h],
+                [CFLAGS="$CFLAGS -I$withval/include/bind"],
+                [CFLAGS="$CFLAGS -I$withval/include"])
+         LDFLAGS="$LDFLAGS -L$withval/lib -Wl,$rpath$withval/lib"
+         AC_CHECK_LIB([bind], [res_query], [LIBS="$LIBS -lbind"],
+                [AC_CHECK_LIB([resolv],
+                        [res_query],
+                        [LIBS="$LIBS -lresolv"],
+                        [echo "cannot find resolver library"; exit 1;])
+                ])
+        ],
+		[dnl Have to include resolv.h as res_query is sometimes defined as a macro
+				AC_MSG_CHECKING([for res_query in -lresolv (with resolv.h if present)])
+				saved_libs="$LIBS"
+				LIBS="-lresolv $LIBS"
+				AC_TRY_LINK([
+						#ifdef HAVE_RESOLV_H
+						#include <resolv.h>
+						#endif],
+						[res_query(0,0,0,0,0)],
+						[AC_MSG_RESULT(yes)
+								have_res_query=yes],
+						[AC_MSG_RESULT(no)
+								LIBS="$saved_libs"])
+        ])
+		
+		
+		
+dnl [AC_CHECK_LIB(resolv, res_query)])
+
+# Checks for libraries.
+AC_CHECK_LIB(nsl, inet_pton)
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(intl, gettext)
+AC_CHECK_LIB(pthread, pthread_create)
+
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_C_INLINE
 AC_TYPE_PID_T
+AC_TYPE_UID_T
 AC_TYPE_SIZE_T
 AC_C_VOLATILE
 AC_C_BIGENDIAN
@@ -138,6 +168,7 @@ AC_FUNC_MALLOC
 AC_FUNC_MEMCMP
 AC_FUNC_REALLOC
 AC_FUNC_SETPGRP
+AC_FUNC_SELECT_ARGTYPES
 AC_TYPE_SIGNAL
 
 
@@ -145,6 +176,7 @@ AC_TYPE_SIGNAL
 # res_ninit() and res_nquery() functions when threading, but it is
 # safest to use them.
 
+# Nowadays, I think libspf2 requires this function to be available.
 AC_CHECK_DECLS([res_ninit], [], [], [[
 	#ifdef HAVE_SYS_SOCKET_H
 	# include <sys/socket.h>		/* inet_ functions / structs */
@@ -158,7 +190,11 @@ AC_CHECK_DECLS([res_ninit], [], [], [[
 	#include <resolv.h>
 	]])
 
-AC_CHECK_FUNCS([ftruncate gethostname memmove memset socket strcasecmp strchr strcspn strdup strerror strncasecmp strspn strtoul])
+AC_CHECK_FUNCS([ftruncate gethostname memmove memset socket])
+AC_CHECK_FUNCS([strchr strcspn strdup strerror])
+AC_CHECK_FUNCS([strcasecmp strncasecmp strspn strtoul])
+AC_CHECK_FUNCS([gethostbyname inet_ntoa select strrchr strstr strtol])
+
 AC_REPLACE_FUNCS([getopt_long_only])
 AC_REPLACE_FUNCS([__ns_initparse __ns_name_uncompress __ns_get16 __ns_msg_getflag])
 

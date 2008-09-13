@@ -29,103 +29,33 @@
 
 
 
+#if 0
 
-SPF_err_t SPF_find_mod_data( SPF_config_t spfcid, SPF_id_t spfid, const char *mod_name,
-		       SPF_data_t **data, size_t *data_len )
+/* The RFC says this never happens. */
+
+SPF_errcode_t
+SPF_find_mod_cidr(SPF_server_t *spf_server,
+		SPF_record_t *spf_record,
+		const char *mod_name,
+		int *ipv4_cidr, int *ipv6_cidr )
 {
-    SPF_internal_t *spfi = SPF_id2spfi(spfid);
-    int		i;
-    SPF_mod_t	*mod;
-    size_t	name_len = strlen( mod_name );
+    SPF_data_t		*data;
+    size_t		data_len;
+    SPF_errcode_t	err;
 
     /*
      * make sure we were passed valid data to work with
      */
-    if ( spfcid == NULL )
-	SPF_error( "spfcid is NULL" );
-
-    if ( spfid == NULL )
-	SPF_error( "spfid is NULL" );
-    
-
-    /*
-     * find modifier
-     */
-
-    mod = spfi->mod_first;
-    for( i = 0; i < spfi->header.num_mod; i++ )
-    {
-	if ( name_len == mod->name_len
-	     && strncmp( SPF_mod_name( mod ), mod_name, mod->name_len ) == 0 )
-	{
-	    *data = SPF_mod_data( mod );
-	    *data_len = mod->data_len;
-
-	    return 0;
-	}
-    
-	mod = SPF_next_mod( mod );
-    }
-    
-    return 1;
-}
+    SPF_ASSERT_NOTNULL(spf_record);
+    SPF_ASSERT_NOTNULL(mod_name);
+    SPF_ASSERT_NOTNULL(bufp);
+    SPF_ASSERT_NOTNULL(buflenp);
 
 
-SPF_err_t SPF_find_mod_value( SPF_config_t spfcid, SPF_id_t spfid,
-			SPF_dns_config_t spfdc, const char *mod_name,
-			char **buf, size_t *buf_len )
-{
-    SPF_data_t	*data;
-    size_t	data_len;
-    SPF_err_t	err;
-
-    /*
-     * make sure we were passed valid data to work with
-     */
-    if ( spfcid == NULL )
-	SPF_error( "spfcid is NULL" );
-
-    if ( spfid == NULL )
-	SPF_error( "spfid is NULL" );
-    
-    if ( spfdc == NULL )
-	SPF_error( "spfdc is NULL" );
-
-
-    err = SPF_find_mod_data( spfcid, spfid, mod_name, &data, &data_len );
-
-    if ( err )
-	return SPF_E_MOD_NOT_FOUND;
-
-    return SPF_expand( spfcid, spfdc, data, data_len, buf, buf_len );
-}
-
-
-SPF_err_t SPF_find_mod_cidr( SPF_config_t spfcid, SPF_id_t spfid,
-			     SPF_dns_config_t spfdc, const char *mod_name,
-			     int *ipv4_cidr, int *ipv6_cidr )
-{
-    SPF_data_t	*data;
-    size_t	data_len;
-    SPF_err_t	err;
-
-    /*
-     * make sure we were passed valid data to work with
-     */
-    if ( spfcid == NULL )
-	SPF_error( "spfcid is NULL" );
-
-    if ( spfid == NULL )
-	SPF_error( "spfid is NULL" );
-    
-    if ( spfdc == NULL )
-	SPF_error( "spfdc is NULL" );
-
-
-    err = SPF_find_mod_data( spfcid, spfid, mod_name, &data, &data_len );
-
-    if ( err )
-	return SPF_E_MOD_NOT_FOUND;
+    err = SPF_find_mod_data(spf_server, spf_record,
+    				mod_name, &data, &data_len);
+    if (err)
+	return err;
 
     if ( data->dc.parm_type == PARM_CIDR )
     {
@@ -138,5 +68,4 @@ SPF_err_t SPF_find_mod_cidr( SPF_config_t spfcid, SPF_id_t spfid,
     
     return SPF_E_SUCCESS;
 }
-
-
+#endif

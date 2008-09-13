@@ -21,8 +21,10 @@
 #include "spf_internal.h"
 
 
+    /* FIXME  Actually do some optimizations here.... ;-> */
 
-int SPF_optimize( SPF_config_t spfcid, SPF_id_t *dst_spfid, SPF_id_t src_spfid )
+#if 0
+SPF_errcode_t SPF_optimize( SPF_config_t spfcid, SPF_id_t *dst_spfid, SPF_id_t src_spfid )
 {
     if ( spfcid == NULL )
 	SPF_error( "spfcid is NULL" );
@@ -32,8 +34,8 @@ int SPF_optimize( SPF_config_t spfcid, SPF_id_t *dst_spfid, SPF_id_t src_spfid )
 
 
 
-    /* FIXME  Actually do some optimizations here.... ;-> */
     *dst_spfid = SPF_dup_id( src_spfid );
 
     return SPF_E_SUCCESS;
 }
+#endif

@@ -2,22 +2,48 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES	= -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+INCLUDES = -I$(top_srcdir)/src/include -I$(top_srcdir)/src
 
 lib_LTLIBRARIES	= libspf2.la
 
-libspf2_la_SOURCES	= spf.c spf_error_stdio.c spf_compile.c spf_id2str.c \
-	spf_strerror.c spf_print.c spf_config.c spf_dns.c spf_dns_test.c \
-	spf_expand.c spf_find_mod.c spf_dns_null.c spf_optimize.c \
-	spf_verify.c spf_result.c spf_get_spf.c spf_dns_cache.c \
-	spf_dns_resolv.c spf_get_exp.c spf_eval_id.c spf_dns_zone.c \
-	spf_error.c spf_error_default.c spf_error_syslog.c
+libspf2_la_SOURCES	= \
+	spf_compile.c \
+	spf_config.c \
+	spf_dns.c \
+	spf_dns_cache.c \
+	spf_dns_null.c \
+	spf_dns_resolv.c \
+	spf_dns_rr.c \
+	spf_dns_test.c \
+	spf_dns_windns.c \
+	spf_dns_zone.c \
+	spf_expand.c \
+	spf_find_mod.c \
+	spf_get_exp.c \
+	spf_get_spf.c \
+	spf_id2str.c \
+	spf_interpret.c \
+	spf_log.c \
+	spf_log_default.c \
+	spf_log_stdio.c \
+	spf_log_syslog.c \
+	spf_optimize.c \
+	spf_print.c \
+	spf_record.c \
+	spf_request.c \
+	spf_response.c \
+	spf_result.c \
+	spf_server.c \
+	spf_strerror.c \
+	spf_utils.c \
+	spf_verify.c \
+	spf_win32.c
 
 libspf2_la_LIBADD	= $(top_builddir)/src/libreplace/libreplace.la
 
 
 
-libspf2_la_LDFLAGS	= -version-info 1:0:0
+libspf2_la_LDFLAGS	= -version-info 2:0:0
 
 # Copied from the libtool info file:
 #

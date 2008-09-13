@@ -26,7 +26,8 @@
 
 
 
-
+/* TODO: FIXME: Replace this function. */
+#if 0
 SPF_err_t SPF_verify( SPF_config_t spfcid, SPF_id_t spfid )
 {
     SPF_id_t	spfid_new;
@@ -87,3 +88,4 @@ SPF_err_t SPF_verify( SPF_config_t spfcid, SPF_id_t spfid )
 
     return err;
 }
+#endif

@@ -691,7 +691,9 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 	      /* Don't test has_arg with >, because some C compilers don't
 		 allow it to be used on enums.  */
 	      if (pfound->has_arg)
+	        {
 		optarg = nameend + 1;
+		}
 	      else
 		{
 		  if (opterr)

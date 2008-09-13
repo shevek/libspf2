@@ -40,9 +40,7 @@
  * libresolv will be displayed.  This information is often not passed
  * on to (and not needed by) the higher level DNS layers.
  */
-SPF_dns_config_t SPF_dns_create_config_resolv( SPF_dns_config_t layer_below, int debug  );
-void SPF_dns_reset_config_resolv( SPF_dns_config_t spfdcid );
-void SPF_dns_destroy_config_resolv( SPF_dns_config_t spfdcid );
-
+SPF_dns_server_t	*SPF_dns_resolv_new(SPF_dns_server_t *layer_below,
+				const char *name, int debug);
 
 #endif

@@ -29,7 +29,8 @@
 #include "spf.h"
 
 
-const char *SPF_strerror( int spf_c_err )
+const char *
+SPF_strerror( SPF_errcode_t spf_c_err )
 {
     switch ( spf_c_err )
     {
@@ -153,10 +154,14 @@ const char *SPF_strerror( int spf_c_err )
 	return "Mechanisms found after the \"all:\" mechanism will be ignored";
 	break;
 
-    case SPF_E_NOT_HOST:
-      return "Host not found";
-      break;
-	    
+	case SPF_E_INCLUDE_RETURNED_NONE:
+	return "include: mechanism returned 'none'";
+	break;
+
+	case SPF_E_RECURSIVE:
+	return "include: or redirect= caused unlimited recursion";
+	break;
+
     default:
 	return "Unknown SPF error code";
 	break;

@@ -1,0 +1,5 @@
+#!/bin/sh
+[ -z "$srcdir" ] && srcdir=.
+echo
+echo "Running single tests using adoption roll data..."
+exec $srcdir/test test_adopt_roll

@@ -84,13 +84,13 @@ TODO items (somewhat in priority order)
 
   * write new announcement in doc
 
-  * install new copy on backbone:/var/www/spf/libspf-alt/
+  * install new copy on backbone:/var/www/spf/libspf2/
 
-  * save copy in /usr/local/src/spf/libspf-alt/
+  * save copy in /usr/local/src/spf/libspf2/
 
   * cd devel; make clean; make maintainer-clean; cd ..;
-    tar czf libspf-alt.devel.0.3.tgz devel;
-    scp libspf-alt.devel.0.3.tgz backbone:/home/wayne
+    tar czf libspf2.devel.0.3.tgz devel;
+    scp libspf2.devel.0.3.tgz backbone:/home/wayne
 
 * start using CVS
 

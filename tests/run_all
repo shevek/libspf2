@@ -1,0 +1,10 @@
+#!/bin/sh
+srcdir="."
+export srcdir
+$srcdir/run_many_live
+$srcdir/run_many_tdns
+$srcdir/run_single_adopt_roll
+$srcdir/run_single_live
+$srcdir/run_single_parser
+$srcdir/run_single_rfc_examples
+$srcdir/run_single_tdns

@@ -1,0 +1,12 @@
+#!/bin/sh
+[ -z "$srcdir" ] && srcdir=.
+echo
+echo "Running single tests using live data..."
+exec $srcdir/test test_live \
+	--todo=121='FIXME' \
+	--todo=135.result='FIXME' \
+	--todo=136.result='FIXME' \
+	--todo=137.result='FIXME' \
+	--todo=168='FIXME' \
+	--todo=169='FIXME'
+

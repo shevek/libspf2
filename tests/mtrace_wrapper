@@ -4,14 +4,12 @@
 
 # just to make gdb<->bash easier
 
-PROG=../src/spfquery/spfquery_static
-
 rm -f ./mtrace.out
 
 export MALLOC_TRACE=./mtrace.out 
 export MALLOC_CHECK_=2
 
-valgrind --leak-check=yes --show-reachable=yes $PROG "$@"
+source valgrind_wrapper
 
 mout=`mtrace $PROG mtrace.out 2>/dev/null`
 

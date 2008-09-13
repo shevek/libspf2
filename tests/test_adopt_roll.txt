@@ -135,7 +135,7 @@ err-msg         /.*/ no errors
 rec-out         /.*/ SPF record:  v=spf1 a:rollerball.example.com mx report=postmaster@example.com
 
 spftest spf "v=spf1 +habeas +mx +a -all"
-err-msg         php  Warnings: Unknown extension 'habeas' found in rule part 2 (+habeas)
+err-msg         php  Warnings: Unknown extension 'habeas' found in rule part 2 (\+habeas)
 err-msg         /.*/ Unknown mechanism found near "habeas" in "+habeas"
 rec-out         /.*/ Unknown
 

@@ -1,7 +1,0 @@
-#!/bin/sh
-
-#!/bin/sh
-
-PROG=../src/spfquery/spfquery_static
-
-$PROG -dns=test "$@"
