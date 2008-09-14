@@ -19,13 +19,14 @@
 #ifndef INC_SPF_DNS_RR
 #define INC_SPF_DNS_RR
 
-typedef struct SPF_dns_rr_struct SPF_dns_rr_t;
-
 #include "spf_dns.h"
 
-/* The strings in this union are usually  malloc'ed larger than the
- * size of the union.  Only create pointers to it! */
-typedef union
+/**
+ * The strings in this union are usually  malloc'ed larger than the
+ * size of the union.  Only create pointers to it!
+ */
+typedef
+union
 {
     struct in_addr	a;
     char			ptr[1];
@@ -33,8 +34,8 @@ typedef union
     char			txt[1];
     struct in6_addr	aaaa;
 } SPF_dns_rr_data_t;
-    
 
+typedef
 struct SPF_dns_rr_struct
 {
     /* query information */
@@ -42,7 +43,6 @@ struct SPF_dns_rr_struct
     size_t				 domain_buf_len;/* alloced size of domain	*/
 
     ns_type				 rr_type;		/* type of RR queried for	*/
-
 
     /* answer information */
     int					 num_rr;	/* number of RR returned in rr	*/
@@ -57,7 +57,7 @@ struct SPF_dns_rr_struct
     /* misc information */
     void				*hook;		/* used by DNS layers		*/
     SPF_dns_server_t	*source;	/* which layer created this RR  */
-};
+} SPF_dns_rr_t;
 
 SPF_dns_rr_t	*SPF_dns_rr_new(void);
 void			 SPF_dns_rr_free(SPF_dns_rr_t *spfrr);

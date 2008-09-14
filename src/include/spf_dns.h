@@ -20,7 +20,9 @@
 #define INC_SPF_DNS
 
 
-/*
+/**
+ * @file
+ *
  * This library has the ability to use one or more of any of a number
  * of DNS "layers" to obtain DNS information.  These layers all have
  * compatible APIs, with only minor differences that relate to their

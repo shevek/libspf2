@@ -34,11 +34,12 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_triplet = @host@
-DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(top_srcdir)/configure INSTALL TODO config/config.guess \
-	config/config.sub config/depcomp config/install-sh \
-	config/ltmain.sh config/missing install-sh missing
+DIST_COMMON = README $(am__configure_deps) $(srcdir)/Doxyfile.in \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/config.h.in $(top_srcdir)/configure INSTALL TODO \
+	config/config.guess config/config.sub config/depcomp \
+	config/install-sh config/ltmain.sh config/missing install-sh \
+	missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -48,7 +49,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(mkdir_p)
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = Doxyfile
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -106,6 +107,9 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+KV_MAJOR = @KV_MAJOR@
+KV_MINOR = @KV_MINOR@
+KV_PATCH = @KV_PATCH@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBPROGS = @LIBPROGS@
@@ -231,6 +235,8 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
+Doxyfile: $(top_builddir)/config.status $(srcdir)/Doxyfile.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -365,7 +371,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/config
+	$(mkdir_p) $(distdir)/. $(distdir)/config
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

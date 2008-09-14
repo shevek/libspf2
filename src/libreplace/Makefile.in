@@ -118,6 +118,9 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+KV_MAJOR = @KV_MAJOR@
+KV_MINOR = @KV_MINOR@
+KV_PATCH = @KV_PATCH@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBPROGS = @LIBPROGS@
@@ -208,9 +211,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/libreplace/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  src/libreplace/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/libreplace/Makefile
+	  $(AUTOMAKE) --gnu  src/libreplace/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

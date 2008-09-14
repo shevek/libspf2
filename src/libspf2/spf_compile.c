@@ -470,7 +470,7 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 				len = end - p;
 			if (spf_server->debug)
 				SPF_debugf("Adding string literal (%d): '%*.*s'",
-								len, len, len, p);
+								(int)len, (int)len, (int)len, p);
 			memcpy( dst, p, len );
 			ds_len += len;
 			dst += len;
@@ -551,7 +551,7 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 static SPF_errcode_t
 SPF_c_parse_domainspec(SPF_server_t *spf_server,
 				SPF_response_t *spf_response,
-				SPF_data_t *data, int *data_len,
+				SPF_data_t *data, size_t *data_len,
 				const char **startp, const char **endp,
 				size_t max_len, SPF_errcode_t big_err,
 				SPF_cidr_t cidr_ok, int is_mod)

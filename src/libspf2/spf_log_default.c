@@ -20,6 +20,12 @@
 #include "spf_internal.h"
 
 
+/**
+ * @file
+ * Audited, 2008-09-13, Shevek.
+ * TODO: Move into spf_log.c ?
+ */
+
 void (*SPF_error_handler)( const char *, int, const char * ) __attribute__ ((noreturn)) = SPF_DEFAULT_ERROR_HANDLER;
 void (*SPF_warning_handler)( const char *, int, const char * ) = SPF_DEFAULT_WARNING_HANDLER;
 void (*SPF_info_handler)( const char *, int, const char * ) = SPF_DEFAULT_INFO_HANDLER;

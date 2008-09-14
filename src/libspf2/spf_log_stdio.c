@@ -24,44 +24,54 @@
 
 #include "spf.h"
 
-void SPF_error_stdio( const char *file, int line, const char *errmsg )
+/**
+ * @file
+ * Audited, 2008-09-13, Shevek.
+ * Make sure no file:line combo is >127 bytes long.
+ */
+
+void
+SPF_error_stdio(const char *file, int line, const char *errmsg)
 {
-    char	buf[128] = "";
-    if ( file )
-    {
-	snprintf( buf, sizeof(buf), "%s:%d", file, line );
-	fprintf( stderr, "%-20s Error: %s\n", buf, errmsg );
+    char	buf[128];
+    if (file) {
+		snprintf(buf, sizeof(buf), "%s:%d", file, line);
+		fprintf(stderr, "%-20s Error: %s\n", buf, errmsg);
     }
-    else
-	fprintf( stderr, "Error: %s\n", errmsg );
+    else {
+		fprintf(stderr, "Error: %s\n", errmsg);
+	}
     abort();
 }
 
-void SPF_warning_stdio( const char *file, int line, const char *errmsg )
+void
+SPF_warning_stdio(const char *file, int line, const char *errmsg)
 {
-    char	buf[128] = "";
-    if ( file )
-    {
-	snprintf( buf, sizeof(buf), "%s:%d", file, line );
-	fprintf( stderr, "%-20s Warning: %s\n", buf, errmsg );
+    char	buf[128];
+    if (file) {
+		snprintf(buf, sizeof(buf), "%s:%d", file, line);
+		fprintf(stderr, "%-20s Warning: %s\n", buf, errmsg);
     }
-    else
-	fprintf( stderr, "Warning: %s\n", errmsg );
+    else {
+		fprintf(stderr, "Warning: %s\n", errmsg);
+	}
 }
 
-void SPF_info_stdio( const char *file __attribute__ ((unused)), int line __attribute__ ((unused)), const char *errmsg )
+void
+SPF_info_stdio(const char *file __attribute__((unused)), int line __attribute__((unused)), const char *errmsg)
 {
-    printf( "%s\n", errmsg );
+    printf("%s\n", errmsg);
 }
 
-void SPF_debug_stdio( const char *file, int line, const char *errmsg )
+void
+SPF_debug_stdio(const char *file, int line, const char *errmsg)
 {
-    char	buf[128] = "";
-    if ( file )
-    {
-	snprintf( buf, sizeof(buf), "%s:%d", file, line );
-	fprintf( stderr, "%-20s Debug: %s\n", buf, errmsg );
+    char	buf[128];
+    if (file) {
+		snprintf(buf, sizeof(buf), "%s:%d", file, line);
+		fprintf(stderr, "%-20s Debug: %s\n", buf, errmsg);
     }
-    else
-	fprintf( stderr, "Debug: %s\n", errmsg );
+    else {
+		fprintf(stderr, "Debug: %s\n", errmsg);
+	}
 }

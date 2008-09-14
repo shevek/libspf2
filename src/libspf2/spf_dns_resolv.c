@@ -146,12 +146,12 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 			 response, sizeof(response));
 #endif
 
-	if ( dns_len < 0 ) {
+	if (dns_len < 0) {
 		/* This block returns unconditionally. */
-		if ( spf_dns_server->debug )
-			SPF_debugf( "query failed: err = %d  %s (%d): %s",
-				dns_len, hstrerror( SPF_h_errno ), SPF_h_errno,
-				domain );
+		if (spf_dns_server->debug)
+			SPF_debugf("query failed: err = %d  %s (%d): %s",
+				dns_len, hstrerror(SPF_h_errno), SPF_h_errno,
+				domain);
 		if ((SPF_h_errno == HOST_NOT_FOUND) &&
 				(spf_dns_server->layer_below != NULL)) {
 			return SPF_dns_lookup(spf_dns_server->layer_below,

@@ -31,65 +31,72 @@
  * standard expanded error formating routines
  */
 
-void SPF_errorx( const char *file, int line, const char *format, ... )
+void
+SPF_errorx( const char *file, int line, const char *format, ... )
 {
     char	errmsg[SPF_SYSLOG_SIZE];
     va_list ap;
+    
+    if (SPF_error_handler == NULL)
+		abort();
+    
     va_start(ap, format);
-    
-    if ( SPF_error_handler == NULL )
-	abort();
-    
-    vsnprintf( errmsg, sizeof( errmsg ), format, ap );
-    SPF_error_handler( file, line, errmsg );
-    va_end( ap );
+    vsnprintf(errmsg, sizeof(errmsg), format, ap);
+    va_end(ap);
 
+    SPF_error_handler(file, line, errmsg);
     abort();
 }
 
 
-void SPF_warningx( const char *file, int line, const char *format, ... )
+void
+SPF_warningx( const char *file, int line, const char *format, ... )
 {
     char	errmsg[SPF_SYSLOG_SIZE];
     va_list ap;
+
+    if (SPF_warning_handler == NULL)
+		return;
+
     va_start(ap, format);
-    
-    if ( SPF_warning_handler == NULL )
-	return;
-    
-    vsnprintf( errmsg, sizeof( errmsg ), format, ap );
-    SPF_warning_handler( file, line, errmsg );
-    va_end( ap );
+    vsnprintf(errmsg, sizeof(errmsg), format, ap);
+    va_end(ap);
+
+    SPF_warning_handler(file, line, errmsg);
 }
 
 
-void SPF_infox( const char *file, int line, const char *format, ... )
+void
+SPF_infox( const char *file, int line, const char *format, ... )
 {
     char	errmsg[SPF_SYSLOG_SIZE];
     va_list ap;
+
+    if (SPF_info_handler == NULL)
+		return;
+
     va_start(ap, format);
-    
-    if ( SPF_info_handler == NULL )
-	return;
-    
-    vsnprintf( errmsg, sizeof( errmsg ), format, ap );
-    SPF_info_handler( file, line, errmsg );
-    va_end( ap );
+    vsnprintf(errmsg, sizeof(errmsg), format, ap);
+    va_end(ap);
+
+    SPF_info_handler(file, line, errmsg);
 }
 
 
-void SPF_debugx( const char *file, int line, const char *format, ... )
+void
+SPF_debugx( const char *file, int line, const char *format, ... )
 {
     char	errmsg[SPF_SYSLOG_SIZE];
     va_list ap;
+
+    if (SPF_debug_handler == NULL)
+		return;
+
     va_start(ap, format);
-    
-    if ( SPF_debug_handler == NULL )
-	return;
-    
-    vsnprintf( errmsg, sizeof( errmsg ), format, ap );
-    SPF_debug_handler( file, line, errmsg );
-    va_end( ap );
+    vsnprintf(errmsg, sizeof(errmsg), format, ap);
+    va_end(ap);
+
+    SPF_debug_handler(file, line, errmsg);
 }
 
 
@@ -98,53 +105,57 @@ void SPF_debugx( const char *file, int line, const char *format, ... )
  * error reporting routines that accept a va_list
  */
 
-void SPF_errorv( const char *file, int line, const char *format, va_list ap )
+void
+SPF_errorv(const char *file, int line, const char *format, va_list ap)
 {
     char	errmsg[SPF_SYSLOG_SIZE];
     
-    if ( SPF_error_handler == NULL )
-	abort();
+    if (SPF_error_handler == NULL)
+		abort();
     
-    vsnprintf( errmsg, sizeof( errmsg ), format, ap );
+    vsnprintf(errmsg, sizeof(errmsg), format, ap);
     SPF_error_handler( file, line, errmsg );
 
     abort();
 }
 
 
-void SPF_warningv( const char *file, int line, const char *format, va_list ap )
+void
+SPF_warningv(const char *file, int line, const char *format, va_list ap)
 {
     char	errmsg[SPF_SYSLOG_SIZE];
     
-    if ( SPF_warning_handler == NULL )
-	return;
+    if (SPF_warning_handler == NULL)
+		return;
     
-    vsnprintf( errmsg, sizeof( errmsg ), format, ap );
-    SPF_warning_handler( file, line, errmsg );
+    vsnprintf(errmsg, sizeof(errmsg), format, ap);
+    SPF_warning_handler(file, line, errmsg);
 }
 
 
-void SPF_infov( const char *file, int line, const char *format, va_list ap )
+void
+SPF_infov(const char *file, int line, const char *format, va_list ap)
 {
     char	errmsg[SPF_SYSLOG_SIZE];
     
-    if ( SPF_info_handler == NULL )
-	return;
+    if (SPF_info_handler == NULL)
+		return;
     
-    vsnprintf( errmsg, sizeof( errmsg ), format, ap );
-    SPF_info_handler( file, line, errmsg );
+    vsnprintf(errmsg, sizeof(errmsg), format, ap);
+    SPF_info_handler(file, line, errmsg);
 }
 
 
-void SPF_debugv( const char *file, int line, const char *format, va_list ap )
+void
+SPF_debugv(const char *file, int line, const char *format, va_list ap)
 {
     char	errmsg[SPF_SYSLOG_SIZE];
     
-    if ( SPF_debug_handler == NULL )
-	return;
+    if (SPF_debug_handler == NULL)
+		return;
     
-    vsnprintf( errmsg, sizeof( errmsg ), format, ap );
-    SPF_debug_handler( file, line, errmsg );
+    vsnprintf(errmsg, sizeof(errmsg), format, ap);
+    SPF_debug_handler(file, line, errmsg);
 }
 
 
@@ -152,34 +163,38 @@ void SPF_debugv( const char *file, int line, const char *format, va_list ap )
  * reporting routines for braindead compilers
  */
 
-void SPF_errorx2( const char *format, ... )
+void
+SPF_errorx2(const char *format, ...)
 {
     va_list ap;
-    va_start( ap, format );
-    SPF_errorv( NULL, 0, format, ap );
-    va_end( ap );
+    va_start(ap, format);
+    SPF_errorv(NULL, 0, format, ap);
+    va_end(ap);
 }
 
-void SPF_warningx2( const char *format, ... )
+void
+SPF_warningx2(const char *format, ...)
 {
     va_list ap;
-    va_start( ap, format );
-    SPF_warningv( NULL, 0, format, ap );
-    va_end( ap );
+    va_start(ap, format);
+    SPF_warningv(NULL, 0, format, ap);
+    va_end(ap);
 }
 
-void SPF_infox2( const char *format, ... )
+void
+SPF_infox2(const char *format, ...)
 {
     va_list ap;
-    va_start( ap, format );
-    SPF_infov( NULL, 0, format, ap );
-    va_end( ap );
+    va_start(ap, format);
+    SPF_infov(NULL, 0, format, ap);
+    va_end(ap);
 }
 
-void SPF_debugx2( const char *format, ... )
+void
+SPF_debugx2(const char *format, ...)
 {
     va_list ap;
-    va_start( ap, format );
-    SPF_debugv( NULL, 0, format, ap );
-    va_end( ap );
+    va_start(ap, format);
+    SPF_debugv(NULL, 0, format, ap);
+    va_end(ap);
 }

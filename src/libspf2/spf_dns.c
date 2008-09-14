@@ -48,15 +48,15 @@ static void
 SPF_dns_debug_pre(SPF_dns_server_t *spf_dns_server, const char *domain,
 				ns_type rr_type, int should_cache)
 {
-	if ( spf_dns_server->debug ) {
-		SPF_debugf( "DNS %s lookup:  %s  %s (%d)",
+	if (spf_dns_server->debug) {
+		SPF_debugf("DNS %s lookup:  %s  %s (%d)",
 			spf_dns_server->name, domain,
-			( (rr_type == ns_t_a)     ? "A" :
-			  (rr_type == ns_t_aaaa)  ? "AAAA" :
-			  (rr_type == ns_t_mx)    ? "MX" :
-			  (rr_type == ns_t_txt)   ? "TXT" :
-			  (rr_type == ns_t_ptr)   ? "PTR" :
-			  (rr_type == ns_t_any)   ? "ANY" :
+			( (rr_type == ns_t_a)       ? "A" :
+			  (rr_type == ns_t_aaaa)    ? "AAAA" :
+			  (rr_type == ns_t_mx)      ? "MX" :
+			  (rr_type == ns_t_txt)     ? "TXT" :
+			  (rr_type == ns_t_ptr)     ? "PTR" :
+			  (rr_type == ns_t_any)     ? "ANY" :
 			  (rr_type == ns_t_invalid) ? "BAD" :
 			  "??" ),
 			rr_type );
@@ -66,16 +66,16 @@ SPF_dns_debug_pre(SPF_dns_server_t *spf_dns_server, const char *domain,
 static void
 SPF_dns_debug_post(SPF_dns_server_t *spf_dns_server, SPF_dns_rr_t*spfrr)
 {
-	if ( spf_dns_server->debug ) {
+	if (spf_dns_server->debug) {
 		SPF_debugf( "DNS %s found:  %s  %s (%d)  "
 				"TTL: %ld  RR found: %d  herrno: %d  source: %s",
 			spf_dns_server->name, spfrr->domain,
-			( (spfrr->rr_type == ns_t_a)     ? "A" :
-			  (spfrr->rr_type == ns_t_aaaa)  ? "AAAA" :
-			  (spfrr->rr_type == ns_t_mx)    ? "MX" :
-			  (spfrr->rr_type == ns_t_txt)   ? "TXT" :
-			  (spfrr->rr_type == ns_t_ptr)   ? "PTR" :
-			  (spfrr->rr_type == ns_t_any)   ? "ANY" :
+			( (spfrr->rr_type == ns_t_a)       ? "A" :
+			  (spfrr->rr_type == ns_t_aaaa)    ? "AAAA" :
+			  (spfrr->rr_type == ns_t_mx)      ? "MX" :
+			  (spfrr->rr_type == ns_t_txt)     ? "TXT" :
+			  (spfrr->rr_type == ns_t_ptr)     ? "PTR" :
+			  (spfrr->rr_type == ns_t_any)     ? "ANY" :
 			  (spfrr->rr_type == ns_t_invalid) ? "BAD" :
 			  "??" ),
 			spfrr->rr_type, spfrr->ttl, spfrr->num_rr, spfrr->herrno,
@@ -106,69 +106,68 @@ SPF_dns_rr_t *
 SPF_dns_lookup(SPF_dns_server_t *spf_dns_server, const char *domain,
 				ns_type rr_type, int should_cache)
 {
-    SPF_dns_rr_t	*spfrr;
-    
+	SPF_dns_rr_t	*spfrr;
+	
 	SPF_ASSERT_NOTNULL(spf_dns_server);
 	SPF_dns_debug_pre(spf_dns_server, domain, rr_type, should_cache);
 	SPF_ASSERT_NOTNULL(spf_dns_server->lookup);
 	spfrr = spf_dns_server->lookup(spf_dns_server,
 					domain, rr_type, should_cache);
-    if ( spfrr == NULL )
+	if (spfrr == NULL)
 		SPF_error( "SPF DNS layer return NULL during a lookup." );
 	SPF_dns_debug_post(spf_dns_server, spfrr);
-    return spfrr;
+	return spfrr;
 }
 
 SPF_dns_rr_t *
 SPF_dns_rlookup(SPF_dns_server_t *spf_dns_server, struct in_addr ipv4,
 				ns_type rr_type, int should_cache)
 {
-    char			 domain[ sizeof( "111.222.333.444.in-addr.arpa" ) ];
-    union {
+	char			 domain[ sizeof("111.222.333.444.in-addr.arpa") ];
+	union {
 		struct in_addr	ipv4;
 		unsigned char	x[4];
-    } tmp;
+	} tmp;
 
-    /*
-     * make sure the scratch buffer is big enough
-     */
-    tmp.ipv4 = ipv4;
+	/*
+	 * make sure the scratch buffer is big enough
+	 */
+	tmp.ipv4 = ipv4;
 
-    snprintf( domain, sizeof( domain ), "%d.%d.%d.%d.in-addr.arpa",
-	     tmp.x[3], tmp.x[2], tmp.x[1], tmp.x[0] );
+	snprintf(domain, sizeof(domain), "%d.%d.%d.%d.in-addr.arpa",
+		 tmp.x[3], tmp.x[2], tmp.x[1], tmp.x[0]);
 
 	return SPF_dns_lookup(spf_dns_server, domain, rr_type,should_cache);
 }
 
-SPF_dns_rr_t *SPF_dns_rlookup6( SPF_dns_server_t *spf_dns_server,
-				struct in6_addr ipv6, ns_type rr_type, int should_cache )
+SPF_dns_rr_t *
+SPF_dns_rlookup6(SPF_dns_server_t *spf_dns_server,
+				struct in6_addr ipv6, ns_type rr_type, int should_cache)
 {
-    char			 domain[ sizeof( struct in6_addr ) * 4 + sizeof( ".ip6.arpa" ) + 1 ];  /* nibbles */
+	char	 domain[ sizeof(struct in6_addr) * 4 + sizeof(".ip6.arpa" ) + 1];  /* nibbles */
+	char	*p, *p_end;
+	int		 i;
 
-    char	*p, *p_end;
-    int		i;
-
-    p = domain;
-    p_end = p + sizeof( domain );
+	p = domain;
+	p_end = p + sizeof( domain );
 			
-    for( i = sizeof( struct in6_addr ) - 1; i >= 0; i-- )
-    {
-	p += snprintf( p, p_end - p, "%.1x.%.1x.",
-		       ipv6.s6_addr[i] & 0xf,
-		       ipv6.s6_addr[i] >> 4 );
-    }
+	for (i = sizeof(struct in6_addr) - 1; i >= 0; i--) {
+		p += snprintf(p, p_end - p, "%.1x.%.1x.",
+					ipv6.s6_addr[i] & 0xf,
+					ipv6.s6_addr[i] >> 4);
+	}
 
-    /* squash the final '.' */
-    p += snprintf( p, p_end - p, "ip6.arpa" );
+	/* squash the final '.' */
+	p += snprintf(p, p_end - p, "ip6.arpa");
 
-	return SPF_dns_lookup(spf_dns_server, domain, rr_type,should_cache);
+	return SPF_dns_lookup(spf_dns_server, domain, rr_type, should_cache);
 }
 
 
 
 /* XXX FIXME */
 /*
- * Set the SMPT client domain name
+ * Set the SMTP client domain name
  */
 
 /* This ought to be refactored with the PTR code in the interpreter.  */
@@ -176,17 +175,17 @@ char *
 SPF_dns_get_client_dom( SPF_dns_server_t *spf_dns_server,
 				SPF_request_t *sr )
 {
-    char	 *client_dom;
-    SPF_dns_rr_t *rr_ptr;
-    SPF_dns_rr_t *rr_a;
-    SPF_dns_rr_t *rr_aaaa;
-    
-    int		i, j;
-    
-    int		max_ptr;
+	char	 *client_dom;
+	SPF_dns_rr_t *rr_ptr;
+	SPF_dns_rr_t *rr_a;
+	SPF_dns_rr_t *rr_aaaa;
+	
+	int		i, j;
+	
+	int		max_ptr;
 
-    SPF_ASSERT_NOTNULL(spf_dns_server);
-    SPF_ASSERT_NOTNULL(sr);
+	SPF_ASSERT_NOTNULL(spf_dns_server);
+	SPF_ASSERT_NOTNULL(sr);
 
 
 /*
@@ -210,29 +209,28 @@ SPF_dns_get_client_dom( SPF_dns_server_t *spf_dns_server,
 		
 		max_ptr = rr_ptr->num_rr;
 		/* XXX TODO? Or irrelevant?
-		if ( max_ptr > sr->max_dns_ptr )
+		if (max_ptr > sr->max_dns_ptr)
 			max_ptr = sr->max_dns_ptr;
 		*/
-		if ( max_ptr > SPF_MAX_DNS_PTR )
+		if (max_ptr > SPF_MAX_DNS_PTR)
 			max_ptr = SPF_MAX_DNS_PTR;
 
-		for( i = 0; i < max_ptr; i++ )
-		{
-			rr_a = SPF_dns_lookup( spf_dns_server, rr_ptr->rr[i]->ptr, ns_t_a, FALSE );
+		for (i = 0; i < max_ptr; i++) {
+			rr_a = SPF_dns_lookup(spf_dns_server, rr_ptr->rr[i]->ptr, ns_t_a, FALSE);
 
-			for( j = 0; j < rr_a->num_rr; j++ ) {
-				if ( rr_a->rr[j]->a.s_addr == sr->ipv4.s_addr ) {
-					client_dom = strdup( rr_ptr->rr[i]->ptr );
-					SPF_dns_rr_free( rr_ptr );
-					SPF_dns_rr_free( rr_a );
+			for (j = 0; j < rr_a->num_rr; j++) {
+				if (rr_a->rr[j]->a.s_addr == sr->ipv4.s_addr) {
+					client_dom = strdup(rr_ptr->rr[i]->ptr);
+					SPF_dns_rr_free(rr_ptr);
+					SPF_dns_rr_free(rr_a);
 					return client_dom;
 				}
 			}
-			SPF_dns_rr_free( rr_a );
+			SPF_dns_rr_free(rr_a);
 		}
-		SPF_dns_rr_free( rr_ptr );
+		SPF_dns_rr_free(rr_ptr);
 	}
-	    
+		
 	else if ( sr->client_ver == AF_INET6 ) {
 		rr_ptr = SPF_dns_rlookup6( spf_dns_server, sr->ipv6, ns_t_ptr, FALSE );
 
@@ -261,7 +259,7 @@ SPF_dns_get_client_dom( SPF_dns_server_t *spf_dns_server,
 		SPF_dns_rr_free( rr_ptr );
 	}
 
-    return strdup( "unknown" );
+	return strdup( "unknown" );
 }
 
 

@@ -33,12 +33,21 @@
 #include <netdb.h>
 #endif
 
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+
 
 #include "spf.h"
 #include "spf_dns.h"
 #include "spf_internal.h"
 #include "spf_dns_internal.h"
 #include "spf_dns_rr.h"
+
+/**
+ * @file
+ * Audited, 2008-09-13, Shevek.
+ */
 
 SPF_dns_rr_t *
 SPF_dns_rr_new_nxdomain(SPF_dns_server_t *spf_dns_server,
@@ -57,7 +66,7 @@ SPF_dns_rr_new_init(SPF_dns_server_t *spf_dns_server,
     SPF_dns_rr_t	*spfrr;
 
     spfrr = SPF_dns_rr_new();
-    if ( spfrr == NULL )
+    if (spfrr == NULL)
 		return spfrr;
 
     spfrr->source = spf_dns_server;
@@ -80,14 +89,13 @@ SPF_dns_rr_new_init(SPF_dns_server_t *spf_dns_server,
     return spfrr;
 }
 
-
 SPF_dns_rr_t *
 SPF_dns_rr_new()
 {
     SPF_dns_rr_t	*spfrr;
 
-    spfrr = malloc( sizeof( SPF_dns_rr_t ) );
-    if ( spfrr == NULL )
+    spfrr = malloc(sizeof(SPF_dns_rr_t));
+    if (spfrr == NULL)
 		return spfrr;
 	memset(spfrr, 0, sizeof(SPF_dns_rr_t));
 
@@ -159,8 +167,8 @@ SPF_dns_rr_buf_realloc(SPF_dns_rr_t *spfrr, int idx, size_t len)
     if (spfrr->rr_buf_len[idx] >= len)
 		return SPF_E_SUCCESS;
 
-    spfrr->rr[idx] = realloc( spfrr->rr[idx], len );
-    if ( spfrr->rr[idx] == NULL )
+    spfrr->rr[idx] = realloc(spfrr->rr[idx], len);
+    if (spfrr->rr[idx] == NULL)
 		return SPF_E_NO_MEMORY;
     spfrr->rr_buf_len[idx] = len;
 
@@ -189,64 +197,37 @@ SPF_dns_rr_dup(SPF_dns_rr_t **dstp, SPF_dns_rr_t *src)
 			if (err) return err; \
 		} while(0)
     
-    for( i = dst->num_rr - 1; i >= 0; i-- ) {
-		switch( dst->rr_type ) {
-		case ns_t_a:
-			SPF_DNS_RR_REALLOC(dst, i, sizeof(SPF_dns_rr_data_t));
-			dst->rr[i]->a = src->rr[i]->a;
-			break;
-			
-		case ns_t_ptr:
-			SPF_DNS_RR_REALLOC(dst, i, strlen( src->rr[i]->ptr ) + 1);
-			strcpy( dst->rr[i]->ptr, src->rr[i]->ptr );
-			break;
-			
-		case ns_t_mx:
-			SPF_DNS_RR_REALLOC(dst, i, strlen( src->rr[i]->mx ) + 1);
-			strcpy( dst->rr[i]->mx, src->rr[i]->mx );
-			break;
-			
-		case ns_t_txt:
-			SPF_DNS_RR_REALLOC(dst, i, strlen( src->rr[i]->txt ) + 1);
-			strcpy( dst->rr[i]->txt, src->rr[i]->txt );
-			break;
-			
-		case ns_t_aaaa:
-			SPF_DNS_RR_REALLOC(dst, i, sizeof(SPF_dns_rr_data_t));
-			dst->rr[i]->aaaa = src->rr[i]->aaaa;
-			break;
-			
-		default:
-			break;
+    for (i = dst->num_rr - 1; i >= 0; i--) {
+		switch (dst->rr_type) {
+			case ns_t_a:
+				SPF_DNS_RR_REALLOC(dst, i, sizeof(SPF_dns_rr_data_t));
+				dst->rr[i]->a = src->rr[i]->a;
+				break;
+				
+			case ns_t_ptr:
+				SPF_DNS_RR_REALLOC(dst, i, strlen(src->rr[i]->ptr) + 1);
+				strcpy(dst->rr[i]->ptr, src->rr[i]->ptr);
+				break;
+				
+			case ns_t_mx:
+				SPF_DNS_RR_REALLOC(dst, i, strlen(src->rr[i]->mx) + 1);
+				strcpy(dst->rr[i]->mx, src->rr[i]->mx);
+				break;
+				
+			case ns_t_txt:
+				SPF_DNS_RR_REALLOC(dst, i, strlen(src->rr[i]->txt) + 1);
+				strcpy(dst->rr[i]->txt, src->rr[i]->txt);
+				break;
+				
+			case ns_t_aaaa:
+				SPF_DNS_RR_REALLOC(dst, i, sizeof(SPF_dns_rr_data_t));
+				dst->rr[i]->aaaa = src->rr[i]->aaaa;
+				break;
+				
+			default:
+				break;
 		}
 	}
 
     return SPF_E_SUCCESS;
 }
-
-#if 0
-SPF_dns_rr_t *
-SPF_dns_dup_rr( SPF_dns_rr_t *orig )
-{
-    SPF_errcode_t	err;
-    SPF_dns_rr_t	*spfrr;
-    
-
-    if ( orig == NULL )
-	return NULL;
-
-    spfrr = SPF_dns_create_rr();
-    if ( spfrr == NULL )
-	return NULL;
-
-    err = SPF_dns_copy_rr( spfrr, orig );
-    if ( err )
-    {
-	SPF_dns_destroy_rr( spfrr );
-	return NULL;
-    }
-
-    return spfrr;
-}
-
-#endif
