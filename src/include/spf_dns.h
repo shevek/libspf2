@@ -166,18 +166,5 @@ SPF_dns_rr_t	*SPF_dns_rlookup6( SPF_dns_server_t *spf_dns_server,
 char		*SPF_dns_get_client_dom(SPF_dns_server_t *spf_dns_server,
 				SPF_request_t *sr);
 
-/*
- * helper functions
- */
-
-
-#if 0
-#ifdef WORDS_BIGENDIAN
-#define SPF_IPV4(a,b,c,d) ((unsigned long)((((unsigned long)a)<<24) + (((unsigned long)b)<<16) + (((unsigned long)c)<<8) + (unsigned long)d))
-#else
-#define SPF_IPV4(a,b,c,d) ((unsigned long)((((unsigned long)d)<<24) + (((unsigned long)c)<<16) + (((unsigned long)b)<<8) + (unsigned long)a))
-#endif
-#endif
-
 
 #endif

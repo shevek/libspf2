@@ -18,10 +18,20 @@
 #ifndef INC_SPF_LOG
 #define INC_SPF_LOG
 
-/*
+/**
+ * @file
  * Error messages and warnings generated internally by the library call
  * these routines.  By default, the messages go to stderr, but you can
  * define your own routines to deal with the messages instead.
+ *
+ * To use the syslog routines, add code such as:
+ *
+ *  openlog(logPrefix,LOG_PID|LOG_CONS|LOG_NDELAY|LOG_NOWAIT,LOG_MAIL);
+ *
+ *  SPF_error_handler = SPF_error_syslog;
+ *  SPF_warning_handler = SPF_warning_syslog;
+ *  SPF_info_handler = SPF_info_syslog;
+ *  SPF_debug_handler = SPF_debug_syslog;
  */
 
 #include <stdarg.h>
@@ -86,16 +96,6 @@ void SPF_error_syslog( const char *file, int line, const char *errmsg ) __attrib
 void SPF_warning_syslog( const char *file, int line, const char *errmsg );
 void SPF_info_syslog( const char *file __attribute__ ((unused)), int line __attribute__ ((unused)), const char *errmsg );
 void SPF_debug_syslog( const char *file, int line, const char *errmsg );
-
-#if 0
-    /* to use the syslog routines, add code such as: */
-    openlog(logPrefix,LOG_PID|LOG_CONS|LOG_NDELAY|LOG_NOWAIT,LOG_MAIL);
-
-    SPF_error_handler = SPF_error_syslog;
-    SPF_warning_handler = SPF_warning_syslog;
-    SPF_info_handler = SPF_info_syslog;
-    SPF_debug_handler = SPF_debug_syslog;
-#endif
 
 /* FYI only -- can't be changed without recompiling the library */
 #define SPF_DEFAULT_ERROR_HANDLER	SPF_error_stdio
