@@ -8,7 +8,6 @@ lib_LTLIBRARIES	= libspf2.la
 
 libspf2_la_SOURCES	= \
 	spf_compile.c \
-	spf_config.c \
 	spf_dns.c \
 	spf_dns_cache.c \
 	spf_dns_null.c \
@@ -18,7 +17,6 @@ libspf2_la_SOURCES	= \
 	spf_dns_windns.c \
 	spf_dns_zone.c \
 	spf_expand.c \
-	spf_find_mod.c \
 	spf_get_exp.c \
 	spf_get_spf.c \
 	spf_id2str.c \
@@ -27,23 +25,20 @@ libspf2_la_SOURCES	= \
 	spf_log_default.c \
 	spf_log_stdio.c \
 	spf_log_syslog.c \
-	spf_optimize.c \
 	spf_print.c \
 	spf_record.c \
 	spf_request.c \
 	spf_response.c \
-	spf_result.c \
 	spf_server.c \
 	spf_strerror.c \
 	spf_utils.c \
-	spf_verify.c \
 	spf_win32.c
 
 libspf2_la_LIBADD	= $(top_builddir)/src/libreplace/libreplace.la
 
 
 
-libspf2_la_LDFLAGS	= -version-info 2:0:0
+libspf2_la_LDFLAGS	= -version-info 3:0:0
 
 # Copied from the libtool info file:
 #

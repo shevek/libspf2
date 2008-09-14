@@ -261,10 +261,3 @@ SPF_dns_get_client_dom( SPF_dns_server_t *spf_dns_server,
 
 	return strdup( "unknown" );
 }
-
-
-
-#if 0
-SPF_dns_rr_t SPF_dns_nxdomain = 
-{(char *)"", 0, ns_t_any, 0, NULL, NULL,  0, 0, 0, HOST_NOT_FOUND, NULL, NULL };
-#endif

@@ -53,21 +53,20 @@ libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libspf2_la_DEPENDENCIES =  \
 	$(top_builddir)/src/libreplace/libreplace.la
-am_libspf2_la_OBJECTS = spf_compile.lo spf_config.lo spf_dns.lo \
-	spf_dns_cache.lo spf_dns_null.lo spf_dns_resolv.lo \
-	spf_dns_rr.lo spf_dns_test.lo spf_dns_windns.lo \
-	spf_dns_zone.lo spf_expand.lo spf_find_mod.lo spf_get_exp.lo \
-	spf_get_spf.lo spf_id2str.lo spf_interpret.lo spf_log.lo \
-	spf_log_default.lo spf_log_stdio.lo spf_log_syslog.lo \
-	spf_optimize.lo spf_print.lo spf_record.lo spf_request.lo \
-	spf_response.lo spf_result.lo spf_server.lo spf_strerror.lo \
-	spf_utils.lo spf_verify.lo spf_win32.lo
+am_libspf2_la_OBJECTS = spf_compile.lo spf_dns.lo spf_dns_cache.lo \
+	spf_dns_null.lo spf_dns_resolv.lo spf_dns_rr.lo \
+	spf_dns_test.lo spf_dns_windns.lo spf_dns_zone.lo \
+	spf_expand.lo spf_get_exp.lo spf_get_spf.lo spf_id2str.lo \
+	spf_interpret.lo spf_log.lo spf_log_default.lo \
+	spf_log_stdio.lo spf_log_syslog.lo spf_print.lo spf_record.lo \
+	spf_request.lo spf_response.lo spf_server.lo spf_strerror.lo \
+	spf_utils.lo spf_win32.lo
 libspf2_la_OBJECTS = $(am_libspf2_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/spf_compile.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/spf_config.Plo ./$(DEPDIR)/spf_dns.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/spf_dns.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_dns_cache.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_dns_null.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_dns_resolv.Plo \
@@ -76,7 +75,6 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/spf_dns_windns.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_dns_zone.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_expand.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/spf_find_mod.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_get_exp.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_get_spf.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_id2str.Plo \
@@ -85,16 +83,13 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/spf_log_default.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_log_stdio.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_log_syslog.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/spf_optimize.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_print.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_record.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_request.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_response.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/spf_result.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_server.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_strerror.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_utils.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/spf_verify.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/spf_win32.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -228,7 +223,6 @@ INCLUDES = -I$(top_srcdir)/src/include -I$(top_srcdir)/src
 lib_LTLIBRARIES = libspf2.la
 libspf2_la_SOURCES = \
 	spf_compile.c \
-	spf_config.c \
 	spf_dns.c \
 	spf_dns_cache.c \
 	spf_dns_null.c \
@@ -238,7 +232,6 @@ libspf2_la_SOURCES = \
 	spf_dns_windns.c \
 	spf_dns_zone.c \
 	spf_expand.c \
-	spf_find_mod.c \
 	spf_get_exp.c \
 	spf_get_spf.c \
 	spf_id2str.c \
@@ -247,20 +240,17 @@ libspf2_la_SOURCES = \
 	spf_log_default.c \
 	spf_log_stdio.c \
 	spf_log_syslog.c \
-	spf_optimize.c \
 	spf_print.c \
 	spf_record.c \
 	spf_request.c \
 	spf_response.c \
-	spf_result.c \
 	spf_server.c \
 	spf_strerror.c \
 	spf_utils.c \
-	spf_verify.c \
 	spf_win32.c
 
 libspf2_la_LIBADD = $(top_builddir)/src/libreplace/libreplace.la
-libspf2_la_LDFLAGS = -version-info 2:0:0
+libspf2_la_LDFLAGS = -version-info 3:0:0
 all: all-recursive
 
 .SUFFIXES:
@@ -331,7 +321,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_compile.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_dns.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_dns_cache.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_dns_null.Plo@am__quote@
@@ -341,7 +330,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_dns_windns.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_dns_zone.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_expand.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_find_mod.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_get_exp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_get_spf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_id2str.Plo@am__quote@
@@ -350,16 +338,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_log_default.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_log_stdio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_log_syslog.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_optimize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_print.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_record.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_request.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_response.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_result.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_strerror.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_utils.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_verify.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spf_win32.Plo@am__quote@
 
 .c.o:

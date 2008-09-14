@@ -119,6 +119,18 @@ TODO items (somewhat in priority order)
 
 * SPF_verify()
 
+     *   * version ok
+     *   * lengths ok
+     *   * counts ok
+     *   * types ok
+     *   * max_dns_mech
+     *   * cidr data first and not both zero
+     *   * ip4/ip6 cidr ranges
+     *   * invalid chars in data_str and mod name
+     *   * data on mechs that shouldn't have any
+     *   * mechs that should have data, but don't
+
+
 * fix all FIXME's
 
 * convert int -> SPF_err_t

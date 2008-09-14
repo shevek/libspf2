@@ -319,7 +319,7 @@ SPF_i_set_received_spf(SPF_response_t *spf_response)
 		
 
 		/* FIXME: Add in full compiler errors. */
-	#if 0
+#if 0
 		/* add in the optional compiler error keyword */
 		if ( output.err_msg != NULL ) {
 			p += snprintf( p, p_end - p, " problem=%s;", output.err_msg );
@@ -329,7 +329,7 @@ SPF_i_set_received_spf(SPF_response_t *spf_response)
 			p += snprintf( p, p_end - p, " problem=%s;", c_results.err_msg );
 			if ( p_end - p <= 0 ) break;
 		}
-	#endif
+#endif
 
 		/* FIXME  should the explanation string be included in the header? */
 
