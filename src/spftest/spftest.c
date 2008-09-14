@@ -76,8 +76,8 @@
 static void usage()
 {
 	printf( "Usage: spftest [spf \"<spf record>\" | domain <domain name>\n" );
-	printf( "				| ip <ip address> | exp \"<explanation string>\"\n" );
-	printf( "				| version ]\n" );
+	printf( "                | ip <ip address> | exp \"<explanation string>\"\n" );
+	printf( "                | version ]\n" );
 }
 
 

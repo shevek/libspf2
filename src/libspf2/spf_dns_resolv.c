@@ -61,6 +61,20 @@
 #include "spf_dns_internal.h"
 #include "spf_dns_resolv.h"
 
+/**
+ * @file
+ * Audited, 2008-09-15, Shevek.
+ */
+
+static const struct res_sym ns_sects[] = {
+	{ ns_s_qd, "QUESTION",   "Question" },
+	{ ns_s_an, "ANSWER",     "Answer" },
+	{ ns_s_ns, "AUTHORITY",  "Authority" },
+	{ ns_s_ar, "ADDITIONAL", "Additional" },
+};
+
+static const int num_ns_sect = sizeof(ns_sects) / sizeof(*ns_sects);
+
 
 #if HAVE_DECL_RES_NINIT
 # define SPF_h_errno res_state->res_h_errno
@@ -86,39 +100,123 @@ SPF_dns_resolv_init_key()
 }
 #endif
 
+static void
+SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
+				const u_char *responsebuf, size_t responselen,
+				const u_char *rdata, size_t rdlen)
+{
+	char	ip4_buf[ INET_ADDRSTRLEN ];
+	char	ip6_buf[ INET6_ADDRSTRLEN ];
+	char	name_buf[ NS_MAXDNAME ];
+	int		prio;
+	int		err;
+
+	if (spf_dns_server->debug > 1) {
+		switch (ns_rr_type(rr)) {
+			case ns_t_a:
+				SPF_debugf("A: %s",
+						inet_ntop(AF_INET, rdata,
+							ip4_buf, sizeof(ip4_buf)));
+				break;
+
+			case ns_t_aaaa:
+				SPF_debugf("AAAA: %s",
+						inet_ntop(AF_INET6, rdata,
+							ip6_buf, sizeof(ip6_buf)));
+				break;
+
+			case ns_t_ns:
+				err = ns_name_uncompress(responsebuf,
+							  responsebuf + responselen,
+							  rdata,
+							  name_buf, sizeof(name_buf));
+				if (err < 0)		/* 0 or -1 */
+					SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+							err, strerror(errno), errno);
+				else
+					SPF_debugf("NS: %s", name_buf);
+				break;
+
+			case ns_t_cname:
+				err = ns_name_uncompress(responsebuf,
+							  responsebuf + responselen,
+							  rdata,
+							  name_buf, sizeof(name_buf));
+				if ( err < 0 )		/* 0 or -1 */
+					SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+							err, strerror(errno), errno );
+				else
+					SPF_debugf("CNAME: %s", name_buf);
+				break;
+
+			case ns_t_mx:
+				prio = ns_get16(rdata);
+				err = ns_name_uncompress(responsebuf,
+								responsebuf + responselen,
+								rdata + NS_INT16SZ,
+								name_buf, sizeof(name_buf));
+				if (err < 0)		/* 0 or -1 */
+					SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+							err, strerror(errno), errno);
+				else
+					SPF_debugf("MX: %d %s", prio, name_buf);
+				break;
+
+			case ns_t_txt:
+				/* XXX I think this is wrong/unsafe. Shevek. */
+				SPF_debugf("TXT: (%d) \"%.*s\"",
+						rdlen, rdlen - 1, rdata + 1);
+				break;
+
+			case ns_t_ptr:
+				err = ns_name_uncompress(responsebuf,
+								responsebuf + responselen,
+								rdata,
+								name_buf, sizeof(name_buf));
+				if (err < 0)		/* 0 or -1 */
+					SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+							err, strerror(errno), errno);
+				else
+					SPF_debugf("PTR: %s", name_buf);
+				break;
+
+			default:
+				SPF_debugf("not parsed:  type: %d", ns_rr_type(rr));
+				break;
+		}
+	}
+
+}
+
 static SPF_dns_rr_t *
 SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 				const char *domain, ns_type rr_type, int should_cache)
 {
-    SPF_dns_rr_t			*spfrr;
+	SPF_dns_rr_t			*spfrr;
 
-    int		err;
-    int		i;
-    int		nrec;
-    int		cnt;
+	int		err;
+	int		i;
+	int		nrec;
+	int		cnt;
 
-    u_char	response[2048];
+	u_char	*responsebuf;
+	size_t	 responselen;
 
-    int		dns_len;
+	ns_msg	ns_handle;
+	ns_rr	rr;
 
-    ns_msg	ns_handle;
-    ns_rr	rr;
+	int		ns_sect;
+	int		num_ns_sect = sizeof( ns_sects ) / sizeof( *ns_sects );
 
-    int		ns_sects[] = { ns_s_qd, ns_s_an, ns_s_ns, ns_s_ar };
-    const char	*ns_sect_names[] = { "Question", "Answer", "Authority", "Additional" };
-    int		ns_sect;
-    int		num_ns_sect = sizeof( ns_sects ) / sizeof( *ns_sects );
+	char	name_buf[ NS_MAXDNAME ];
 
-    char	ip4_buf[ INET_ADDRSTRLEN ];
-    char	ip6_buf[ INET6_ADDRSTRLEN ];
-    char	name_buf[ NS_MAXDNAME ];
-    int		prio;
+	size_t	rdlen;
+	const u_char	*rdata;
 
-    int		rdlen;
-    const u_char	*rdata, *rdata_end;
-
+#if HAVE_DECL_RES_NINIT
 	void				*res_spec;
 	struct __res_state	*res_state;
+#endif
 
 	SPF_ASSERT_NOTNULL(spf_dns_server);
 
@@ -137,298 +235,288 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 	else {
 		res_state = (struct __res_state *)res_spec;
 	}
-
-	/* Resolve the name. */
-	dns_len = res_nquery(res_state, domain, ns_c_in, rr_type,
-			 response, sizeof(response));
-#else
-    dns_len = res_query(domain, ns_c_in, rr_type,
-			 response, sizeof(response));
 #endif
 
-	if (dns_len < 0) {
-		/* This block returns unconditionally. */
-		if (spf_dns_server->debug)
-			SPF_debugf("query failed: err = %d  %s (%d): %s",
-				dns_len, hstrerror(SPF_h_errno), SPF_h_errno,
-				domain);
-		if ((SPF_h_errno == HOST_NOT_FOUND) &&
-				(spf_dns_server->layer_below != NULL)) {
-			return SPF_dns_lookup(spf_dns_server->layer_below,
-							domain, rr_type, should_cache);
+	responselen = 2048;
+	responsebuf = (u_char *)malloc(responselen);
+	memset(responsebuf, 0, responselen);
+
+	/*
+	 * Retry the lookup until our response buffer is big enough.
+	 *
+	 * This loop repeats until either we fail a lookup or we succeed.
+	 * The size of the response buffer is monotonic increasing, so eventually we
+	 * must either succeed, or we try to malloc more RAM than we can.
+	 *
+	 * The Linux man pages do not describe res_nquery adequately. Solaris says:
+	 *
+	 * The res_nquery() and res_query() routines return a length that may be bigger
+	 * than anslen. In that case, retry the query with a larger buf. The answer to the
+	 * second query may be larger still], so it is recommended that you supply a buf
+	 * larger than the answer returned by the previous query. answer must be large
+	 * enough to receive a maximum UDP response from the server or parts of the answer
+	 * will be silently discarded. The default maximum UDP response size is 512 bytes.
+	 */
+	for (;;) {
+		int	dns_len;
+
+#if HAVE_DECL_RES_NINIT
+		/* Resolve the name. */
+		dns_len = res_nquery(res_state, domain, ns_c_in, rr_type,
+				 responsebuf, responselen);
+#else
+		dns_len = res_query(domain, ns_c_in, rr_type,
+				 responsebuf, responselen);
+#endif
+
+		if (dns_len < 0) {
+			/* We failed to perform a lookup. */
+			/* This block returns unconditionally. */
+			free(responsebuf);
+			if (spf_dns_server->debug)
+				SPF_debugf("query failed: err = %d  %s (%d): %s",
+					dns_len, hstrerror(SPF_h_errno), SPF_h_errno,
+					domain);
+			if ((SPF_h_errno == HOST_NOT_FOUND) &&
+					(spf_dns_server->layer_below != NULL)) {
+				return SPF_dns_lookup(spf_dns_server->layer_below,
+								domain, rr_type, should_cache);
+			}
+			return SPF_dns_rr_new_init(spf_dns_server,
+							domain, rr_type, 0, SPF_h_errno);
 		}
-		return SPF_dns_rr_new_init(spf_dns_server,
-						domain, rr_type, 0, SPF_h_errno);
+		else if (dns_len > responselen) {
+			/* We managed a lookup but our buffer was too small. */
+			responselen = dns_len * 2;
+#if 0
+			/* Sanity-trap - we should never hit this. */
+			if (responselen > 1048576) {	/* One megabyte. */
+				free(responsebuf);
+				return SPF_dns_rr_new_init(spf_dns_server,
+								domain, rr_type, 0, SPF_h_errno);
+			}
+#endif
+			responsebuf = realloc(responsebuf, responselen);
+		}
+		else {
+			/* We managed a lookup, and our buffer was large enough. */
+			responselen = dns_len;
+			break;
+		}
 	}
 
-    /*
-     * initialize stuff
-     */
+
+
+	/*
+	 * initialize stuff
+	 */
 	spfrr = SPF_dns_rr_new_init(spf_dns_server,
 					domain, rr_type, 0, NETDB_SUCCESS);
 
-    err = ns_initparse( response, dns_len, &ns_handle );
+	err = ns_initparse(responsebuf, responselen, &ns_handle);
 
-	if ( err < 0 ) {	/* 0 or -1 */
-		if ( spf_dns_server->debug )
-			SPF_debugf( "ns_initparse failed: err = %d  %s (%d)",
-				err, strerror( errno ), errno );
+	if (err < 0) {	/* 0 or -1 */
+		if (spf_dns_server->debug)
+			SPF_debugf("ns_initparse failed: err = %d  %s (%d)",
+				err, strerror(errno), errno);
+		free(responsebuf);
 		return spfrr;
-    }
-
-
-    if ( spf_dns_server->debug > 1 ) {
-		SPF_debugf( "msg id:             %d", ns_msg_id( ns_handle ));
-		SPF_debugf( "ns_f_qr quest/resp: %d", ns_msg_getflag( ns_handle, ns_f_qr ));
-		SPF_debugf( "ns_f_opcode:        %d", ns_msg_getflag( ns_handle, ns_f_opcode ));
-		SPF_debugf( "ns_f_aa auth ans:   %d", ns_msg_getflag( ns_handle, ns_f_aa ));
-		SPF_debugf( "ns_f_tc truncated:  %d", ns_msg_getflag( ns_handle, ns_f_tc ));
-		SPF_debugf( "ns_f_rd rec desire: %d", ns_msg_getflag( ns_handle, ns_f_rd ));
-		SPF_debugf( "ns_f_ra rec avail:  %d", ns_msg_getflag( ns_handle, ns_f_ra ));
-		SPF_debugf( "ns_f_rcode:         %d", ns_msg_getflag( ns_handle, ns_f_rcode ));
 	}
 
 
-    /* FIXME  the error handling from here on is suspect at best */
-	for( ns_sect = 0; ns_sect < num_ns_sect; ns_sect++ ) {
-		if ( ns_sects[ ns_sect ] != ns_s_an )
+	if (spf_dns_server->debug > 1) {
+		SPF_debugf("msg id:             %d", ns_msg_id(ns_handle));
+		SPF_debugf("ns_f_qr quest/resp: %d", ns_msg_getflag(ns_handle, ns_f_qr));
+		SPF_debugf("ns_f_opcode:        %d", ns_msg_getflag(ns_handle, ns_f_opcode));
+		SPF_debugf("ns_f_aa auth ans:   %d", ns_msg_getflag(ns_handle, ns_f_aa));
+		SPF_debugf("ns_f_tc truncated:  %d", ns_msg_getflag(ns_handle, ns_f_tc));
+		SPF_debugf("ns_f_rd rec desire: %d", ns_msg_getflag(ns_handle, ns_f_rd));
+		SPF_debugf("ns_f_ra rec avail:  %d", ns_msg_getflag(ns_handle, ns_f_ra));
+		SPF_debugf("ns_f_rcode:         %d", ns_msg_getflag(ns_handle, ns_f_rcode));
+	}
+
+
+	/* FIXME  the error handling from here on is suspect at best */
+	for (ns_sect = 0; ns_sect < num_ns_sect; ns_sect++) {
+		/* We pass this point if:
+		 * - We are the 'answer' section.
+		 * - We are debugging.
+		 * Otherwise, we continue to the next section.
+		 */
+		if (ns_sects[ns_sect].number != ns_s_an && spf_dns_server->debug <= 1)
 			continue;
 
-		nrec = ns_msg_count( ns_handle, ns_sects[ ns_sect ] );
+		nrec = ns_msg_count(ns_handle, ns_sects[ns_sect].number);
 
-		if ( spf_dns_server->debug > 1 )
-			SPF_debugf( "%s:  %d", ns_sect_names[ns_sect], nrec );
+		if (spf_dns_server->debug > 1)
+			SPF_debugf("%s:  %d", ns_sects[ns_sect].name, nrec);
 
 		spfrr->num_rr = 0;
 		cnt = 0;
-		for( i = 0; i < nrec; i++ ) {
-			err = ns_parserr( &ns_handle, ns_sects[ ns_sect ], i, &rr );
-			if ( err < 0 )		/* 0 or -1 */
-			{
-			if ( spf_dns_server->debug > 1 )
-				SPF_debugf( "ns_parserr failed: err = %d  %s (%d)",
-					err, strerror( errno ), errno );
-			return spfrr;
-			}
-
-			rdlen = ns_rr_rdlen( rr );
-			if ( spf_dns_server->debug > 1 )
-			SPF_debugf( "name: %s  type: %d  class: %d  ttl: %d  rdlen: %d",
-				ns_rr_name( rr ), ns_rr_type( rr ), ns_rr_class( rr ),
-				ns_rr_ttl( rr ), rdlen );
-
-			if ( rdlen <= 0 )
-			continue;
-
-			rdata = ns_rr_rdata( rr );
-
-			if ( spf_dns_server->debug > 1 )
-			{
-			switch( ns_rr_type( rr ) )
-			{
-			case ns_t_a:
-				SPF_debugf( "A: %s",
-					inet_ntop( AF_INET, rdata,
-						   ip4_buf, sizeof( ip4_buf ) ));
-				break;
-
-			case ns_t_aaaa:
-				SPF_debugf( "AAAA: %s",
-					inet_ntop( AF_INET6, rdata,
-					ip6_buf, sizeof( ip6_buf ) ));
-				break;
-
-			case ns_t_ns:
-				err = ns_name_uncompress( response,
-							  response + sizeof( response ),
-							  rdata,
-							  name_buf, sizeof( name_buf ) );
-				if ( err < 0 )		/* 0 or -1 */
-				{
-				SPF_debugf( "ns_name_uncompress failed: err = %d  %s (%d)",
-					err, strerror( errno ), errno );
-				}
-				else
-				SPF_debugf( "NS: %s", name_buf );
-				break;
-
-			case ns_t_cname:
-				err = ns_name_uncompress( response,
-							  response + sizeof( response ),
-							  rdata,
-							  name_buf, sizeof( name_buf ) );
-				if ( err < 0 )		/* 0 or -1 */
-				{
-				SPF_debugf( "ns_name_uncompress failed: err = %d  %s (%d)",
-					err, strerror( errno ), errno );
-				}
-				else
-				SPF_debugf( "CNAME: %s", name_buf );
-				break;
-
-			case ns_t_mx:
-				prio = ns_get16( rdata );
-				err = ns_name_uncompress( response,
-							  response + sizeof( response ),
-							  rdata + NS_INT16SZ,
-							  name_buf, sizeof( name_buf ) );
-				if ( err < 0 )		/* 0 or -1 */
-				{
-				SPF_debugf( "ns_name_uncompress failed: err = %d  %s (%d)",
-					err, strerror( errno ), errno );
-				}
-				else
-				SPF_debugf( "MX: %d %s", prio, name_buf );
-				break;
-
-			case ns_t_txt:
-				rdata_end = rdata + rdlen;
-				SPF_debugf( "TXT: (%d) \"%.*s\"",
-					rdlen, rdlen-1, rdata+1 );
-				break;
-
-			case ns_t_ptr:
-				err = ns_name_uncompress( response,
-							  response + sizeof( response ),
-							  rdata,
-							  name_buf, sizeof( name_buf ) );
-				if ( err < 0 )		/* 0 or -1 */
-				{
-				SPF_debugf( "ns_name_uncompress failed: err = %d  %s (%d)",
-					err, strerror( errno ), errno );
-				}
-				else
-				SPF_debugf( "PTR: %s", name_buf );
-				break;
-
-			default:
-				SPF_debugf( "not parsed:  type: %d", ns_rr_type( rr ) );
-				break;
-			}
-			}
-
-			if ( ns_sects[ ns_sect ] != ns_s_an  &&  spf_dns_server->debug > 1 )
-			continue;
-
-
-			if ( ns_rr_type( rr ) != spfrr->rr_type
-			 && ns_rr_type( rr ) != ns_t_cname )
-			{
-			SPF_debugf( "unexpected rr type: %d   expected: %d",
-				ns_rr_type( rr ), rr_type );
-			continue;
-			}
-
-			switch( ns_rr_type( rr ) )
-			{
-			case ns_t_a:
-			if ( SPF_dns_rr_buf_realloc( spfrr, cnt,
-							sizeof( spfrr->rr[cnt]->a ) ) != SPF_E_SUCCESS )
-				return spfrr;
-			memmove( &spfrr->rr[cnt]->a, rdata, sizeof( spfrr->rr[cnt]->a ) );
-			cnt++;
-			break;
-
-			case ns_t_aaaa:
-			if ( SPF_dns_rr_buf_realloc( spfrr, cnt,
-							sizeof( spfrr->rr[cnt]->aaaa ) ) != SPF_E_SUCCESS )
-				return spfrr;
-			memmove( &spfrr->rr[cnt]->aaaa, rdata, sizeof( spfrr->rr[cnt]->aaaa ) );
-
-			cnt++;
-			break;
-
-			case ns_t_ns:
-			break;
-
-			case ns_t_cname:
-			/* FIXME:  are CNAMEs always sent with the real RR? */
-			break;
-
-			case ns_t_mx:
-			err = ns_name_uncompress( response,
-						  response + sizeof( response ),
-						  rdata + NS_INT16SZ,
-						  name_buf, sizeof( name_buf ) );
-			if ( err < 0 )		/* 0 or -1 */
-			{
-				if ( spf_dns_server->debug > 1 )
-				SPF_debugf( "ns_name_uncompress failed: err = %d  %s (%d)",
-					err, strerror( errno ), errno );
+		for (i = 0; i < nrec; i++) {
+			err = ns_parserr(&ns_handle, ns_sects[ns_sect].number, i, &rr);
+			if (err < 0) {		/* 0 or -1 */
+				if (spf_dns_server->debug > 1)
+					SPF_debugf("ns_parserr failed: err = %d  %s (%d)",
+							err, strerror(errno), errno);
+				free(responsebuf);
 				return spfrr;
 			}
 
-			if ( SPF_dns_rr_buf_realloc( spfrr, cnt,
-							strlen( name_buf ) + 1 ) != SPF_E_SUCCESS )
-				return spfrr;
-			strcpy( spfrr->rr[cnt]->mx, name_buf );
+			rdlen = ns_rr_rdlen(rr);
+			if (spf_dns_server->debug > 1)
+				SPF_debugf("name: %s  type: %d  class: %d  ttl: %d  rdlen: %d",
+						ns_rr_name(rr), ns_rr_type(rr), ns_rr_class(rr),
+						ns_rr_ttl(rr), rdlen);
 
-			cnt++;
-			break;
+			if (rdlen <= 0)
+				continue;
 
-			case ns_t_txt:
-			if ( rdlen > 1 )
-			{
-				u_char *src, *dst;
-				size_t len;
+			rdata = ns_rr_rdata(rr);
 
-				if ( SPF_dns_rr_buf_realloc( spfrr, cnt, rdlen ) != SPF_E_SUCCESS )
-					return spfrr;
+			SPF_dns_resolv_debug(spf_dns_server, rr,
+					responsebuf, responselen, rdata, rdlen);
 
-				dst = (u_char *)spfrr->rr[cnt]->txt;
-				len = 0;
-				src = (u_char *)rdata;
-				while ( rdlen > 0 ) {
-					len = *src;
-					src++;
-					memcpy( dst, src, len );
-					dst += len;
-					src += len;
-					rdlen -= len + 1;
-				}
-				*dst = '\0';
-			} else {
-				if ( SPF_dns_rr_buf_realloc( spfrr, cnt, 1 ) != SPF_E_SUCCESS )
-				return spfrr;
-				spfrr->rr[cnt]->txt[0] = '\0';
+			/* And now, if we aren't the answer section, we skip the section. */
+			if (ns_sects[ns_sect].number != ns_s_an)
+				continue;
+
+			/* Now, we are in the answer section. */
+			if (ns_rr_type(rr) != spfrr->rr_type && ns_rr_type(rr) != ns_t_cname) {
+				SPF_debugf("unexpected rr type: %d   expected: %d",
+						ns_rr_type(rr), rr_type);
+				continue;
 			}
 
-			cnt++;
-			break;
+			switch (ns_rr_type(rr)) {
+				case ns_t_a:
+					if (SPF_dns_rr_buf_realloc(spfrr, cnt,
+								sizeof(spfrr->rr[cnt]->a)) != SPF_E_SUCCESS) {
+						free(responsebuf);
+						return spfrr;
+					}
+					memcpy(&spfrr->rr[cnt]->a, rdata, sizeof(spfrr->rr[cnt]->a));
+					cnt++;
+					break;
 
-			case ns_t_ptr:
-			err = ns_name_uncompress( response,
-						  response + sizeof( response ),
-						  rdata,
-						  name_buf, sizeof( name_buf ) );
-			if ( err < 0 )		/* 0 or -1 */
-			{
-				if ( spf_dns_server->debug > 1 )
-				SPF_debugf( "ns_name_uncompress failed: err = %d  %s (%d)",
-					err, strerror( errno ), errno );
-				return spfrr;
-			}
+				case ns_t_aaaa:
+					if (SPF_dns_rr_buf_realloc(spfrr, cnt,
+								sizeof(spfrr->rr[cnt]->aaaa)) != SPF_E_SUCCESS) {
+						free(responsebuf);
+						return spfrr;
+					}
+					memcpy(&spfrr->rr[cnt]->aaaa, rdata, sizeof(spfrr->rr[cnt]->aaaa));
+					cnt++;
+					break;
 
-			if ( SPF_dns_rr_buf_realloc( spfrr, cnt,
-							strlen( name_buf ) + 1 ) != SPF_E_SUCCESS )
-				return spfrr;
-			strcpy( spfrr->rr[cnt]->ptr, name_buf );
+				case ns_t_ns:
+					break;
 
-			cnt++;
-			break;
+				case ns_t_cname:
+					/* FIXME:  are CNAMEs always sent with the real RR? */
+					break;
 
-			default:
-			break;
+				case ns_t_mx:
+					err = ns_name_uncompress(responsebuf,
+									responsebuf + responselen,
+									rdata + NS_INT16SZ,
+									name_buf, sizeof(name_buf));
+					if (err < 0) {		/* 0 or -1 */
+						if (spf_dns_server->debug > 1)
+							SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+									err, strerror(errno), errno);
+						free(responsebuf);
+						return spfrr;
+					}
+
+					if (SPF_dns_rr_buf_realloc(spfrr, cnt,
+									strlen(name_buf) + 1 ) != SPF_E_SUCCESS) {
+						free(responsebuf);
+						return spfrr;
+					}
+					strcpy(spfrr->rr[cnt]->mx, name_buf);
+					cnt++;
+					break;
+
+				case ns_t_txt:
+					if (rdlen > 1) {
+						u_char *src, *dst;
+						size_t len;
+
+						/* Just rdlen is enough because there is at least one
+						 * length byte. */
+						if (SPF_dns_rr_buf_realloc(spfrr, cnt, rdlen) != SPF_E_SUCCESS) {
+							free(responsebuf);
+							return spfrr;
+						}
+
+						dst = (u_char *)spfrr->rr[cnt]->txt;
+						src = (u_char *)rdata;
+						len = 0;
+						while (rdlen > 0) {
+							/* Consume one byte into a length. */
+							len = *src;
+							src++;
+							rdlen--;
+
+							/* Avoid buffer overrun if len is junk. */
+							if (len > rdlen)
+								len = rdlen;
+							memcpy(dst, src, len);
+
+							/* Consume the data. */
+							src += len;
+							dst += len;
+							rdlen -= len;
+						}
+						*dst = '\0';
+					}
+					else {
+						if (SPF_dns_rr_buf_realloc(spfrr, cnt, 1) != SPF_E_SUCCESS) {
+							free(responsebuf);
+							return spfrr;
+						}
+						spfrr->rr[cnt]->txt[0] = '\0';
+					}
+
+					cnt++;
+					break;
+
+				case ns_t_ptr:
+					err = ns_name_uncompress(responsebuf,
+									responsebuf + responselen,
+									rdata,
+									name_buf, sizeof(name_buf));
+					if (err < 0) {		/* 0 or -1 */
+						if (spf_dns_server->debug > 1)
+							SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+									err, strerror(errno), errno);
+						free(responsebuf);
+						return spfrr;
+					}
+
+					if (SPF_dns_rr_buf_realloc(spfrr, cnt,
+									strlen(name_buf) + 1) != SPF_E_SUCCESS) {
+						free(responsebuf);
+						return spfrr;
+					}
+					strcpy(spfrr->rr[cnt]->ptr, name_buf);
+					cnt++;
+					break;
+
+				default:
+					break;
 			}
 		}
 
 		spfrr->num_rr = cnt;
 	}
 
-    if ( spfrr->num_rr == 0 )
+	if (spfrr->num_rr == 0)
 		spfrr->herrno = NO_DATA;
 
-    return spfrr;
+	free(responsebuf);
+	return spfrr;
 }
 
 
@@ -453,30 +541,30 @@ SPF_dns_resolv_new(SPF_dns_server_t *layer_below,
 #if HAVE_DECL_RES_NINIT
 	pthread_once(&res_state_control, SPF_dns_resolv_init_key);
 #else
-    if ( res_init() != 0 ) {
+	if ( res_init() != 0 ) {
 		perror("res_init");
 		return NULL;
-    }
+	}
 #endif
 
-    spf_dns_server = malloc(sizeof(SPF_dns_server_t));
-    if (spf_dns_server == NULL)
+	spf_dns_server = malloc(sizeof(SPF_dns_server_t));
+	if (spf_dns_server == NULL)
 		return NULL;
 	memset(spf_dns_server, 0, sizeof(SPF_dns_server_t));
 
-    if (name ==  NULL)
+	if (name ==  NULL)
 		name = "resolv";
 
-    spf_dns_server->destroy     = SPF_dns_resolv_free;
-    spf_dns_server->lookup      = SPF_dns_resolv_lookup;
-    spf_dns_server->get_spf     = NULL;
-    spf_dns_server->get_exp     = NULL;
-    spf_dns_server->add_cache   = NULL;
-    spf_dns_server->layer_below = layer_below;
-    spf_dns_server->name        = name;
-    spf_dns_server->debug       = debug;
+	spf_dns_server->destroy     = SPF_dns_resolv_free;
+	spf_dns_server->lookup      = SPF_dns_resolv_lookup;
+	spf_dns_server->get_spf     = NULL;
+	spf_dns_server->get_exp     = NULL;
+	spf_dns_server->add_cache   = NULL;
+	spf_dns_server->layer_below = layer_below;
+	spf_dns_server->name        = name;
+	spf_dns_server->debug       = debug;
 
-    return spf_dns_server;
+	return spf_dns_server;
 }
 
 #endif	/* _WIN32 */
