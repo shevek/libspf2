@@ -180,7 +180,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
-EXTRA_DIST = bootstrap LICENSES INSTALL Changelog README TODO win32
+EXTRA_DIST = bootstrap LICENSES INSTALL README TODO win32
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

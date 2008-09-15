@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-EXTRA_DIST		= bootstrap LICENSES INSTALL Changelog README TODO win32
+EXTRA_DIST		= bootstrap LICENSES INSTALL README TODO win32
 
 SUBDIRS = src tests docs
 
