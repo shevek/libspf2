@@ -21,9 +21,10 @@
 
 #include "spf_dns.h"
 
-/* For an overview of the DNS layer system, see spf_dns.h */
-
-/*
+/**
+ * @file
+ * @brief A testing layer for DNS.
+ *
  * The test DNS layer is actually just a thin wrapper around the zone
  * DNS layer.  It provides all the DNS information needed to do the
  * SPF regression tests.  This happens to be useful to me when I'm
@@ -32,17 +33,17 @@
  *
  * While multiple test DNS layers can be created, I can't see any
  * use for more than one.
+ *
+ * For an overview of the DNS layer system, see spf_dns.h
  */
 
-/*
+/**
  * These routines take care of creating/destroying/etc. the objects
- * that hold the DNS layer configuration.  spfdcid objects contain
+ * that hold the DNS layer configuration. SPF_dns_server_t objects contain
  * malloc'ed data, so they must be destroyed when you are finished
  * with them, or you will leak memory. 
  */
-
 SPF_dns_server_t	*SPF_dns_test_new( SPF_dns_server_t *layer_below,
 				const char *name, int debug);
-
 
 #endif

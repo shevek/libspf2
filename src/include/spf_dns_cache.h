@@ -19,10 +19,10 @@
 #ifndef INC_SPF_DNS_CACHE
 #define INC_SPF_DNS_CACHE
 
-/* For an overview of the DNS layer system, see spf_dns.h */
 
-
-/*
+/**
+ * @file
+ *
  * The caching DNS layer provides a quick, in-process cache of DNS
  * information.  It is not designed to be a general DNS cache, it is
  * tailored to the needs of the SPF system.  In particular, you can
@@ -36,17 +36,19 @@
  * be useful.  For example, caches of different sizes will have
  * different hash collisions, thus reducing the number of redundant
  * queries sent to lower DNS layers.
+ *
+ *
+ * For an overview of the DNS layer system, see spf_dns.h
  */
 
 
-/*
+/**
  * These routines take care of creating/destroying/etc. the objects
- * that hold the DNS layer configuration.  spfdcid objects contain
+ * that hold the DNS layer configuration. SPF_dns_server_t objects contain
  * malloc'ed data, so they must be destroyed when you are finished
  * with them, or you will leak memory. 
- */
-
-/* cache_bits determines the size of the DNS cache.  The cache will be
+ *
+ * cache_bits determines the size of the DNS cache.  The cache will be
  * 2^cache_bits entries large.
  *
  * If debugging is turned on, information about cache hits and misses
@@ -56,7 +58,7 @@ SPF_dns_server_t	*SPF_dns_cache_new(SPF_dns_server_t *layer_below,
 				const char *name, int debug, int cache_bits);
 
 
-/*
+/**
  * By default, the caching DNS layer uses the Time To Live (TTL)
  * values that are obtained from the actual DNS Resource Records (RR).
  * However, because we know more about the situation than general
@@ -97,7 +99,7 @@ void	 SPF_dns_cache_set_ttl( SPF_dns_server_t *spf_dns_server,
 				time_t min_ttl, time_t err_ttl,
 				time_t txt_ttl, time_t rdns_ttl );
 
-/*
+/**
  * The caching DNS layer can try to conserve it's cache to only those
  * queries that will likely to be used often.  If told to conserve the
  * cache entries, it will not cache queries that were constructed from

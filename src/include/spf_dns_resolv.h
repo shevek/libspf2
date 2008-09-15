@@ -19,23 +19,23 @@
 #ifndef INC_SPF_DNS_RESOLV
 #define INC_SPF_DNS_RESOLV
 
-/* For an overview of the DNS layer system, see spf_dns.h */
-
-/*
+/**
+ * @file
  * The resolv DNS layer is an interface to the libresolv stub DNS resolver.
  *
  * While multiple resolv DNS layers can be created, I can't see much
  * use for more than one.
+ *
+ * For an overview of the DNS layer system, see spf_dns.h
  */
 
-/*
+
+/**
  * These routines take care of creating/destroying/etc. the objects
- * that hold the DNS layer configuration.  spfdcid objects contain
+ * that hold the DNS layer configuration. SPF_dns_server_t objects contain
  * malloc'ed data, so they must be destroyed when you are finished
  * with them, or you will leak memory. 
- */
-
-/*
+ *
  * if debugging is enabled, information about the results from
  * libresolv will be displayed.  This information is often not passed
  * on to (and not needed by) the higher level DNS layers.

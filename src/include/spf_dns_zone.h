@@ -19,9 +19,10 @@
 #ifndef INC_SPF_DNS_ZONE
 #define INC_SPF_DNS_ZONE
 
-/* For an overview of the DNS layer system, see spf_dns.h */
-
-/*
+/**
+ * @file
+ * @brief A local DNS zone layer.
+ *
  * The zone DNS layer allows you to create DNS zone information from
  * scratch, without calling some sort of external DNS resolver.
  *
@@ -50,30 +51,31 @@
  * match any type of RR query.  This is most useful when you want to
  * wildcard HOST_NOT_FOUND entries to prevent queries of any type from
  * being fetched from a lower DNS layer.
+ *
+ *
+ * For an overview of the DNS layer system, see spf_dns.h
  */
 
 
-/*
+/**
  * These routines take care of creating/destroying/etc. the objects
- * that hold the DNS layer configuration.  spfdcid objects contain
+ * that hold the DNS layer configuration. SPF_dns_server_t objects contain
  * malloc'ed data, so they must be destroyed when you are finished
  * with them, or you will leak memory. 
- */
-
-/*
+ *
  * The "name" will be used when displaying debugging information so
  * that you can tell which zone layer in the stack of DNS layers
  * generated the output.
  */
- 
 SPF_dns_server_t	*SPF_dns_zone_new(SPF_dns_server_t *layer_below,
 				const char *name, int debug);
 
-/*
+/**
+ * Adds an entry to a DNS zone.
+ *
  * If a given domain name has multiple records of a given RR type, you
  * can call the add routine multiple times to add to the RR set.
  */
-
 SPF_errcode_t		 SPF_dns_zone_add_str(SPF_dns_server_t *spf_dns_server,
 				const char *domain, ns_type rr_type,
 				SPF_dns_stat_t herrno, const char *data);

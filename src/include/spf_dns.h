@@ -157,7 +157,8 @@ SPF_dns_rr_t	*SPF_dns_rlookup6( SPF_dns_server_t *spf_dns_server,
 				int should_cache );
 
 
-/* The client domain is the validated domain name of the client IP
+/**
+ * The client domain is the validated domain name of the client IP
  * address.  This is not just the domain name(s) found in the reverse
  * DNS tree, but involves checking to make sure these name(s) use the
  * client IP address.  The complete validation procedure is described
