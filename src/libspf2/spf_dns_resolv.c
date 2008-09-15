@@ -14,6 +14,9 @@
  */
 
 /**
+ * @file
+ * @brief A DNS resolver which uses libresolv/libbind to query a DNS server.
+ *
  * If we have a res_ninit then we make a thread-local resolver
  * state, which we use to perform all resolutions.
  *
@@ -287,7 +290,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 		}
 		else if (dns_len > responselen) {
 			/* We managed a lookup but our buffer was too small. */
-			responselen = dns_len * 2;
+			responselen = dns_len + (dns_len >> 1);
 #if 0
 			/* Sanity-trap - we should never hit this. */
 			if (responselen > 1048576) {	/* One megabyte. */
@@ -444,7 +447,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 						size_t len;
 
 						/* Just rdlen is enough because there is at least one
-						 * length byte. */
+						 * length byte, which we do not copy. */
 						if (SPF_dns_rr_buf_realloc(spfrr, cnt, rdlen) != SPF_E_SUCCESS) {
 							free(responsebuf);
 							return spfrr;

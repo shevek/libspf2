@@ -1,5 +1,41 @@
-This readme has been adapted from Wayne's original readme by
-Shevek <libspf2@anarres.org>
+/**
+ * @file
+ * @brief Description of libspf2
+ * The contents of this file is extracted by the documentation
+ * generator, and forms the front matter and introductory text to this 
+ * manual. The documentation for this file is, therefore, apparently
+ * empty.
+ */
+
+/**
+ * @mainpage Introduction to libspf2
+
+ * @par Authors
+
+ - Current maintainer: Shevek <libspf2@anarres.org>
+ - Contributors: Magnus Holmgren, Julian Mehnle, Scott Kitterman
+ - Original author, 1.0 series: Wayne Schlitt <wayne@midwestcs.com>
+
+ * @par License
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of either:
+
+  a) the GNU Lesser General Public License as published by the Free
+     Software Foundation; either version 2.1, or (at your option) any
+     later version, or
+
+  OR
+
+  b) The two-clause BSD license.
+
+Some code in the 'replace' subdirectory was obtained form other sources
+and have different, but compatible, licenses. These routines are
+used only when the native libraries for the OS do not contain these
+functions.  You should review the licenses and copyright statments
+in these functions if you are using an OS that needs these functions.
+
+ * @par Original README from Wayne Schlitt
 
 Libspf2 is an implementation of the SPF specification as found at
 http://www.ietf.org/internet-drafts/draft-mengwong-spf-00.txt
@@ -22,9 +58,6 @@ The valgrind program is regularly run to make sure that there are no
 memory leaks and reads/writes to invalid memory.
 
 
-Please report all bugs to <libspf2@anarres.org>
-
-
 This code has been compiled and passed its regression tests on Debian
 Linux (sid/testing) on the x86, FreeBSD 4.3 (x86), FreeBSD 4.9
 (x86??), NetBSD 1.62 (x86?), SunOS 5.8 on the ultrasparc, and a few
@@ -34,3 +67,5 @@ systems also.
 
 
 -wayne
+
+ */

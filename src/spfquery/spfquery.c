@@ -704,6 +704,9 @@ int main( int argc, char *argv[] )
 	FREE_REQUEST(spf_request);
 	FREE(spf_server, SPF_server_free);
 
+	FREE(req, free);
+	FREE(opts, free);
+
 #ifdef _WIN32
 	SPF_win32_cleanup();
 #endif

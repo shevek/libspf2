@@ -26,11 +26,9 @@ typedef struct SPF_macro_struct SPF_macro_t;
 #include "spf_request.h"
 #include "spf_server.h"
 
-/*
+/**
  * Compiled SPF record
- */
-
-/*
+ *
  * The compiled form of the SPF record is as follows:
  *
  * * A four byte header which contains the version, and information

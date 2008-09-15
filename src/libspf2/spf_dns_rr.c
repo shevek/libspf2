@@ -148,7 +148,7 @@ SPF_dns_rr_buf_realloc(SPF_dns_rr_t *spfrr, int idx, size_t len)
 			return SPF_E_NO_MEMORY;
 		spfrr->rr = new_data;
 		
-		new_buf_len = realloc( spfrr->rr_buf_len,
+		new_buf_len = realloc(spfrr->rr_buf_len,
 					   new_num * sizeof(*new_buf_len));
 		if (new_buf_len == NULL)
 			return SPF_E_NO_MEMORY;
@@ -176,13 +176,17 @@ SPF_dns_rr_buf_realloc(SPF_dns_rr_t *spfrr, int idx, size_t len)
 }
 
 
+/**
+ * This function generates a valgrind error because strlen always reads in
+ * blocks of 4 bytes, and can overrun the end of the allocated buffers.
+ */
 SPF_errcode_t
 SPF_dns_rr_dup(SPF_dns_rr_t **dstp, SPF_dns_rr_t *src)
 {
 	SPF_dns_rr_t	*dst;
     SPF_errcode_t	err;
     int			i;
- 
+
  	SPF_ASSERT_NOTNULL(src);
  	SPF_ASSERT_NOTNULL(dstp);
 	dst = SPF_dns_rr_new_init(src->source,
@@ -196,7 +200,7 @@ SPF_dns_rr_dup(SPF_dns_rr_t **dstp, SPF_dns_rr_t *src)
 			err = SPF_dns_rr_buf_realloc(d, i, s); \
 			if (err) return err; \
 		} while(0)
-    
+
     for (i = dst->num_rr - 1; i >= 0; i--) {
 		switch (dst->rr_type) {
 			case ns_t_a:
