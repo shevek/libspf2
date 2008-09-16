@@ -46,25 +46,31 @@ new(class, args)
 	OUTPUT:
 		RETVAL
 
+void
+DESTROY(server)
+	Mail::SPF_XS::Server	server
+	CODE:
+		SPF_server_free(server);
+
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Request
 
 Mail::SPF_XS::Request
-new(class, args)
-	SV	*class
-	HV	*args
+new(server, args)
+	Mail::SPF_XS::Server	 server
+	HV						*args
 	PREINIT:
-		SV				**svp;
-		SPF_server_t	*spf_server;
+		// SV				**svp;
 		SPF_request_t	*spf_request;
 	CODE:
-		(void)class;
-		svp = hv_fetch(args, "Server", 6, FALSE);
-		if (!svp || !SvROK(*svp) || !sv_derived_from(*svp, "Mail::SPF_XS::Server"))
-			croak("Usage: new( { Server => $server, ... } )");
-		spf_server = (SPF_server_t *)SvRV(*svp);
-		spf_request = SPF_request_new(spf_server);
+		spf_request = SPF_request_new(server);
 		RETVAL = spf_request;
 	OUTPUT:
 		RETVAL
+
+void
+DESTROY(request)
+	Mail::SPF_XS::Request	request
+	CODE:
+		SPF_request_free(request);
 
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Response
