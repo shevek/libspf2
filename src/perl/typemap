@@ -1,0 +1,3 @@
+Mail::SPF_XS::Server	T_PTROBJ
+Mail::SPF_XS::Request	T_PTROBJ
+Mail::SPF_XS::Response	T_PTROBJ
