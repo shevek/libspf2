@@ -2,9 +2,9 @@
 #include <perl.h>
 #include <XSUB.h>
 
-#include "../include/spf_server.h"
-#include "../include/spf_request.h"
-#include "../include/spf_response.h"
+#include "../src/include/spf_server.h"
+#include "../src/include/spf_request.h"
+#include "../src/include/spf_response.h"
 
 typedef SPF_server_t	*Mail__SPF_XS__Server;
 typedef SPF_request_t	*Mail__SPF_XS__Request;
