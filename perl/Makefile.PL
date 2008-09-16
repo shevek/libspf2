@@ -14,7 +14,7 @@ WriteMakefile(
 					'Mail::SPF'		=> 0.30,
 						},
 	OPTIMIZE		=> $cflags,
-	LIBS			=> [ '-L../libspf2/.libs -lspf2', ],
+	LIBS			=> [ '-L../src/libspf2/.libs -lspf2', ],
 );
 
 sub MY::postamble {
@@ -23,7 +23,7 @@ sub MY::postamble {
 	chomp($old);
 	my $new = <<'EON';
 
-$(INST_DYNAMIC) : ../libspf2/.libs/libspf2.so.*
+$(INST_DYNAMIC) : ../src/libspf2/.libs/libspf2.so.*
 
 .PHONY : aux dep readme
 
