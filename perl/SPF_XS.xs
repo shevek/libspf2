@@ -41,7 +41,7 @@ new(class, args)
 		SPF_server_t	*spf_server;
 	CODE:
 		(void)class;
-		spf_server = NULL;
+		spf_server = SPF_server_new(SPF_DNS_RESOLV, 0);
 		RETVAL = spf_server;
 	OUTPUT:
 		RETVAL
@@ -51,6 +51,19 @@ DESTROY(server)
 	Mail::SPF_XS::Server	server
 	CODE:
 		SPF_server_free(server);
+
+Mail::SPF_XS::Response
+process(server, request)
+	Mail::SPF_XS::Server	server
+	Mail::SPF_XS::Request	request
+	PREINIT:
+		SPF_response_t	*response = NULL;
+	CODE:
+		request->spf_server = server;
+		SPF_request_query_mailfrom(request, &response);
+		RETVAL = response;
+	OUTPUT:
+		RETVAL
 
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Request
 
@@ -74,3 +87,10 @@ DESTROY(request)
 		SPF_request_free(request);
 
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Response
+
+void
+DESTROY(response)
+	Mail::SPF_XS::Response	response
+	CODE:
+		SPF_response_free(response);
+
