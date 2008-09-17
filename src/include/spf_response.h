@@ -16,7 +16,7 @@
 #ifndef INC_SPF_RESPONSE
 #define INC_SPF_RESPONSE
 
-/*
+/**
  * Results from an SPF check
  *
  * The results of the SPF check (as defined by the official SPF spec)
@@ -86,7 +86,7 @@ enum SPF_result_enum {
 	SPF_RESULT_PERMERROR
 } SPF_result_t;
 
-/*
+/**
  * The reason that the result was returned
  *
  * This is what triggered the SPF result.  Usually, it is a mechanism in the
@@ -106,7 +106,7 @@ enum SPF_reason_enum {
 } SPF_reason_t;
 
 
-/*
+/**
  * error codes returned by various SPF functions.  (including SPF_compile()
  * and SPF_id2str(), spf_result(), etc.).
  *
