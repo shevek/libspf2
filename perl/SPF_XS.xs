@@ -72,10 +72,15 @@ new(server, args)
 	Mail::SPF_XS::Server	 server
 	HV						*args
 	PREINIT:
-		// SV				**svp;
+		SV				**svp;
 		SPF_request_t	*spf_request;
 	CODE:
 		spf_request = SPF_request_new(server);
+		svp = hv_fetch(args, "ip_address", 10, FALSE);
+		if (svp && SvPOK(*svp))
+			if (SPF_request_set_ipv4_str(spf_request, SvPV_nolen(*svp)) != SPF_E_SUCCESS)
+				croak("Failed to set ipv4 client address");
+		// ...
 		RETVAL = spf_request;
 	OUTPUT:
 		RETVAL
