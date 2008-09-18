@@ -120,12 +120,14 @@ process(server, request)
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Request
 
 Mail::SPF_XS::Request
-new(args)
-	HV						*args
+new(class, args)
+	SV	*class
+	HV	*args
 	PREINIT:
 		SV				**svp;
 		SPF_request_t	*spf_request;
 	CODE:
+		(void)class;
 		spf_request = SPF_request_new(NULL);
 		svp = hv_fetch(args, "ip_address", 10, FALSE);
 		if (!svp || !SvPOK(*svp))
@@ -156,4 +158,38 @@ DESTROY(response)
 	Mail::SPF_XS::Response	response
 	CODE:
 		SPF_response_free(response);
+
+const char *
+code(response)
+	Mail::SPF_XS::Response	response
+	CODE:
+		switch (SPF_response_result(response)) {
+			default:
+			case SPF_RESULT_INVALID:
+				RETVAL = "invalid";
+				break;
+			case SPF_RESULT_NEUTRAL:
+				RETVAL = "neutral";
+				break;
+			case SPF_RESULT_PASS:
+				RETVAL = "pass";
+				break;
+			case SPF_RESULT_FAIL:
+				RETVAL = "fail";
+				break;
+			case SPF_RESULT_SOFTFAIL:
+				RETVAL = "softfail";
+				break;
+			case SPF_RESULT_NONE:
+				RETVAL = "none";
+				break;
+			case SPF_RESULT_TEMPERROR:
+				RETVAL = "temperror";
+				break;
+			case SPF_RESULT_PERMERROR:
+				RETVAL = "permerror";
+				break;
+		}
+	OUTPUT:
+		RETVAL
 
