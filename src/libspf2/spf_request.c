@@ -96,7 +96,7 @@ SPF_request_set_ipv4_str(SPF_request_t *sr, const char *astr)
 	if (astr == NULL)
 		astr = "0.0.0.0";
 	if (inet_pton(AF_INET, astr, &addr) <= 0)
-		return -1;
+		return SPF_E_INVALID_IP4;
 	return SPF_request_set_ipv4(sr, addr);
 }
 
@@ -107,7 +107,7 @@ SPF_request_set_ipv6_str(SPF_request_t *sr, const char *astr)
 	if (astr == NULL)
 		astr = "::";
 	if (inet_pton(AF_INET6, astr, &addr) <= 0)
-		return -1;
+		return SPF_E_INVALID_IP6;
 	return SPF_request_set_ipv6(sr, addr);
 }
 
@@ -161,7 +161,7 @@ SPF_request_set_env_from(SPF_request_t *sr, const char *from)
 		sr->env_from_dp = strdup(from);
 	}
 
-	return 0;
+	return 0;	// SPF_E_SUCCESS
 }
 
 const char *

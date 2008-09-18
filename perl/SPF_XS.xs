@@ -120,18 +120,24 @@ process(server, request)
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Request
 
 Mail::SPF_XS::Request
-new(server, args)
-	Mail::SPF_XS::Server	 server
+new(args)
 	HV						*args
 	PREINIT:
 		SV				**svp;
 		SPF_request_t	*spf_request;
 	CODE:
-		spf_request = SPF_request_new(server);
+		spf_request = SPF_request_new(NULL);
 		svp = hv_fetch(args, "ip_address", 10, FALSE);
-		if (svp && SvPOK(*svp))
-			if (SPF_request_set_ipv4_str(spf_request, SvPV_nolen(*svp)) != SPF_E_SUCCESS)
-				croak("Failed to set ipv4 client address");
+		if (!svp || !SvPOK(*svp))
+			croak("new() requires ip_address => $address");
+		if (SPF_request_set_ipv4_str(spf_request, SvPV_nolen(*svp)) != SPF_E_SUCCESS)
+			if (SPF_request_set_ipv6_str(spf_request, SvPV_nolen(*svp)) != SPF_E_SUCCESS)
+				croak("Failed to set client address: Not a valid ipv4 or ipv6");
+		svp = hv_fetch(args, "identity", 8, FALSE);
+		if (!svp || !SvPOK(*svp))
+			croak("new() requires identity => $identity");
+		if (SPF_request_set_env_from(spf_request, SvPV_nolen(*svp)) != 0)
+			croak("Failed to set env_from identity");
 		// ...
 		RETVAL = spf_request;
 	OUTPUT:
