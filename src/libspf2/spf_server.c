@@ -78,6 +78,7 @@ SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
 	SPF_response_t		*spf_response;
 	SPF_dns_server_t	*dc_r;
 	SPF_dns_server_t	*dc_c;
+	SPF_dns_server_t	*dc_z;
 	SPF_server_t		*sp;
 	SPF_errcode_t		 err;
 
@@ -94,19 +95,26 @@ SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
 	switch (dnstype) {
 		case SPF_DNS_RESOLV:
 			dc_r = SPF_dns_resolv_new(NULL, NULL, debug);
-			if (dc_r == 0)
+			if (dc_r == NULL)
 				SPF_error("Failed to create DNS resolver");
 			sp->resolver = dc_r;
 			break;
 
 		case SPF_DNS_CACHE:
 			dc_r = SPF_dns_resolv_new(NULL, NULL, debug);
-			if (dc_r == 0)
+			if (dc_r == NULL)
 				SPF_error("Failed to create DNS resolver");
 			dc_c = SPF_dns_cache_new(dc_r, NULL, debug, 8);
-			if (dc_c == 0)
+			if (dc_c == NULL)
 				SPF_error("Failed to create DNS cache");
 			sp->resolver = dc_c;
+			break;
+
+		case SPF_DNS_ZONE:
+			dc_z = SPF_dns_zone_new(NULL, NULL, debug);
+			if (dc_z == NULL)
+				SPF_error("Failed to create DNS zone");
+			sp->resolver = dc_z;
 			break;
 
 		default:

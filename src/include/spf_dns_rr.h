@@ -35,6 +35,9 @@ union
     struct in6_addr	aaaa;
 } SPF_dns_rr_data_t;
 
+/**
+ * This is also used in spf_dns_zone.c
+ */
 typedef
 struct SPF_dns_rr_struct
 {

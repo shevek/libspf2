@@ -69,7 +69,7 @@ struct SPF_server_struct {
 
 typedef
 enum SPF_server_dnstype_enum {
-	SPF_DNS_RESOLV, SPF_DNS_CACHE
+	SPF_DNS_RESOLV, SPF_DNS_CACHE, SPF_DNS_ZONE
 } SPF_server_dnstype_t;
 
 SPF_server_t	*SPF_server_new(SPF_server_dnstype_t dnstype,int debug);

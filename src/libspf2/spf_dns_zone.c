@@ -54,8 +54,10 @@
 #include "spf_dns_zone.h"
 
 
-/*
- * this is really little more than a proof-of-concept static zone.
+/**
+ * @file
+ *
+ * This is really little more than a proof-of-concept static zone.
  *
  * The static zone shouldn't just be an unsorted list that must be
  * completely searched each time.  Rather something should be done to
@@ -322,7 +324,7 @@ SPF_dns_zone_new(SPF_dns_server_t *layer_below,
     }
 
     if (name ==  NULL)
-		name = "resolv";
+		name = "zone";
 
     spf_dns_server->destroy      = SPF_dns_zone_free;
     spf_dns_server->lookup       = SPF_dns_zone_lookup;

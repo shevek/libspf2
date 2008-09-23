@@ -5,10 +5,12 @@
 #include "../src/include/spf_server.h"
 #include "../src/include/spf_request.h"
 #include "../src/include/spf_response.h"
+#include "../src/include/spf_dns_zone.h"
 
-typedef SPF_server_t	*Mail__SPF_XS__Server;
-typedef SPF_request_t	*Mail__SPF_XS__Request;
-typedef SPF_response_t	*Mail__SPF_XS__Response;
+typedef SPF_server_t		*Mail__SPF_XS__Server;
+typedef SPF_request_t		*Mail__SPF_XS__Request;
+typedef SPF_response_t		*Mail__SPF_XS__Response;
+typedef SPF_dns_server_t	*Mail__SPF_XS__Zone;
 
 #define EXPORT_INTEGER(x) do { \
 								newCONSTSUB(stash, #x, newSViv(x)); \
@@ -38,6 +40,7 @@ BOOT:
 
 	EXPORT_INTEGER(SPF_DNS_RESOLV);
 	EXPORT_INTEGER(SPF_DNS_CACHE);
+	EXPORT_INTEGER(SPF_DNS_ZONE);
 
 	EXPORT_ERRCODE(SPF_E_SUCCESS);
 	EXPORT_ERRCODE(SPF_E_NO_MEMORY);
@@ -103,6 +106,18 @@ DESTROY(server)
 	Mail::SPF_XS::Server	server
 	CODE:
 		SPF_server_free(server);
+
+Mail::SPF_XS::Zone
+resolver(server)
+	Mail::SPF_XS::Server	server
+	CODE:
+		/* XXX
+		if (server->resolver->lookup != SPF_dns_zone_lookup)
+			croak("zone() may only be called for servers of type SPF_DNS_ZONE");
+		*/
+		RETVAL = server->resolver;
+	OUTPUT:
+		RETVAL
 
 Mail::SPF_XS::Response
 process(server, request)
@@ -190,6 +205,20 @@ code(response)
 				RETVAL = "permerror";
 				break;
 		}
+	OUTPUT:
+		RETVAL
+
+MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Zone
+
+int
+add(zone, domain, rr_type, herrno, data)
+	Mail::SPF_XS::Zone		 zone
+	const char				*domain
+	int						 rr_type
+	int						 herrno
+	const char				*data
+	CODE:
+		RETVAL = SPF_dns_zone_add_str(zone, domain, rr_type, herrno, data);
 	OUTPUT:
 		RETVAL
 
