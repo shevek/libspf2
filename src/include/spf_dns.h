@@ -68,6 +68,7 @@
  * For those who don't have <arpa/nameserv.h>
  */
 
+/* XXX This should use a more sensible define. */
 #if !defined( HAVE_NS_TYPE )
 
 #define	ns_t_invalid	0

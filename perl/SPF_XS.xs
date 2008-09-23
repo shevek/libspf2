@@ -2,6 +2,9 @@
 #include <perl.h>
 #include <XSUB.h>
 
+// XXX Need to fix ns_type in spf_dns.h first.
+// #include <arpa/nameser.h>
+
 #include "../src/include/spf_server.h"
 #include "../src/include/spf_request.h"
 #include "../src/include/spf_response.h"
@@ -10,7 +13,7 @@
 typedef SPF_server_t		*Mail__SPF_XS__Server;
 typedef SPF_request_t		*Mail__SPF_XS__Request;
 typedef SPF_response_t		*Mail__SPF_XS__Response;
-typedef SPF_dns_server_t	*Mail__SPF_XS__Zone;
+typedef SPF_dns_server_t	*Mail__SPF_XS__Resolver;
 
 #define EXPORT_INTEGER(x) do { \
 								newCONSTSUB(stash, #x, newSViv(x)); \
@@ -84,6 +87,19 @@ BOOT:
 	EXPORT_INTEGER(SPF_RESULT_NONE);
 	EXPORT_INTEGER(SPF_RESULT_TEMPERROR);
 	EXPORT_INTEGER(SPF_RESULT_PERMERROR);
+
+	// stash = gv_stashpv("Mail::SPF_XS::Resolver", TRUE);
+	// export = get_av("Mail::SPF_XS::Resolver::EXPORT_OK", TRUE);
+
+	EXPORT_INTEGER(ns_t_a);
+	EXPORT_INTEGER(ns_t_any);
+	EXPORT_INTEGER(ns_t_mx);
+	EXPORT_INTEGER(ns_t_ns);
+	EXPORT_INTEGER(ns_t_ptr);
+	// EXPORT_INTEGER(ns_t_soa);
+	EXPORT_INTEGER(ns_t_txt);
+
+	EXPORT_INTEGER(NETDB_SUCCESS);
 }
 
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Server
@@ -94,9 +110,21 @@ new(class, args)
 	HV	*args
 	PREINIT:
 		SPF_server_t	*spf_server;
+		SV				**svp;
+		SPF_server_dnstype_t	dnstype;
 	CODE:
 		(void)class;
-		spf_server = SPF_server_new(SPF_DNS_RESOLV, 0);
+		svp = hv_fetch(args, "dnstype", 7, FALSE);
+		if (svp) {
+			if (SvIOK(*svp))
+				dnstype = SvIV(*svp);
+			else
+				croak("dnstype must be an integer");
+		}
+		else {
+			dnstype = SPF_DNS_RESOLV;
+		}
+		spf_server = SPF_server_new(dnstype, 0);
 		RETVAL = spf_server;
 	OUTPUT:
 		RETVAL
@@ -107,14 +135,10 @@ DESTROY(server)
 	CODE:
 		SPF_server_free(server);
 
-Mail::SPF_XS::Zone
+Mail::SPF_XS::Resolver
 resolver(server)
 	Mail::SPF_XS::Server	server
 	CODE:
-		/* XXX
-		if (server->resolver->lookup != SPF_dns_zone_lookup)
-			croak("zone() may only be called for servers of type SPF_DNS_ZONE");
-		*/
 		RETVAL = server->resolver;
 	OUTPUT:
 		RETVAL
@@ -208,17 +232,18 @@ code(response)
 	OUTPUT:
 		RETVAL
 
-MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Zone
+MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Resolver
 
 int
-add(zone, domain, rr_type, herrno, data)
-	Mail::SPF_XS::Zone		 zone
+add(resolver, domain, rr_type, herrno, data)
+	Mail::SPF_XS::Resolver	 resolver
 	const char				*domain
 	int						 rr_type
 	int						 herrno
 	const char				*data
 	CODE:
-		RETVAL = SPF_dns_zone_add_str(zone, domain, rr_type, herrno, data);
+		/* XXX Ensure it's a zone resolver. */
+		RETVAL = SPF_dns_zone_add_str(resolver, domain, rr_type, herrno, data);
 	OUTPUT:
 		RETVAL
 
