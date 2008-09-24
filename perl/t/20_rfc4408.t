@@ -20,6 +20,16 @@ foreach my $scenario ($suite->scenarios) {
 	foreach my $case ($scenario->test_cases) {
 		print "Test case ", $case->name, "\n";
 
+		# use Data::Dumper;
+		# print Dumper([ $scenario->records ]);
+		for my $record ($scenario->records) {
+			print "Adding record " . $record->string . "\n";
+			$server->resolver->add($record->name,
+					Net::DNS::typesbyname($record->type),
+					NETDB_SUCCESS,
+					$record->rdatastr);
+		}
+
 		my $request = Mail::SPF_XS::Request->new({
 			scope           => $case->scope,
 			identity        => $case->identity,
