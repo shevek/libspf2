@@ -258,6 +258,8 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 
 		case PARM_CLIENT_DOM:		/* SMTP client domain name		*/
 			var = SPF_request_get_client_dom(spf_request);
+			if (! var)
+				return SPF_E_NO_MEMORY;
 			break;
 
 		case PARM_CLIENT_VER:		/* IP ver str - in-addr/ip6		*/

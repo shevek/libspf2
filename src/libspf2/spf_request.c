@@ -123,7 +123,7 @@ SPF_request_set_helo_dom(SPF_request_t *sr, const char *dom)
 		return SPF_E_NO_MEMORY;
 	/* set cur_dom and env_from? */
 	if (sr->env_from == NULL)
-		SPF_request_set_env_from(sr, dom);
+		return SPF_request_set_env_from(sr, dom);
 	return SPF_E_SUCCESS;
 }
 
