@@ -284,7 +284,7 @@ SPF_dns_cache_bucket_find(SPF_dns_cache_config_t *spfhook,
 }
 
 /* This must be called with the lock held. */
-static void
+static SPF_errcode_t
 SPF_dns_cache_bucket_add(SPF_dns_cache_config_t *spfhook,
 				SPF_dns_rr_t *rr, int idx)
 {
@@ -292,9 +292,12 @@ SPF_dns_cache_bucket_add(SPF_dns_cache_config_t *spfhook,
 
 	bucket = (SPF_dns_cache_bucket_t *)
 				malloc(sizeof(SPF_dns_cache_bucket_t));
+	if (! bucket)
+		return SPF_E_NO_MEMORY;
 	bucket->next = spfhook->cache[idx];
 	spfhook->cache[idx] = bucket;
 	bucket->rr = rr;
+	return SPF_E_SUCCESS;
 }
 
 
@@ -400,9 +403,10 @@ SPF_dns_cache_lookup(SPF_dns_server_t *spf_dns_server,
 
 	if (SPF_dns_rr_dup(&cached_rr, rr) == SPF_E_SUCCESS) {
 		if (SPF_dns_cache_rr_fixup(spfhook, cached_rr, domain, rr_type) == SPF_E_SUCCESS){
-			SPF_dns_cache_bucket_add(spfhook, cached_rr, idx);
-			pthread_mutex_unlock(&(spfhook->cache_lock));
-			return rr;
+			if (SPF_dns_cache_bucket_add(spfhook, cached_rr, idx) == SPF_E_SUCCESS) {
+				pthread_mutex_unlock(&(spfhook->cache_lock));
+				return rr;
+			}
 		}
 	}
 
