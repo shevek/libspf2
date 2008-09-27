@@ -170,7 +170,11 @@ SPF_dns_rlookup6(SPF_dns_server_t *spf_dns_server,
  * Set the SMTP client domain name
  */
 
-/* This ought to be refactored with the PTR code in the interpreter.  */
+/**
+ * This may return NULL if the strdup() fails.
+ *
+ * This ought to be refactored with the PTR code in the interpreter.
+ */
 char *
 SPF_dns_get_client_dom( SPF_dns_server_t *spf_dns_server,
 				SPF_request_t *sr )
