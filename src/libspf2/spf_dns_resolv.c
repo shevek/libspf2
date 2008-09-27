@@ -229,10 +229,12 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 	if (res_spec == NULL) {
 		res_state = (struct __res_state *)
 						malloc(sizeof(struct __res_state));
+		if (! res_state)
+			SPF_errorf("Failed to allocate %d bytes for res_state",
+							sizeof(struct __res_state));
 		memset(res_state, 0, sizeof(struct __res_state));
-		if (res_ninit(res_state) != 0) {
+		if (res_ninit(res_state) != 0)
 			SPF_error("Failed to call res_ninit()");
-		}
 		pthread_setspecific(res_state_key, (void *)res_state);
 	}
 	else {
