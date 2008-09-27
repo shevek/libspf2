@@ -212,6 +212,9 @@ SPF_dns_get_client_dom( SPF_dns_server_t *spf_dns_server,
 		if (max_ptr > sr->max_dns_ptr)
 			max_ptr = sr->max_dns_ptr;
 		*/
+		/* XXX do we want to report if this is exceeded and we
+		 * might've missed a validated name because of that?
+		 */
 		if (max_ptr > SPF_MAX_DNS_PTR)
 			max_ptr = SPF_MAX_DNS_PTR;
 
@@ -239,6 +242,9 @@ SPF_dns_get_client_dom( SPF_dns_server_t *spf_dns_server,
 		if ( max_ptr > sr->max_dns_ptr )
 			max_ptr = sr->max_dns_ptr;
 		*/
+		/* XXX do we want to report if this is exceeded and we
+		 * might've missed a validated name because of that?
+		 */
 		if ( max_ptr > SPF_MAX_DNS_PTR )
 			max_ptr = SPF_MAX_DNS_PTR;
 
