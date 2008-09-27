@@ -1080,6 +1080,8 @@ SPF_record_interpret(SPF_record_t *spf_record,
 				save_spf_response = spf_response;
 				spf_response = SPF_response_new(spf_request);
 				if (! spf_response) {
+					if (spf_record_subr)
+						SPF_record_free(spf_record_subr);
 					SPF_FREE_LOOKUP_DATA();
 					return DONE_TEMPERR(SPF_E_NO_MEMORY);
 				}
