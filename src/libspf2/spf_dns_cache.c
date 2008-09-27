@@ -298,7 +298,10 @@ SPF_dns_cache_bucket_add(SPF_dns_cache_config_t *spfhook,
 }
 
 
-static void
+/**
+ * Patches up an rr for insertion into the cache.
+ */
+static SPF_errcode_t
 SPF_dns_cache_rr_fixup(SPF_dns_cache_config_t *spfhook,
 				SPF_dns_rr_t *cached_rr,
 				const char *domain, ns_type rr_type)
@@ -312,17 +315,12 @@ SPF_dns_cache_rr_fixup(SPF_dns_cache_config_t *spfhook,
 	/* XXX I'm still not sure about this bit. */
 	if (cached_rr->domain == NULL || cached_rr->domain[0] != '\0') {
 		char	*new_domain;
-		size_t	new_len = strlen( domain ) + 1;
+		size_t	 new_len = strlen(domain) + 1;
 
-		if ( cached_rr->domain_buf_len < new_len ) {
+		if (cached_rr->domain_buf_len < new_len) {
 			new_domain = realloc(cached_rr->domain, new_len);
-			if ( new_domain == NULL ) {
-				/* XXX Panic! */
-				// SPF_dns_rr_free(cached_rr);
-				// spfhook->cache[ h ] = NULL;
-				// return fetched_rr;
-			}
-
+			if (new_domain == NULL)
+				return SPF_E_NO_MEMORY;
 			cached_rr->domain = new_domain;
 			cached_rr->domain_buf_len = new_len;
 		}
@@ -348,6 +346,8 @@ SPF_dns_cache_rr_fixup(SPF_dns_cache_config_t *spfhook,
     }
 
 	cached_rr->utc_ttl = cached_rr->ttl + time(NULL);
+
+	return SPF_E_SUCCESS;
 }
 
 
@@ -365,15 +365,20 @@ SPF_dns_cache_lookup(SPF_dns_server_t *spf_dns_server,
 
     pthread_mutex_lock(&(spfhook->cache_lock));
 
+	/* XXX Can this be done outside the lock? */
 	idx = hash(spfhook, domain, 0 /* spfhook->hash_mask+rr_type */);
 	idx &= (spfhook->cache_size - 1);
 
 	bucket = SPF_dns_cache_bucket_find(spfhook, domain, rr_type, idx);
 	if (bucket != NULL) {
 		if (bucket->rr != NULL) {
-			SPF_dns_rr_dup(&rr, bucket->rr);
-			pthread_mutex_unlock(&(spfhook->cache_lock));
-			return rr;
+			if (SPF_dns_rr_dup(&rr, bucket->rr) == SPF_E_SUCCESS) {
+				pthread_mutex_unlock(&(spfhook->cache_lock));
+				return rr;
+			}
+			else if (rr != NULL) {
+				SPF_dns_rr_free(rr);	/* Within the lock. :-( */
+			}
 		}
 	}
 
@@ -383,32 +388,31 @@ SPF_dns_cache_lookup(SPF_dns_server_t *spf_dns_server,
 
 	pthread_mutex_unlock(&(spfhook->cache_lock));
 
-    if ( spf_dns_server->layer_below )
-		rr = SPF_dns_lookup( spf_dns_server->layer_below,
-						domain, rr_type, should_cache );
-    else
+    if (!spf_dns_server->layer_below)
 		return SPF_dns_rr_new_nxdomain(spf_dns_server, domain);
 
+	rr = SPF_dns_lookup( spf_dns_server->layer_below,
+					domain, rr_type, should_cache );
     if (spfhook->conserve_cache && !should_cache)
 		return rr;
 
     pthread_mutex_lock(&(spfhook->cache_lock));
 
-	if (SPF_dns_rr_dup(&cached_rr, rr))	{
-		/* XXX This represents a malloc failure. Put a warning in. */
-		pthread_mutex_unlock(&(spfhook->cache_lock));
-		if (cached_rr)
-			SPF_dns_rr_free(cached_rr);
-		return rr;
+	if (SPF_dns_rr_dup(&cached_rr, rr) == SPF_E_SUCCESS) {
+		if (SPF_dns_cache_rr_fixup(spfhook, cached_rr, domain, rr_type) == SPF_E_SUCCESS){
+			SPF_dns_cache_bucket_add(spfhook, cached_rr, idx);
+			pthread_mutex_unlock(&(spfhook->cache_lock));
+			return rr;
+		}
 	}
-
-	SPF_dns_cache_rr_fixup(spfhook, cached_rr, domain, rr_type);
-
-	SPF_dns_cache_bucket_add(spfhook, cached_rr, idx);
 
     pthread_mutex_unlock(&(spfhook->cache_lock));
 
-    return rr;
+	if (cached_rr)
+		SPF_dns_rr_free(cached_rr);
+
+	return rr;
+
 }
 
 

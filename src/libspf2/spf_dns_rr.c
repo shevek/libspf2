@@ -177,6 +177,9 @@ SPF_dns_rr_buf_realloc(SPF_dns_rr_t *spfrr, int idx, size_t len)
 
 
 /**
+ * This function may return both an error code and an rr, or
+ * one, or neither. 
+ *
  * This function generates a valgrind error because strlen always reads in
  * blocks of 4 bytes, and can overrun the end of the allocated buffers.
  */
