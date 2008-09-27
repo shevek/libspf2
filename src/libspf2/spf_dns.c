@@ -78,7 +78,7 @@ SPF_dns_debug_post(SPF_dns_server_t *spf_dns_server, SPF_dns_rr_t*spfrr)
 			  (spfrr->rr_type == ns_t_any)     ? "ANY" :
 			  (spfrr->rr_type == ns_t_invalid) ? "BAD" :
 			  "??" ),
-			spfrr->rr_type, spfrr->ttl, spfrr->num_rr, spfrr->herrno,
+			spfrr->rr_type, (long)spfrr->ttl, spfrr->num_rr, spfrr->herrno,
 			(spfrr->source
 				? (spfrr->source->name
 					? spfrr->source->name
