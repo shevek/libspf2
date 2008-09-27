@@ -117,13 +117,19 @@ SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 	if (spf_dns_server->debug > 1) {
 		switch (ns_rr_type(rr)) {
 			case ns_t_a:
-				SPF_debugf("A: %s",
+				if (rdlen != 4)
+					SPF_debugf("A: wrong rdlen %lu", (unsigned long)rdlen);
+				else
+					SPF_debugf("A: %s",
 						inet_ntop(AF_INET, rdata,
 							ip4_buf, sizeof(ip4_buf)));
 				break;
 
 			case ns_t_aaaa:
-				SPF_debugf("AAAA: %s",
+				if (rdlen != 16)
+					SPF_debugf("AAAA: wrong rdlen %lu", (unsigned long)rdlen);
+				else
+					SPF_debugf("AAAA: %s",
 						inet_ntop(AF_INET6, rdata,
 							ip6_buf, sizeof(ip6_buf)));
 				break;
@@ -153,6 +159,10 @@ SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 				break;
 
 			case ns_t_mx:
+				if (rdlen < NS_INT16SZ) {
+					SPF_debugf("MX: rdlen too short: %lu", (unsigned long)rdlen);
+					break;
+				}
 				prio = ns_get16(rdata);
 				err = ns_name_uncompress(responsebuf,
 								responsebuf + responselen,
@@ -166,7 +176,12 @@ SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 				break;
 
 			case ns_t_txt:
+				if (rdlen < 1) {
+					SPF_debugf("TXT: rdlen too short: %lu", (unsigned long)rdlen);
+					break;
+				}
 				/* XXX I think this is wrong/unsafe. Shevek. */
+				/* XXX doesn't parse the different TXT "sections" */
 				SPF_debugf("TXT: (%d) \"%.*s\"",
 						rdlen, rdlen - 1, rdata + 1);
 				break;
@@ -395,6 +410,11 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 
 			switch (ns_rr_type(rr)) {
 				case ns_t_a:
+					if (rdlen != 4) {
+						/* XXX Error handling. */
+						free(responsebuf);
+						return spfrr;
+					}
 					if (SPF_dns_rr_buf_realloc(spfrr, cnt,
 								sizeof(spfrr->rr[cnt]->a)) != SPF_E_SUCCESS) {
 						free(responsebuf);
@@ -405,6 +425,11 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 					break;
 
 				case ns_t_aaaa:
+					if (rdlen != 16) {
+						/* XXX Error handling. */
+						free(responsebuf);
+						return spfrr;
+					}
 					if (SPF_dns_rr_buf_realloc(spfrr, cnt,
 								sizeof(spfrr->rr[cnt]->aaaa)) != SPF_E_SUCCESS) {
 						free(responsebuf);
@@ -422,6 +447,11 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 					break;
 
 				case ns_t_mx:
+					if (rdlen < NS_INT16SZ) {
+						/* XXX Error handling. */
+						free(responsebuf);
+						return spfrr;
+					}
 					err = ns_name_uncompress(responsebuf,
 									responsebuf + responselen,
 									rdata + NS_INT16SZ,
@@ -465,6 +495,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 							rdlen--;
 
 							/* Avoid buffer overrun if len is junk. */
+							/* XXX don't we rather want to flag this as error? */
 							if (len > rdlen)
 								len = rdlen;
 							memcpy(dst, src, len);
