@@ -210,6 +210,7 @@ SPF_response_add_error_v(SPF_response_t *rp,
 
 	rp->errors[rp->errors_length].code = code;
 	rp->errors[rp->errors_length].is_error = is_error;
+	/* If we are a memory error, this might fail. */
 	rp->errors[rp->errors_length].message = strdup(buf);
 	rp->errors_length++;
 

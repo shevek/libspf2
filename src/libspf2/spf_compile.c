@@ -54,7 +54,8 @@ enum SPF_domspec_enum {
 	DOMSPEC_NONE, DOMSPEC_OPTIONAL, DOMSPEC_REQUIRED
 } SPF_domspec_t;
 
-/* This is greater than any possible total mechanism or modifier.
+/**
+ * This is greater than any possible total mechanism or modifier.
  *	 SPF_MAX_MOD_LEN  + SPF_MAX_STR_LEN
  *	 SPF_MAX_MECH_LEN + SPF_MAX_STR_LEN
  */
@@ -98,9 +99,9 @@ SPF_mechtype_find(int mech_type)
 	return NULL;
 }
 
+WARN_UNUSED_RESULT
 static int
 SPF_c_ensure_capacity(void **datap, size_t *sizep, size_t length)
-		WARN_UNUSED_RESULT
 {
 	size_t		 size = *sizep;
 	if (length > size)
@@ -115,9 +116,11 @@ SPF_c_ensure_capacity(void **datap, size_t *sizep, size_t length)
 	return 0;
 }
 
-/* If a struct for IP addresses is added which itself contains a
+/**
+ * If a struct for IP addresses is added which itself contains a
  * CIDR field, then this must be modified to take a (cidr *) rather
- * than a (SPF_data_cidr_t *) */
+ * than a (SPF_data_cidr_t *)
+ */
 static SPF_errcode_t
 SPF_c_parse_cidr_ip6(SPF_response_t *spf_response,
 				unsigned char *maskp,
@@ -702,6 +705,7 @@ SPF_c_parse_ip6(SPF_response_t *spf_response, SPF_mech_t *mech, char const **sta
 }
 
 
+WARN_UNUSED_RESULT
 static SPF_errcode_t
 SPF_c_mech_add(SPF_server_t *spf_server,
 				SPF_record_t *spf_record, SPF_response_t *spf_response,
@@ -837,7 +841,10 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 		if (SPF_c_ensure_capacity((void **)&spf_record->mech_first,
 							&spf_record->mech_size,
 							spf_record->mech_len + len) < 0)
-			return SPF_E_NO_MEMORY;
+			return SPF_response_add_error_ptr(spf_response,
+							SPF_E_NO_MEMORY,
+							NULL, NULL,
+							"Failed to allocate memory for mechanism");
 		memcpy( (char *)spf_record->mech_first + spf_record->mech_len,
 			spf_mechanism,
 			len);
@@ -850,6 +857,7 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 	return err;
 }
 
+WARN_UNUSED_RESULT
 static SPF_errcode_t
 SPF_c_mod_add(SPF_server_t *spf_server,
 				SPF_record_t *spf_record, SPF_response_t *spf_response,
@@ -900,7 +908,10 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 		if (SPF_c_ensure_capacity((void **)&spf_record->mod_first,
 							&spf_record->mod_size,
 							spf_record->mod_len + len) < 0)
-			return SPF_E_NO_MEMORY;
+			return SPF_response_add_error_ptr(spf_response,
+							SPF_E_NO_MEMORY,
+							NULL, NULL,
+							"Failed to allocate memory for modifier");
 		memcpy( (char *)spf_record->mod_first + spf_record->mod_len,
 			spf_modifier,
 			len);
@@ -1029,14 +1040,13 @@ SPF_record_lint(SPF_server_t *spf_server,
 
 
 
-/*
+/**
  * The SPF compiler.
  *
  * It converts the SPF record in string format that is easy for people
  * to deal with into a compact binary format that is easy for
  * computers to deal with.
  */
-
 SPF_errcode_t
 SPF_record_compile(SPF_server_t *spf_server,
 								SPF_response_t *spf_response, 
@@ -1099,48 +1109,46 @@ SPF_record_compile(SPF_server_t *spf_server,
 	/*
 	 * parse the SPF record
 	 */
-	while( *p != '\0' )
-	{
+	while (*p != '\0') {
 		/* TODO WARN: If it's a \n or a \t */
 		/* skip to the next token */
-		while( *p == ' ' )
+		while (*p == ' ')
 			p++;
 
-		if (*p == '\0' )
+		if (*p == '\0')
 			break;
 
 		/* see if we have a valid prefix */
 		prefix = PREFIX_UNKNOWN;
-		switch( *p )
-		{
-		case '+':
-			prefix = PREFIX_PASS;
-			p++;
-			break;
-			
-		case '-':
-			prefix = PREFIX_FAIL;
-			p++;
-			break;
-			
-		case '~':
-			prefix = PREFIX_SOFTFAIL;
-			p++;
-			break;
-			
-		case '?':
-			prefix = PREFIX_NEUTRAL;
-			p++;
-			break;
+		switch (*p) {
+			case '+':
+				prefix = PREFIX_PASS;
+				p++;
+				break;
+				
+			case '-':
+				prefix = PREFIX_FAIL;
+				p++;
+				break;
+				
+			case '~':
+				prefix = PREFIX_SOFTFAIL;
+				p++;
+				break;
+				
+			case '?':
+				prefix = PREFIX_NEUTRAL;
+				p++;
+				break;
 
-		default:
-			while ( ispunct( (unsigned char)( *p ) ) ) {
-				SPF_response_add_error_ptr(spf_response,
-								SPF_E_INVALID_PREFIX, NULL, p,
-								"Invalid prefix '%c'", *p);
-					p++;
-			}
-			break;
+			default:
+				while (ispunct((unsigned char)(*p))) {
+					SPF_response_add_error_ptr(spf_response,
+									SPF_E_INVALID_PREFIX, NULL, p,
+									"Invalid prefix '%c'", *p);
+						p++;
+				}
+				break;
 		}
 
 		name_start = p;
@@ -1268,7 +1276,9 @@ SPF_record_compile(SPF_server_t *spf_server,
 			err = SPF_c_mech_add(spf_server,
 							spf_record, spf_response,
 							mechtype, prefix, &val_start);
-			if ( err )
+			if (err == SPF_E_NO_MEMORY)
+				return err;
+			else
 				/* Do nothing. Continue for the next error. */ ;
 			/* We shouldn't have to worry about the child function
 			 * updating the pointer. So we just use our 'well known'
@@ -1308,7 +1318,9 @@ SPF_record_compile(SPF_server_t *spf_server,
 			err = SPF_c_mod_add(spf_server,
 							spf_record, spf_response,
 							name_start, name_len, &val_start);
-			if ( err )
+			if (err == SPF_E_NO_MEMORY)
+				return err;
+			else
 				/* Do nothing. Continue for the next error. */ ;
 			p = val_end;
 			break;
