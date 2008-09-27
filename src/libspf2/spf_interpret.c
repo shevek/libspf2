@@ -860,8 +860,10 @@ SPF_record_interpret(SPF_record_t *spf_record,
 			}
 
 			SPF_dns_rr_free( rr_mx );
-			if (max_exceeded)
+			if (max_exceeded) {
+				SPF_FREE_LOOKUP_DATA();
 				return DONE(SPF_RESULT_PERMERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
+			}
 			break;
 
 		case MECH_PTR:
@@ -935,8 +937,10 @@ SPF_record_interpret(SPF_record_t *spf_record,
 				}
 				SPF_dns_rr_free(rr_ptr);
 
-				if (max_exceeded)
+				if (max_exceeded) {
+					SPF_FREE_LOOKUP_DATA();
 					return DONE(SPF_RESULT_PERMERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
+				}
 			}
 
 			else if ( spf_request->client_ver == AF_INET6 ) {
@@ -1004,8 +1008,10 @@ SPF_record_interpret(SPF_record_t *spf_record,
 				}
 				SPF_dns_rr_free(rr_ptr);
 
-				if (max_exceeded)
+				if (max_exceeded) {
+					SPF_FREE_LOOKUP_DATA();
 					return DONE(SPF_RESULT_PERMERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
+				}
 			}
 
 
