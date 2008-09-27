@@ -136,6 +136,7 @@ SPF_dns_rr_buf_realloc(SPF_dns_rr_t *spfrr, int idx, size_t len)
 	SPF_dns_rr_data_t	**new_data;
 	size_t				 *new_buf_len;
 	int					  new_num;
+	char				 *new_rr;
 	int					  j;
 	
 	if (spfrr->rr_buf_num <= idx) {
@@ -167,9 +168,10 @@ SPF_dns_rr_buf_realloc(SPF_dns_rr_t *spfrr, int idx, size_t len)
     if (spfrr->rr_buf_len[idx] >= len)
 		return SPF_E_SUCCESS;
 
-    spfrr->rr[idx] = realloc(spfrr->rr[idx], len);
-    if (spfrr->rr[idx] == NULL)
+	new_rr = realloc(spfrr->rr[idx], len);
+    if (new_rr == NULL)
 		return SPF_E_NO_MEMORY;
+    spfrr->rr[idx] = new_rr;
     spfrr->rr_buf_len[idx] = len;
 
     return SPF_E_SUCCESS;
