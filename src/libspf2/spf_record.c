@@ -50,6 +50,8 @@ SPF_record_new(SPF_server_t *spf_server, const char *text)
 	SPF_record_t	*rp;
 	
 	rp = (SPF_record_t *)malloc(sizeof(SPF_record_t));
+	if (!rp)
+		return rp;
 	memset(rp, 0, sizeof(SPF_record_t));
 
 	rp->spf_server = spf_server;

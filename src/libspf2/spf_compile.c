@@ -1103,6 +1103,12 @@ SPF_record_compile(SPF_server_t *spf_server,
 						"Could not find a valid SPF record");
 
 	spf_record = SPF_record_new(spf_server, record);
+	if (spf_record == NULL) {
+		*spf_recordp = NULL;
+		return SPF_response_add_error_ptr(spf_response, SPF_E_NO_MEMORY,
+						NULL, p,
+						"Failed to allocate an SPF record");
+	}
 	spf_record->version = 1;
 	*spf_recordp = spf_record;
 
