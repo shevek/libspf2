@@ -85,7 +85,7 @@ static const int num_ns_sect = sizeof(ns_sects) / sizeof(*ns_sects);
 # define SPF_h_errno h_errno
 #endif
 
-#ifdef HAVE_DECL_RES_NINIT
+#if HAVE_DECL_RES_NINIT
 static pthread_once_t	res_state_control = PTHREAD_ONCE_INIT;
 static pthread_key_t	res_state_key;
 
@@ -97,7 +97,7 @@ SPF_dns_resolv_thread_term(void *arg)
 }
 
 static void
-SPF_dns_resolv_init_key()
+SPF_dns_resolv_init_key(void)
 {
 	pthread_key_create(&res_state_key, SPF_dns_resolv_thread_term);
 }
@@ -528,7 +528,7 @@ SPF_dns_resolv_free(SPF_dns_server_t *spf_dns_server)
 {
 	SPF_ASSERT_NOTNULL(spf_dns_server);
 
-#ifndef HAVE_DECL_RES_NINIT
+#if ! HAVE_DECL_RES_NINIT
 	res_close();
 #endif
 
