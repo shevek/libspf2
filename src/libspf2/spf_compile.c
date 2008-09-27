@@ -14,6 +14,7 @@
  */
 
 #include "spf_sys_config.h"
+#include "spf_internal.h"
 
 
 #ifdef STDC_HEADERS
@@ -97,16 +98,21 @@ SPF_mechtype_find(int mech_type)
 	return NULL;
 }
 
-static void
+static int
 SPF_c_ensure_capacity(void **datap, size_t *sizep, size_t length)
+		WARN_UNUSED_RESULT
 {
 	size_t		 size = *sizep;
 	if (length > size)
 		size = length + (length / 4);
 	if (size > *sizep) {
-		*datap = realloc(*datap, size);
+		void	*tmp = realloc(*datap, size);
+		if (!tmp)
+			return -1;
+		*datap = tmp;
 		*sizep = size;
 	}
+	return 0;
 }
 
 /* If a struct for IP addresses is added which itself contains a
@@ -828,9 +834,10 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 	if (err == SPF_E_SUCCESS) {
 		if (mechtype->is_dns_mech)
 			spf_record->num_dns_mech++;
-		SPF_c_ensure_capacity((void **)&spf_record->mech_first,
+		if (SPF_c_ensure_capacity((void **)&spf_record->mech_first,
 							&spf_record->mech_size,
-							spf_record->mech_len + len);
+							spf_record->mech_len + len) < 0)
+			return SPF_E_NO_MEMORY;
 		memcpy( (char *)spf_record->mech_first + spf_record->mech_len,
 			spf_mechanism,
 			len);
@@ -890,9 +897,10 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 
 	/* Copy the thing in. */
 	if (err == SPF_E_SUCCESS) {
-		SPF_c_ensure_capacity((void **)&spf_record->mod_first,
+		if (SPF_c_ensure_capacity((void **)&spf_record->mod_first,
 							&spf_record->mod_size,
-							spf_record->mod_len + len);
+							spf_record->mod_len + len) < 0)
+			return SPF_E_NO_MEMORY;
 		memcpy( (char *)spf_record->mod_first + spf_record->mod_len,
 			spf_modifier,
 			len);
