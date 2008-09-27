@@ -136,7 +136,7 @@ SPF_dns_rr_buf_realloc(SPF_dns_rr_t *spfrr, int idx, size_t len)
 	SPF_dns_rr_data_t	**new_data;
 	size_t				 *new_buf_len;
 	int					  new_num;
-	char				 *new_rr;
+	void				 *new_rr;
 	int					  j;
 	
 	if (spfrr->rr_buf_num <= idx) {
