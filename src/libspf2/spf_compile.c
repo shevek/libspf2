@@ -1378,6 +1378,8 @@ SPF_record_compile_macro(SPF_server_t *spf_server,
 	/* XXX TODO: Tidy this up? */
 	size = sizeof(SPF_macro_t) + spf_macro->macro_len;
 	*spf_macrop = (SPF_macro_t *)malloc(size);
+	if (!*spf_macrop)
+		return SPF_E_NO_MEMORY;
 	memcpy(*spf_macrop, buf, size);
 
 	return SPF_E_SUCCESS;
