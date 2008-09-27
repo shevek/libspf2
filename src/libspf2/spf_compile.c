@@ -91,9 +91,9 @@ static const SPF_mechtype_t spf_mechtypes[] = {
 static const SPF_mechtype_t *
 SPF_mechtype_find(int mech_type)
 {
-	int		 i;
+	size_t		 i;
 	for (i = 0; i < spf_num_mechanisms; i++) {
-			if (spf_mechtypes[i].mech_type == mech_type)
+		if (spf_mechtypes[i].mech_type == mech_type)
 			return &spf_mechtypes[i];
 	}
 	return NULL;
@@ -1284,8 +1284,7 @@ SPF_record_compile(SPF_server_t *spf_server,
 							mechtype, prefix, &val_start);
 			if (err == SPF_E_NO_MEMORY)
 				return err;
-			else
-				/* Do nothing. Continue for the next error. */ ;
+			/* XXX Else do nothing. Continue for the next error. */
 			/* We shouldn't have to worry about the child function
 			 * updating the pointer. So we just use our 'well known'
 			 * copy. */
@@ -1326,8 +1325,7 @@ SPF_record_compile(SPF_server_t *spf_server,
 							name_start, name_len, &val_start);
 			if (err == SPF_E_NO_MEMORY)
 				return err;
-			else
-				/* Do nothing. Continue for the next error. */ ;
+			/* XXX Else do nothing. Continue for the next error. */
 			p = val_end;
 			break;
 			
