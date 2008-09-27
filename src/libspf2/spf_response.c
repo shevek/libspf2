@@ -39,6 +39,8 @@ SPF_response_new(SPF_request_t *spf_request)
 	SPF_response_t	*rp;
 
 	rp = (SPF_response_t *)malloc(sizeof(SPF_response_t));
+	if (! rp)
+		return rp;
 	memset(rp, 0, sizeof(SPF_response_t));
 
 	rp->spf_request = spf_request;

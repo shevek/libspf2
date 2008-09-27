@@ -59,15 +59,19 @@
 #include "spf_dns_internal.h"
 
 
+WARN_UNUSED_RESULT
 static SPF_errcode_t
 SPF_server_set_rec_dom_ghbn(SPF_server_t *sp)
 {
-	sp->rec_dom = malloc( HOST_NAME_MAX );
+	sp->rec_dom = malloc(HOST_NAME_MAX);
+	if (! sp->rec_dom)
+		return SPF_E_NO_MEMORY;
 #ifdef _WIN32
 	gethostnameFQDN(sp->rec_dom, HOST_NAME_MAX);
 	return 0;	/* XXX FIXME? */
 #else
 	if (gethostname(sp->rec_dom, HOST_NAME_MAX) < 0)
+		/* XXX Error using strerror. */
 		return SPF_E_INTERNAL_ERROR;
 #endif
 	return SPF_E_SUCCESS;
@@ -84,6 +88,8 @@ SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
 	SPF_errcode_t		 err;
 
 	sp = (SPF_server_t *)malloc(sizeof(SPF_server_t));
+	if (! sp)
+		return sp;
 	memset(sp, 0, sizeof(SPF_server_t));
 
 	sp->max_dns_mech = SPF_MAX_DNS_MECH;
@@ -91,7 +97,9 @@ SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
 	sp->max_dns_mx = SPF_MAX_DNS_MX;
 	sp->debug = debug;
 
-	SPF_server_set_rec_dom_ghbn(sp);
+	err = SPF_server_set_rec_dom_ghbn(sp);
+	if (err != SPF_E_SUCCESS)
+		SPF_error("Failed to set rec_dom using gethostname()");
 
 	switch (dnstype) {
 		case SPF_DNS_RESOLV:
@@ -167,6 +175,8 @@ SPF_server_set_rec_dom(SPF_server_t *sp, const char *dom)
 	if (dom == NULL)
 		return SPF_server_set_rec_dom_ghbn(sp);
 	sp->rec_dom = strdup(dom);
+	if (! sp->rec_dom)
+		return SPF_E_NO_MEMORY;
 	return SPF_E_SUCCESS;
 }
 
@@ -187,8 +197,11 @@ SPF_server_set_explanation(SPF_server_t *sp, const char *exp,
 	SPF_ASSERT_NOTNULL(exp);
 
 	/* This is a hackish way to get the errors. */
-	if (! *spf_responsep)
+	if (! *spf_responsep) {
 		*spf_responsep = SPF_response_new(NULL);
+		if (! *spf_responsep)
+			return SPF_E_NO_MEMORY;
+	}
 
 	err = SPF_record_compile_macro(sp, *spf_responsep, &spf_macro, exp);
 	if (err == SPF_E_SUCCESS) {
@@ -218,19 +231,24 @@ SPF_server_set_localpolicy(SPF_server_t *sp, const char *policy,
 
 	SPF_ASSERT_NOTNULL(policy);
 
+	/* This is a hackish way to get the errors. */
+	if (! *spf_responsep) {
+		*spf_responsep = SPF_response_new(NULL);
+		if (! *spf_responsep)
+			return SPF_E_NO_MEMORY;
+	}
+
 	len = sizeof(SPF_VER_STR) + strlen(policy) + 20;
 	if (use_default_whitelist)
 		len += sizeof(SPF_DEFAULT_WHITELIST);
 	record = malloc(len);
+	if (! record)
+		return SPF_E_NO_MEMORY;
 	if (use_default_whitelist)
 		snprintf(record, len, "%s %s %s",
 						SPF_VER_STR, policy, SPF_DEFAULT_WHITELIST);
 	else
 		snprintf(record, len, "%s %s", SPF_VER_STR, policy);
-
-	/* This is a hackish way to get the errors. */
-	if (! *spf_responsep)
-		*spf_responsep = SPF_response_new(NULL);
 
 	err = SPF_record_compile(sp, *spf_responsep, &spf_record, record);
 	if (err == SPF_E_SUCCESS) {

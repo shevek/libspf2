@@ -1079,6 +1079,8 @@ SPF_record_interpret(SPF_record_t *spf_record,
 			else {
 				save_spf_response = spf_response;
 				spf_response = SPF_response_new(spf_request);
+				if (!spf_response)
+					return DONE_TEMPERR(SPF_E_NO_MEMORY);
 				spf_response->spf_record_exp = spf_record;
 			}
 			/*
