@@ -43,6 +43,8 @@ SPF_request_new(SPF_server_t *spf_server)
 	SPF_request_t	*sr;
 
 	sr = (SPF_request_t *)malloc(sizeof(SPF_request_t));
+	if (! sr)
+		return sr;
 	memset(sr, 0, sizeof(SPF_request_t));
 
 	sr->spf_server = spf_server;
@@ -117,6 +119,8 @@ SPF_request_set_helo_dom(SPF_request_t *sr, const char *dom)
 	SPF_ASSERT_NOTNULL(dom);
 	SPF_FREE(sr->helo_dom);
 	sr->helo_dom = strdup(dom);
+	if (! sr->helo_dom)
+		return SPF_E_NO_MEMORY;
 	/* set cur_dom and env_from? */
 	if (sr->env_from == NULL)
 		SPF_request_set_env_from(sr, dom);
@@ -147,18 +151,40 @@ SPF_request_set_env_from(SPF_request_t *sr, const char *from)
 	cp = strrchr(from, '@');
 	if (cp && (cp != from)) {
 		sr->env_from = strdup(from);
+		if (! sr->env_from)
+			return SPF_E_NO_MEMORY;
 		*cp = '\0';
 		sr->env_from_lp = strdup(from);
+		if (!sr->env_from_lp) {
+			SPF_FREE(sr->env_from);
+			return SPF_E_NO_MEMORY;
+		}
 		sr->env_from_dp = strdup(cp + 1);
+		if (!sr->env_from_dp) {
+			SPF_FREE(sr->env_from);
+			SPF_FREE(sr->env_from_lp);
+			return SPF_E_NO_MEMORY;
+		}
 		*cp = '@';
 	}
 	else {
 		if (cp == from) from++; /* "@domain.example" */
 		len = sizeof("postmaster@") + strlen(from);
 		sr->env_from = malloc(len + 1);	/* sizeof("") == 1? */
+		if (! sr->env_from)
+			return SPF_E_NO_MEMORY;
 		sprintf(sr->env_from, "postmaster@%s", from);
 		sr->env_from_lp = strdup("postmaster");
+		if (!sr->env_from_lp) {
+			SPF_FREE(sr->env_from);
+			return SPF_E_NO_MEMORY;
+		}
 		sr->env_from_dp = strdup(from);
+		if (!sr->env_from_dp) {
+			SPF_FREE(sr->env_from);
+			SPF_FREE(sr->env_from_lp);
+			return SPF_E_NO_MEMORY;
+		}
 	}
 
 	return 0;	// SPF_E_SUCCESS
@@ -246,6 +272,8 @@ SPF_request_query_mailfrom(SPF_request_t *spf_request,
 	SPF_ASSERT_NOTNULL(spf_server);
 
 	*spf_responsep = SPF_response_new(spf_request);
+	if (! *spf_responsep)
+		return SPF_E_NO_MEMORY;
 
 	/* Give localhost a free ride */
 	if (SPF_request_is_loopback(spf_request))
@@ -275,6 +303,8 @@ SPF_request_query_fallback(SPF_request_t *spf_request,
 	SPF_ASSERT_NOTNULL(spf_server);
 
 	*spf_responsep = SPF_response_new(spf_request);
+	if (! *spf_responsep)
+		return SPF_E_NO_MEMORY;
 
 	/* Give localhost a free ride */
 	if (SPF_request_is_loopback(spf_request))
@@ -316,6 +346,8 @@ SPF_request_query_rcptto(SPF_request_t *spf_request,
 	SPF_ASSERT_NOTNULL(spf_server);
 
 	*spf_responsep = SPF_response_new(spf_request);
+	if (! *spf_responsep)
+		return SPF_E_NO_MEMORY;
 
 	/* Give localhost a free ride */
 	if (SPF_request_is_loopback(spf_request))
@@ -329,6 +361,8 @@ SPF_request_query_rcptto(SPF_request_t *spf_request,
 
 	len = sizeof(SPF_VER_STR) + 64 + strlen(rcpt_to_dom);
 	record = malloc(len);
+	if (! record)
+		return SPF_E_NO_MEMORY;
 	snprintf(record, len, SPF_VER_STR " mx:%s", rcpt_to_dom);
 	err = SPF_record_compile(spf_server,
 					*spf_responsep, &spf_record,
