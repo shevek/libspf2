@@ -230,47 +230,48 @@ SPF_dns_zone_add_str( SPF_dns_server_t *spf_dns_server,
      */
     cnt = spfrr->num_rr;
 
-	switch( rr_type ) {
-	case ns_t_a:
-		SPF_RR_TRY_REALLOC(spfrr, cnt, sizeof( spfrr->rr[cnt]->a ));
-		err = inet_pton( AF_INET, data, &spfrr->rr[cnt]->a );
-		if ( err <= 0 )
-			return SPF_E_INVALID_IP4;
-		break;
+	switch (rr_type) {
+		case ns_t_a:
+			SPF_RR_TRY_REALLOC(spfrr, cnt, sizeof( spfrr->rr[cnt]->a ));
+			err = inet_pton( AF_INET, data, &spfrr->rr[cnt]->a );
+			if ( err <= 0 )
+				return SPF_E_INVALID_IP4;
+			break;
 
-	case ns_t_aaaa:
-		SPF_RR_TRY_REALLOC(spfrr, cnt, sizeof( spfrr->rr[cnt]->aaaa ));
-		err = inet_pton( AF_INET6, data, &spfrr->rr[cnt]->aaaa );
-		if ( err <= 0 )
-			return SPF_E_INVALID_IP6;
-		break;
+		case ns_t_aaaa:
+			SPF_RR_TRY_REALLOC(spfrr, cnt, sizeof( spfrr->rr[cnt]->aaaa ));
+			err = inet_pton( AF_INET6, data, &spfrr->rr[cnt]->aaaa );
+			if ( err <= 0 )
+				return SPF_E_INVALID_IP6;
+			break;
 
-	case ns_t_mx:
-		SPF_RR_TRY_REALLOC(spfrr, cnt, strlen( data ) + 1);
-		strcpy( spfrr->rr[cnt]->mx, data );
-		break;
+		case ns_t_mx:
+			SPF_RR_TRY_REALLOC(spfrr, cnt, strlen( data ) + 1);
+			strcpy( spfrr->rr[cnt]->mx, data );
+			break;
 
-	case ns_t_txt:
-		SPF_RR_TRY_REALLOC(spfrr, cnt, strlen( data ) + 1);
-		strcpy( spfrr->rr[cnt]->txt, data );
-		break;
+		case ns_t_txt:
+		case ns_t_spf:
+			SPF_RR_TRY_REALLOC(spfrr, cnt, strlen( data ) + 1);
+			strcpy( spfrr->rr[cnt]->txt, data );
+			break;
 
-	case ns_t_ptr:
-		SPF_RR_TRY_REALLOC(spfrr, cnt, strlen( data ) + 1);
-		strcpy( spfrr->rr[cnt]->ptr, data );
-		break;
+		case ns_t_ptr:
+			SPF_RR_TRY_REALLOC(spfrr, cnt, strlen( data ) + 1);
+			strcpy( spfrr->rr[cnt]->ptr, data );
+			break;
 
-	case ns_t_any:
-		if ( data )
-			SPF_error( "RR type ANY can not have data.");
-		if ( herrno == NETDB_SUCCESS )
-			SPF_error( "RR type ANY must return a DNS error code.");
-		SPF_error( "RR type ANY can not have multiple RR.");
-		break;
+		case ns_t_any:
+			if ( data )
+				SPF_error( "RR type ANY can not have data.");
+			if ( herrno == NETDB_SUCCESS )
+				SPF_error( "RR type ANY must return a DNS error code.");
+			SPF_error( "RR type ANY can not have multiple RR.");
+			break;
 
-	default:
-		SPF_error( "Invalid RR type" );
-		break;
+		default:
+			SPF_error( "Invalid RR type" );
+			break;
 	}
 
     spfrr->num_rr = cnt + 1;
@@ -281,17 +282,17 @@ SPF_dns_zone_add_str( SPF_dns_server_t *spf_dns_server,
 
 
 static void
-SPF_dns_zone_free( SPF_dns_server_t *spf_dns_server )
+SPF_dns_zone_free(SPF_dns_server_t *spf_dns_server)
 {
     SPF_dns_zone_config_t	*spfhook;
     int				i;
 
 	SPF_ASSERT_NOTNULL(spf_dns_server);
-	spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
+	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
 
 	if (spfhook) {
 		if (spfhook->zone) {
-			for( i = 0; i < spfhook->zone_buf_len; i++ ) {
+			for (i = 0; i < spfhook->zone_buf_len; i++) {
 				if (spfhook->zone[i])
 					SPF_dns_rr_free(spfhook->zone[i]);
 			}
@@ -313,15 +314,16 @@ SPF_dns_zone_new(SPF_dns_server_t *layer_below,
     SPF_dns_zone_config_t	*spfhook;
 
     spf_dns_server = malloc(sizeof(SPF_dns_server_t));
-    if ( spf_dns_server == NULL )
+    if (spf_dns_server == NULL)
 		return NULL;
 	memset(spf_dns_server, 0, sizeof(SPF_dns_server_t));
 
-    spf_dns_server->hook = calloc(1, sizeof(SPF_dns_zone_config_t));
-    if ( spf_dns_server->hook == NULL ) {
-		free( spf_dns_server );
+    spf_dns_server->hook = malloc(sizeof(SPF_dns_zone_config_t));
+    if (spf_dns_server->hook == NULL) {
+		free(spf_dns_server);
 		return NULL;
     }
+	memset(spf_dns_server->hook, 0, sizeof(SPF_dns_zone_config_t));
 
     if (name ==  NULL)
 		name = "zone";
@@ -339,9 +341,9 @@ SPF_dns_zone_new(SPF_dns_server_t *layer_below,
 
     spfhook->zone_buf_len = 32;
     spfhook->num_zone = 0;
-    spfhook->zone = calloc( spfhook->zone_buf_len, sizeof( *spfhook->zone ) );
+    spfhook->zone = calloc(spfhook->zone_buf_len, sizeof(*spfhook->zone));
 
-    if ( spfhook->zone == NULL ) {
+    if (spfhook->zone == NULL) {
 		free(spfhook);
 		free(spf_dns_server);
 		return NULL;
@@ -349,6 +351,12 @@ SPF_dns_zone_new(SPF_dns_server_t *layer_below,
 
     spfhook->nxdomain = SPF_dns_rr_new_init(spf_dns_server,
 					"", ns_t_any, 24 * 60 * 60, HOST_NOT_FOUND);
+	if (spfhook->nxdomain == NULL) {
+		free(spfhook->zone);
+		free(spfhook);
+		free(spf_dns_server);
+		return NULL;
+	}
 
     return spf_dns_server;
 }
