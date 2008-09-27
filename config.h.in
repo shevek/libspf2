@@ -6,6 +6,10 @@
 /* Define to 1 if you have the <arpa/nameser.h> header file. */
 #undef HAVE_ARPA_NAMESER_H
 
+/* Define to 1 if you have the declaration of `ns_t_spf', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NS_T_SPF
+
 /* Define to 1 if you have the declaration of `res_ninit', and to 0 if you
    don't. */
 #undef HAVE_DECL_RES_NINIT

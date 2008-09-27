@@ -48,13 +48,14 @@ if test "X$ac_cv_prog_gcc" = "Xyes"; then
         fi
 fi
 AC_PROG_CPP
-AC_SUBST(SUBDIRS)
+AC_SUBST([SUBDIRS])
 AC_PROG_MAKE_SET
-AC_SUBST(LIBPROGS)
+AC_SUBST([LIBPROGS])
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_PROG_LN_S
-AC_PROG_RANLIB
+dnl This is obsolete
+dnl AC_PROG_RANLIB
 
 # Check if the linker accepts --rpath (for Darwin)
 AC_MSG_CHECKING([if ld accepts --rpath])
@@ -70,16 +71,16 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_CHECK_SIZEOF([int])
-AC_CHECK_HEADERS([limits.h])
-AC_CHECK_HEADERS([sys/param.h])
-AC_CHECK_HEADERS([netinet/in.h sys/socket.h syslog.h sys/time.h errno.h sys/types.h])
-AC_CHECK_HEADERS([fcntl.h malloc.h nmemory.h stddef.h inttypes.h stdlib.h string.h syslog.h unistd.h stdarg.h])
-AC_CHECK_HEADERS([pthread.h pwd.h grp.h])
-AC_CHECK_HEADERS([netdb.h arpa/inet.h arpa/nameser.h])
-AC_CHECK_HEADERS([syslog.h])
-AC_CHECK_HEADERS([resolv.h], [], [],
-      [[#if HAVE_SYS_TYPES_H
+AC_CHECK_HEADERS([limits.h sys/param.h syslog.h sys/time.h errno.h sys/types.h])
+AC_CHECK_HEADERS([fcntl.h malloc.h nmemory.h stddef.h inttypes.h stdlib.h string.h unistd.h stdarg.h])
+AC_CHECK_HEADERS([pthread.h pwd.h grp.h libintl.h getopt.h])
+AC_CHECK_HEADERS([netdb.h netinet/in.h sys/socket.h arpa/inet.h arpa/nameser.h])
+AC_CHECK_HEADERS([resolv.h], [], [], [[
+	#if HAVE_SYS_TYPES_H
 	#  include <sys/types.h>
+	#endif
+	#ifdef HAVE_SYS_SOCKET_H
+	#  include <sys/socket.h> /* DNS HEADER struct */
 	#endif
 	#ifdef HAVE_NETINET_IN_H
 	#  include <netinet/in.h>   /* inet_ functions / structs */
@@ -87,13 +88,8 @@ AC_CHECK_HEADERS([resolv.h], [], [],
 	#ifdef HAVE_ARPA_NAMESER_H
 	#  include <arpa/nameser.h> /* DNS HEADER struct */
 	#endif
-	#ifdef HAVE_SYS_SOCKET_H
-	#  include <sys/socket.h> /* DNS HEADER struct */
-	#endif
-     ]])
-AC_CHECK_HEADERS([libintl.h])
-AC_CHECK_HEADERS([getopt.h])
-
+	]])
+dnl XXX This is no longer true.
 AC_CHECK_HEADER(pthread.h, , [
 	echo "pthread.h is required to build this program."
 	exit 1;
@@ -150,8 +146,10 @@ AC_C_BIGENDIAN
 AC_C_INLINE
 AC_C_CHAR_UNSIGNED
 AC_CHECK_TYPES([u_char, u_int8_t, u_int16_t, u_int32_t, uint8_t, uint16_t, uint32_t])
-AC_CHECK_TYPES([ns_type], [], [],
-	[[
+AC_CHECK_TYPES([ns_type], [], [], [[
+	#ifdef HAVE_SYS_TYPES_H
+	# include <sys/types.h>
+	#endif
 	#ifdef HAVE_SYS_SOCKET_H
 	# include <sys/socket.h>		/* inet_ functions / structs */
 	#endif
@@ -159,13 +157,12 @@ AC_CHECK_TYPES([ns_type], [], [],
 	# include <netinet/in.h>		/* inet_ functions / structs */
 	#endif
 	#ifdef HAVE_ARPA_NAMESER_H
-	#  include <arpa/nameser.h> /* DNS HEADER struct */
+	# include <arpa/nameser.h> /* DNS HEADER struct */
 	#endif
 	]])
-AC_CHECK_TYPES([struct in6_addr], [], [],
-	[[
+AC_CHECK_TYPES([struct in6_addr], [], [], [[
 	#ifdef HAVE_NETINET_IN_H
-	#  include <netinet/in.h>   /* inet_ functions / structs */
+	# include <netinet/in.h>   /* inet_ functions / structs */
 	#endif
 	]])
 
@@ -185,6 +182,9 @@ AC_TYPE_SIGNAL
 
 # Nowadays, I think libspf2 requires this function to be available.
 AC_CHECK_DECLS([res_ninit], [], [], [[
+	#ifdef HAVE_SYS_TYPES_H
+	# include <sys/types.h>
+	#endif
 	#ifdef HAVE_SYS_SOCKET_H
 	# include <sys/socket.h>		/* inet_ functions / structs */
 	#endif
@@ -194,7 +194,27 @@ AC_CHECK_DECLS([res_ninit], [], [], [[
 	#ifdef HAVE_ARPA_NAMESER_H
 	#  include <arpa/nameser.h> /* DNS HEADER struct */
 	#endif
-	#include <resolv.h>
+	#ifdef HAVE_RESOLV_H
+	# include <resolv.h>
+	#endif
+	]])
+
+AC_CHECK_DECLS([ns_t_spf], [], [], [[
+	#ifdef HAVE_SYS_TYPES_H
+	# include <sys/types.h>
+	#endif
+	#ifdef HAVE_SYS_SOCKET_H
+	# include <sys/socket.h>		/* inet_ functions / structs */
+	#endif
+	#ifdef HAVE_NETINET_IN_H
+	# include <netinet/in.h>		/* inet_ functions / structs */
+	#endif
+	#ifdef HAVE_ARPA_NAMESER_H
+	#  include <arpa/nameser.h> /* DNS HEADER struct */
+	#endif
+	#ifdef HAVE_RESOLV_H
+	# include <resolv.h>
+	#endif
 	]])
 
 AC_CHECK_FUNCS([ftruncate gethostname memmove memset socket])
