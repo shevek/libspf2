@@ -189,8 +189,9 @@ SPF_response_add_error_v(SPF_response_t *rp,
 				const char *text, int idx,
 				const char *format, va_list ap)
 {
-	char	 buf[SPF_ERRMSGSIZE];
-	int		 size;
+	SPF_error_t	*tmp;
+	char		 buf[SPF_ERRMSGSIZE];
+	int			 size;
 
 	/* TODO: Use text and idx */
 
@@ -205,8 +206,12 @@ SPF_response_add_error_v(SPF_response_t *rp,
 
 	if (rp->errors_length == rp->errors_size) {
 		size = rp->errors_size + (rp->errors_size / 4) + 4;
-		rp->errors = (SPF_error_t *)
-				realloc(rp->errors, size * sizeof(SPF_error_t));
+		tmp = (SPF_error_t *)realloc(rp->errors, size * sizeof(SPF_error_t));
+		if (! tmp) {
+			SPF_error("Failed to allocate memory for extra response error");
+			return code;
+		}
+		rp->errors = tmp;
 		rp->errors_size = size;
 	}
 

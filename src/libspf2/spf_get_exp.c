@@ -192,9 +192,12 @@ SPF_request_get_exp(SPF_server_t *spf_server,
 	/* FIXME  we are supposed to concatenate the TXT records */
 
 	/* FIXME: If this generates any errors, demote them to warnings. */
+	spf_macro = NULL;
 	err = SPF_record_compile_macro(spf_server, spf_response, &spf_macro,
 								rr_txt->rr[0]->txt);
 	if (err != SPF_E_SUCCESS) {
+		if (spf_macro)
+			SPF_macro_free(spf_macro);
 		RETURN_DEFAULT_EXP();
 	}
 
