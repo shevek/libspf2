@@ -232,6 +232,22 @@ code(response)
 	OUTPUT:
 		RETVAL
 
+SV *
+string(response)
+	Mail::SPF_XS::Response	response
+	CODE:
+		if (response == NULL) {
+			RETVAL = newSVpvf("(null)");
+		}
+		else {
+			RETVAL = newSVpvf("result=%s, reason=\"%s\", error=%s",
+						SPF_strresult(SPF_response_result(response)),
+						SPF_strreason(SPF_response_reason(response)),
+						SPF_strerror(SPF_response_errcode(response)));
+		}
+	OUTPUT:
+		RETVAL
+
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Resolver
 
 int

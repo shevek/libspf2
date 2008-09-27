@@ -39,7 +39,7 @@ foreach my $scenario ($suite->scenarios) {
 
 		my $response = $server->process($request);
 
-		print "Response is $response\n";
+		print "Response is " . $response->string, "\n";
 
 		my $ok = $case->is_expected_result($response->code);
 		diag(
