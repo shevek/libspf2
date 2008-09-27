@@ -72,6 +72,8 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 
 			buflen = SPF_SMTP_COMMENT_SIZE + 1;
 			buf = malloc(buflen);
+			if (buf == NULL)
+				return SPF_E_NO_MEMORY;
 			memset(buf, '\0', buflen);
 
 			err = SPF_request_get_exp(spf_server, spf_request,
@@ -81,8 +83,14 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 			if (buf == NULL || buf[0] == '\0')
 				break;
 			/* Someone might have realloc'd us smaller? */
-			if (buflen < SPF_SMTP_COMMENT_SIZE + 1)
-				buf = realloc(buf, SPF_SMTP_COMMENT_SIZE + 1);
+			if (buflen < SPF_SMTP_COMMENT_SIZE + 1) {
+				char	*tmp = realloc(buf, SPF_SMTP_COMMENT_SIZE + 1);
+				if (!tmp) {
+					free(buf);
+					return SPF_E_NO_MEMORY;
+				}
+				buf = tmp;
+			}
 
 			len = strlen(buf);
 			if (len < SPF_SMTP_COMMENT_SIZE)
@@ -557,7 +565,7 @@ SPF_record_interpret(SPF_record_t *spf_record,
 	int				 m;			/* Mechanism iterator */
 	SPF_mech_t		*mech;
 	SPF_data_t		*data;
-	SPF_data_t		*data_end;
+	SPF_data_t		*data_end;	/* XXX Replace with size_t data_len */
 
 	/* Where to insert the local policy (whitelist) */
 	SPF_mech_t		*local_policy;	/* Not the local policy */
@@ -589,6 +597,7 @@ SPF_record_interpret(SPF_record_t *spf_record,
 
 	int				max_ptr;
 	int				max_mx;
+	int				max_exceeded;
 
 	char			 ip4_buf[ INET_ADDRSTRLEN ];
 	char			 ip6_buf[ INET6_ADDRSTRLEN ];
@@ -708,50 +717,50 @@ SPF_record_interpret(SPF_record_t *spf_record,
 		}												\
 	} while(0)
 #define SPF_FREE_LOOKUP_DATA() \
-	do { if (buf != NULL) free(buf);} while(0)
+	do { if (buf != NULL) { free(buf); buf = NULL; } } while(0)
 
 
 	resolver = spf_server->resolver;
 
 	mech = spf_record->mech_first;
-	for( m = 0; m < spf_record->num_mech; m++ ) {
+	for (m = 0; m < spf_record->num_mech; m++) {
 
 		/* This is as good a place as any. */
-		if ( spf_response->num_dns_mech > spf_server->max_dns_mech
-			 || spf_response->num_dns_mech > SPF_MAX_DNS_MECH ) {
+		if (spf_response->num_dns_mech > spf_server->max_dns_mech
+			 || spf_response->num_dns_mech > SPF_MAX_DNS_MECH) {
 			SPF_FREE_LOOKUP_DATA();
-			return DONE( SPF_RESULT_TEMPERROR, SPF_REASON_NONE, SPF_E_BIG_DNS );
+			return DONE(SPF_RESULT_TEMPERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
 		}
 
 		data = SPF_mech_data( mech );
 		data_end = SPF_mech_end_data( mech );
 
-		switch( mech->mech_type )
-		{
+		switch (mech->mech_type) {
 		case MECH_A:
 			SPF_ADD_DNS_MECH();
 			SPF_MAYBE_SKIP_CIDR();
 			SPF_GET_LOOKUP_DATA();
 
-			if ( spf_request->client_ver == AF_INET )
+			if (spf_request->client_ver == AF_INET)
 				fetch_ns_type = ns_t_a;
 			else
 				fetch_ns_type = ns_t_aaaa;
 
-			rr_a = SPF_dns_lookup(resolver, lookup, fetch_ns_type, TRUE );
+			rr_a = SPF_dns_lookup(resolver, lookup, fetch_ns_type, TRUE);
 
-			if ( spf_server->debug )
-				SPF_debugf( "found %d A records for %s  (herrno: %d)",
-						rr_a->num_rr, lookup, rr_a->herrno );
+			if (spf_server->debug)
+				SPF_debugf("found %d A records for %s  (herrno: %d)",
+						rr_a->num_rr, lookup, rr_a->herrno);
 
-			if( rr_a->herrno == TRY_AGAIN ) {
+			if (rr_a->herrno == TRY_AGAIN) {
 				SPF_dns_rr_free(rr_a);
 				SPF_FREE_LOOKUP_DATA();
 				return DONE_TEMPERR(SPF_E_DNS_ERROR); /* REASON_MECH */
 			}
 
 			for (i = 0; i < rr_a->num_rr; i++) {
-				if ( rr_a->rr_type != fetch_ns_type )
+				/* XXX Should this be hoisted? */
+				if (rr_a->rr_type != fetch_ns_type)
 					continue;
 
 				if (spf_request->client_ver == AF_INET) {
@@ -778,29 +787,32 @@ SPF_record_interpret(SPF_record_t *spf_record,
 			SPF_MAYBE_SKIP_CIDR();
 			SPF_GET_LOOKUP_DATA();
 
-			rr_mx = SPF_dns_lookup(resolver, lookup, ns_t_mx, TRUE );
+			rr_mx = SPF_dns_lookup(resolver, lookup, ns_t_mx, TRUE);
 
-			if ( spf_server->debug )
-				SPF_debugf( "found %d MX records for %s  (herrno: %d)",
-						rr_mx->num_rr, lookup, rr_mx->herrno );
+			if (spf_server->debug)
+				SPF_debugf("found %d MX records for %s  (herrno: %d)",
+						rr_mx->num_rr, lookup, rr_mx->herrno);
 
-			if( rr_mx->herrno == TRY_AGAIN ) {
+			if (rr_mx->herrno == TRY_AGAIN) {
 				SPF_dns_rr_free(rr_mx);
 				SPF_FREE_LOOKUP_DATA();
 				return DONE_TEMPERR(SPF_E_DNS_ERROR);
 			}
 
+			/* The maximum number of MX records we will inspect. */
 			max_mx = rr_mx->num_rr;
-			if ( max_mx > spf_server->max_dns_mx )
-				max_mx = spf_server->max_dns_mx;
-			if ( max_mx > SPF_MAX_DNS_MX )
-				max_mx = SPF_MAX_DNS_MX;
+			max_exceeded = 0;
+			if (max_mx > spf_server->max_dns_mx) {
+				max_exceeded = 1;
+				max_mx = SPF_server_get_max_dns_mx(spf_server);
+			}
 
-			for( j = 0; j < max_mx; j++ ) {
-				if ( rr_mx->rr_type != ns_t_mx )
+			for (j = 0; j < max_mx; j++) {
+				/* XXX Should this be hoisted? */
+				if (rr_mx->rr_type != ns_t_mx)
 					continue;
 
-				if ( spf_request->client_ver == AF_INET )
+				if (spf_request->client_ver == AF_INET)
 					fetch_ns_type = ns_t_a;
 				else
 					fetch_ns_type = ns_t_aaaa;
@@ -808,40 +820,39 @@ SPF_record_interpret(SPF_record_t *spf_record,
 				rr_a = SPF_dns_lookup(resolver, rr_mx->rr[j]->mx,
 									   fetch_ns_type, TRUE );
 
-				if ( spf_server->debug )
-					SPF_debugf( "%d: found %d A records for %s  (herrno: %d)",
-							j, rr_a->num_rr, rr_mx->rr[j]->mx, rr_a->herrno );
-				if( rr_a->herrno == TRY_AGAIN ) {
+				if (spf_server->debug)
+					SPF_debugf("%d: found %d A records for %s  (herrno: %d)",
+							j, rr_a->num_rr, rr_mx->rr[j]->mx, rr_a->herrno);
+				if (rr_a->herrno == TRY_AGAIN) {
 					SPF_dns_rr_free(rr_mx);
 					SPF_dns_rr_free(rr_a);
 					SPF_FREE_LOOKUP_DATA();
-					return DONE_TEMPERR( SPF_E_DNS_ERROR );
+					return DONE_TEMPERR(SPF_E_DNS_ERROR);
 				}
 
-				for( i = 0; i < rr_a->num_rr; i++ ) {
-					if ( rr_a->rr_type != fetch_ns_type )
+				for (i = 0; i < rr_a->num_rr; i++) {
+					/* XXX Should this be hoisted? */
+					if (rr_a->rr_type != fetch_ns_type)
 						continue;
 
-					if ( spf_request->client_ver == AF_INET )
-					{
-						if ( SPF_i_match_ip4( spf_server, spf_request, mech, rr_a->rr[i]->a ) )
-						{
+					if (spf_request->client_ver == AF_INET) {
+						if (SPF_i_match_ip4(spf_server, spf_request, mech,
+										rr_a->rr[i]->a)) {
 							SPF_dns_rr_free(rr_mx);
 							SPF_dns_rr_free(rr_a);
 							SPF_FREE_LOOKUP_DATA();
-							return DONE( mech->prefix_type, SPF_REASON_MECH,
-										 SPF_E_SUCCESS );
+							return DONE(mech->prefix_type, SPF_REASON_MECH,
+										 SPF_E_SUCCESS);
 						}
 					}
-					else
-					{
-						if ( SPF_i_match_ip6( spf_server, spf_request, mech, rr_a->rr[i]->aaaa ) )
-						{
+					else {
+						if (SPF_i_match_ip6(spf_server, spf_request, mech,
+										rr_a->rr[i]->aaaa)) {
 							SPF_dns_rr_free(rr_mx);
 							SPF_dns_rr_free(rr_a);
 							SPF_FREE_LOOKUP_DATA();
-							return DONE( mech->prefix_type, SPF_REASON_MECH,
-										 SPF_E_SUCCESS );
+							return DONE(mech->prefix_type, SPF_REASON_MECH,
+										 SPF_E_SUCCESS);
 						}
 					}
 				}
@@ -849,56 +860,64 @@ SPF_record_interpret(SPF_record_t *spf_record,
 			}
 
 			SPF_dns_rr_free( rr_mx );
+			if (max_exceeded)
+				return DONE(SPF_RESULT_PERMERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
 			break;
 
 		case MECH_PTR:
 			SPF_ADD_DNS_MECH();
 			SPF_GET_LOOKUP_DATA();
 
-			if ( spf_request->client_ver == AF_INET ) {
+			if (spf_request->client_ver == AF_INET) {
 				rr_ptr = SPF_dns_rlookup(resolver,
 								spf_request->ipv4, ns_t_ptr, TRUE);
 
-				if ( spf_server->debug ) {
+				if (spf_server->debug) {
 					INET_NTOP(AF_INET, &spf_request->ipv4.s_addr,
 										ip4_buf, sizeof(ip4_buf));
 					SPF_debugf("got %d PTR records for %s (herrno: %d)",
 							rr_ptr->num_rr, ip4_buf, rr_ptr->herrno);
 				}
 
-				if( rr_ptr->herrno == TRY_AGAIN ) {
+				if (rr_ptr->herrno == TRY_AGAIN) {
 					SPF_dns_rr_free(rr_ptr);
 					SPF_FREE_LOOKUP_DATA();
 					return DONE_TEMPERR(SPF_E_DNS_ERROR);
 				}
 
 
+				/* The maximum number of PTR records we will inspect. */
 				max_ptr = rr_ptr->num_rr;
-				if ( max_ptr > spf_server->max_dns_ptr )
-					max_ptr = spf_server->max_dns_ptr;
-				if ( max_ptr > SPF_MAX_DNS_PTR )
-					max_ptr = SPF_MAX_DNS_PTR;
+				max_exceeded = 0;
+				if (max_ptr > spf_server->max_dns_ptr) {
+					max_exceeded = 1;
+					max_ptr = SPF_server_get_max_dns_ptr(spf_server);
+				}
 
-				for( i = 0; i < max_ptr; i++ ) {
+				for (i = 0; i < max_ptr; i++) {
+					/* XXX MX has a 'continue' case here which should be hoisted. */
+
 					rr_a = SPF_dns_lookup(resolver,
-							rr_ptr->rr[i]->ptr, ns_t_a, TRUE );
+							rr_ptr->rr[i]->ptr, ns_t_a, TRUE);
 
-					if ( spf_server->debug )
+					if (spf_server->debug)
 						SPF_debugf( "%d:  found %d A records for %s  (herrno: %d)",
 								i, rr_a->num_rr, rr_ptr->rr[i]->ptr, rr_a->herrno );
-					if( rr_a->herrno == TRY_AGAIN ) {
+					if (rr_a->herrno == TRY_AGAIN) {
 						SPF_dns_rr_free(rr_ptr);
 						SPF_dns_rr_free(rr_a);
 						SPF_FREE_LOOKUP_DATA();
 						return DONE_TEMPERR( SPF_E_DNS_ERROR );
 					}
 
-					for( j = 0; j < rr_a->num_rr; j++ ) {
-						if ( spf_server->debug ) {
-							INET_NTOP( AF_INET, &rr_a->rr[j]->a.s_addr,
+					for (j = 0; j < rr_a->num_rr; j++) {
+						/* XXX MX has a 'continue' case here which should be hoisted. */
+
+						if (spf_server->debug) {
+							INET_NTOP(AF_INET, &rr_a->rr[j]->a.s_addr,
 											ip4_buf, sizeof(ip4_buf));
-							SPF_debugf( "%d: %d:  found %s",
-									i, j, ip4_buf );
+							SPF_debugf("%d: %d:  found %s",
+									i, j, ip4_buf);
 						}
 
 						if (rr_a->rr[j]->a.s_addr ==
@@ -908,13 +927,16 @@ SPF_record_interpret(SPF_record_t *spf_record,
 								SPF_dns_rr_free(rr_ptr);
 								SPF_dns_rr_free(rr_a);
 								SPF_FREE_LOOKUP_DATA();
-								return DONE_MECH( mech->prefix_type );
+								return DONE_MECH(mech->prefix_type);
 							}
 						}
 					}
 					SPF_dns_rr_free(rr_a);
 				}
 				SPF_dns_rr_free(rr_ptr);
+
+				if (max_exceeded)
+					return DONE(SPF_RESULT_PERMERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
 			}
 
 			else if ( spf_request->client_ver == AF_INET6 ) {
@@ -935,18 +957,21 @@ SPF_record_interpret(SPF_record_t *spf_record,
 
 
 				max_ptr = rr_ptr->num_rr;
-				if ( max_ptr > spf_server->max_dns_ptr )
-					max_ptr = spf_server->max_dns_ptr;
-				if ( max_ptr > SPF_MAX_DNS_PTR )
-					max_ptr = SPF_MAX_DNS_PTR;
+				max_exceeded = 0;
+				if (max_ptr > spf_server->max_dns_ptr) {
+					max_ptr = SPF_server_get_max_dns_ptr(spf_server);
+					max_exceeded = 1;
+				}
 
-				for( i = 0; i < max_ptr; i++ ) {
+				for (i = 0; i < max_ptr; i++) {
+					/* XXX MX has a 'continue' case here which should be hoisted. */
+
 					rr_aaaa = SPF_dns_lookup(resolver,
 							rr_ptr->rr[i]->ptr, ns_t_aaaa, TRUE);
 
 					if ( spf_server->debug )
-						SPF_debugf( "%d:  found %d AAAA records for %s  (herrno: %d)",
-								i, rr_aaaa->num_rr, rr_ptr->rr[i]->ptr, rr_aaaa->herrno );
+						SPF_debugf("%d:  found %d AAAA records for %s  (herrno: %d)",
+								i, rr_aaaa->num_rr, rr_ptr->rr[i]->ptr, rr_aaaa->herrno);
 					if( rr_aaaa->herrno == TRY_AGAIN ) {
 						SPF_dns_rr_free(rr_ptr);
 						SPF_dns_rr_free(rr_aaaa);
@@ -955,6 +980,7 @@ SPF_record_interpret(SPF_record_t *spf_record,
 					}
 
 					for( j = 0; j < rr_aaaa->num_rr; j++ ) {
+						/* XXX MX has a 'continue' case here which should be hoisted. */
 						if ( spf_server->debug ) {
 							INET_NTOP(AF_INET6, &rr_aaaa->rr[j]->aaaa.s6_addr,
 											ip6_buf, sizeof(ip6_buf));
@@ -977,7 +1003,11 @@ SPF_record_interpret(SPF_record_t *spf_record,
 					SPF_dns_rr_free(rr_aaaa);
 				}
 				SPF_dns_rr_free(rr_ptr);
+
+				if (max_exceeded)
+					return DONE(SPF_RESULT_PERMERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
 			}
+
 
 			break;
 
