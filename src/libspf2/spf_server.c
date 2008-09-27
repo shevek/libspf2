@@ -54,6 +54,7 @@
 #include "spf_dns.h"
 #include "spf_dns_resolv.h"
 #include "spf_dns_cache.h"
+#include "spf_dns_zone.h"
 #include "spf_internal.h"
 #include "spf_dns_internal.h"
 
@@ -132,7 +133,7 @@ SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
 		SPF_response_free(spf_response);
 
 	spf_response = NULL;
-	err = SPF_server_set_localpolicy(sp, "", 1, &spf_response);
+	err = SPF_server_set_localpolicy(sp, "", 0, &spf_response);
 	if (SPF_response_messages(spf_response) > 0)
 		SPF_error("Response errors compiling default whitelist");
 	if (err != SPF_E_SUCCESS)
@@ -366,6 +367,11 @@ SPF_E_NOT_SPF,
 	return SPF_E_SUCCESS;
 }
 
+/**
+ * Various accessors.
+ *
+ * The user is permitted to override the maximums.
+ */
 #define SPF_ACCESS_INT(f) \
 	SPF_errcode_t SPF_server_set_ ## f(SPF_server_t *s, int n) { \
 		s->f = n; return SPF_E_SUCCESS; \
@@ -374,6 +380,11 @@ SPF_E_NOT_SPF,
 		return s->f; \
 	}
 
+/**
+ * The return values from these getter functions are used without
+ * modification. If you set a value higher than the specified
+ * maximum, it will be used. Beware.
+ */
 SPF_ACCESS_INT(max_dns_mech);
 SPF_ACCESS_INT(max_dns_ptr);
 SPF_ACCESS_INT(max_dns_mx);
