@@ -191,6 +191,10 @@ SPF_dns_rr_dup(SPF_dns_rr_t **dstp, SPF_dns_rr_t *src)
  	SPF_ASSERT_NOTNULL(dstp);
 	dst = SPF_dns_rr_new_init(src->source,
 					src->domain, src->rr_type, src->ttl, src->herrno);
+	if (!dst) {
+		*dstp = NULL;
+		return SPF_E_NO_MEMORY;
+	}
 	*dstp = dst;
 
     dst->utc_ttl = src->utc_ttl;
