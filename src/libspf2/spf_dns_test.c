@@ -443,6 +443,8 @@ SPF_dns_test_new(SPF_dns_server_t *layer_below,
 	if (name == NULL)
 		name = "test";
     spf_dns_server = SPF_dns_zone_new(layer_below, name, debug);
+	if (spf_dns_server == NULL)
+		return NULL;
 
 	for( i = 0; i < array_elem( SPF_dns_db ); i++ ) {
 		if (SPF_dns_zone_add_str(spf_dns_server,
