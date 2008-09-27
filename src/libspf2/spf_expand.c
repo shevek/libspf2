@@ -176,8 +176,8 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 	 * expand the data
 	 */
 
-	for( d = data; d < data_end; d = SPF_data_next( d ) ) {
-		if ( d->dc.parm_type == PARM_CIDR )
+	for (d = data; d < data_end; d = SPF_data_next(d)) {
+		if (d->dc.parm_type == PARM_CIDR)
 			continue;
 
 		if ( d->ds.parm_type == PARM_STRING ) {
@@ -288,6 +288,8 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 
 		len = strlen(var);
 		munged_var = (char *)malloc(len + 1);
+		if (munged_var == NULL)
+			return SPF_E_NO_MEMORY;
 		memset(munged_var, 0, len + 1);
 
 		p_read_end = var + len;
@@ -367,11 +369,13 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 
 		/* URL encode */
 
-		if ( d->dv.url_encode )
-		{
-			url_var = malloc( len * 3 + 1 );
-			if ( url_var == NULL )
+		if (d->dv.url_encode) {
+			url_var = malloc(len * 3 + 1);
+			if (url_var == NULL) {
+				if (munged_var)
+					free(munged_var);
 				return SPF_E_NO_MEMORY;
+			}
 
 			p_read = var;
 			p_write = url_var;
@@ -420,9 +424,11 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 		p += len;
 		if ( p_end - p <= 0 ) return SPF_E_INTERNAL_ERROR;
 
-		if ( munged_var ) free( munged_var );
+		if (munged_var)
+			free(munged_var);
 		munged_var = NULL;
-		if ( url_var ) free( url_var );
+		if (url_var)
+			free(url_var);
 		url_var = NULL;
 	}
 
