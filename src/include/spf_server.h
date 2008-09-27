@@ -53,18 +53,18 @@ typedef struct SPF_server_struct SPF_server_t;
 #endif
 
 struct SPF_server_struct {
-	SPF_dns_server_t*resolver;		/* SPF DNS resolver */
-	SPF_record_t	*local_policy;	/* Local policies */
-	SPF_macro_t		*explanation;	/* Explanation string */
+	SPF_dns_server_t*resolver;		/**< SPF DNS resolver */
+	SPF_record_t	*local_policy;	/**< Local policies */
+	SPF_macro_t		*explanation;	/**< Explanation string */
 
-	char			*rec_dom;		/* Default receiving domain */
+	char			*rec_dom;		/**< Default receiving domain */
 
-	int				 max_dns_mech;	/* DoS limit on SPF mechanisms */
-	int				 max_dns_ptr;	/* DoS limit on PTR records */
-	int				 max_dns_mx;	/* DoS limit on MX records */
+	int				 max_dns_mech;	/**< DoS limit on SPF mechanisms */
+	int				 max_dns_ptr;	/**< DoS limit on PTR records */
+	int				 max_dns_mx;	/**< DoS limit on MX records */
 
-	int				 sanitize;		/* limit charset in messages */
-	int				 debug;			/* print debug info */
+	int				 sanitize;		/**< limit charset in messages */
+	int				 debug;			/**< print debug info */
 };
 
 typedef
@@ -89,11 +89,14 @@ SPF_errcode_t	 SPF_server_get_record(SPF_server_t *spf_server,
 					SPF_response_t *spf_response,
 					SPF_record_t **spf_recordp);
 
+/**
+ * Prototypes for the various maximum accessors.
+ */
 #define SPF_DECL_ACCESS_INT(f) \
 	SPF_errcode_t \
-		SPF_server_set_max_dns_mech(SPF_server_t *spf_server, int n); \
+		SPF_server_set_ ## f(SPF_server_t *spf_server, int n); \
 	int \
-		SPF_server_get_max_dns_mech(SPF_server_t *spf_server);
+		SPF_server_get_ ## f(SPF_server_t *spf_server);
 
 SPF_DECL_ACCESS_INT(max_dns_mech);
 SPF_DECL_ACCESS_INT(max_dns_ptr);

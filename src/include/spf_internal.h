@@ -28,6 +28,12 @@
 #define NULL ((void *)0)
 #endif
 
+// #ifdef __GNUC__
+// #define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
+// #else
+#define WARN_UNUSED_RESULT
+// #endif
+
 #define array_elem(x) ((long int)(sizeof( x ) / sizeof( *x )))
 
 
@@ -36,7 +42,8 @@
  */
 
 #ifndef SPF_MAX_DNS_MECH
-/* It is a bad idea to change this for two reasons.
+/**
+ * It is a bad idea to change this for two reasons.
  *
  * First, the obvious reason is the delays caused on the mail server
  * you are running.  DNS lookups that timeout can be *very* time
@@ -54,13 +61,15 @@
 #define SPF_MAX_DNS_MECH 10
 #endif
 #ifndef SPF_MAX_DNS_PTR
-/* It is a bad idea to change this for the same reasons as mentioned
+/**
+ * It is a bad idea to change this for the same reasons as mentioned
  * above for SPF_MAX_DNS_MECH
  */
 #define SPF_MAX_DNS_PTR   10
 #endif
 #ifndef SPF_MAX_DNS_MX
-/* It is a bad idea to change this for the same reasons as mentioned
+/**
+ * It is a bad idea to change this for the same reasons as mentioned
  * above for SPF_MAX_DNS_MECH
  */
 #define SPF_MAX_DNS_MX    10
@@ -76,6 +85,8 @@ static inline char * _align_ptr(char *s)
 static inline size_t _align_sz(size_t s) { return s; }
 static inline char * _align_ptr(char *s) { return s; }
 #endif
+
+#include "spf_record.h"
 
 /* FIXME: need to make these network/compiler portable	*/
 /* FIXME: Several of these duplicate each other. Bad. */
@@ -135,7 +146,7 @@ char *SPF_sanitize( SPF_server_t *spf_server, char *str );
 void SPF_print_sizeof(void);
 
 
-/*
+/**
  * A wrapper for reporting errors from sub-functions.
  *   SPF_errcode_t foo(int a) { ... }
  * becomes:
