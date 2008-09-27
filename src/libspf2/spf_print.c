@@ -82,7 +82,7 @@ SPF_record_print(SPF_record_t *spf_record)
 void SPF_print_sizeof(void)
 {
     // SPF_infof( "sizeof(SPF_rec_header_t)=%u", sizeof(SPF_rec_header_t));
-    SPF_infof( "sizeof(SPF_mech_t)=%u", (unsigned int)sizeof(SPF_mech_t));
-    SPF_infof( "sizeof(SPF_data_t)=%u", (unsigned int)sizeof(SPF_data_t));
-    SPF_infof( "sizeof(SPF_mod_t)=%u", (unsigned int)sizeof(SPF_mod_t));
+    SPF_infof( "sizeof(SPF_mech_t)=%lu", (unsigned long)sizeof(SPF_mech_t));
+    SPF_infof( "sizeof(SPF_data_t)=%lu", (unsigned long)sizeof(SPF_data_t));
+    SPF_infof( "sizeof(SPF_mod_t)=%lu", (unsigned long)sizeof(SPF_mod_t));
 }

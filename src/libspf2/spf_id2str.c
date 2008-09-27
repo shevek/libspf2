@@ -309,7 +309,7 @@ SPF_record_stringify( SPF_record_t *spf_record, char **bufp, size_t *buflenp)
 	p_end = *bufp + *buflenp;
 
 	if (debug)
-		SPF_debugf("stringify: Buffer length is %u\n", (unsigned long)*buflenp);
+		SPF_debugf("stringify: Buffer length is %lu\n", (unsigned long)*buflenp);
 
 
 	/*
