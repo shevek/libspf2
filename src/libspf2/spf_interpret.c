@@ -40,9 +40,8 @@
 #include "spf_dns_internal.h"
 #include "spf_server.h"
 
-
 static SPF_errcode_t
-SPF_i_set_smtp_comment(SPF_response_t *spf_response)
+SPF_i_set_explanation(SPF_response_t *spf_response)
 {
 	SPF_server_t	*spf_server;
 	SPF_request_t	*spf_request;
@@ -50,7 +49,44 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 	SPF_errcode_t	 err;
 	char			*buf;
 	size_t			 buflen;
-	size_t			 len;
+
+	SPF_ASSERT_NOTNULL(spf_response);
+	spf_request = spf_response->spf_request;
+	SPF_ASSERT_NOTNULL(spf_request);
+	spf_server = spf_request->spf_server;
+	SPF_ASSERT_NOTNULL(spf_server);
+
+	spf_record = spf_response->spf_record_exp;
+	SPF_ASSERT_NOTNULL(spf_record);
+
+	if (spf_response->explanation)
+		free(spf_response->explanation);
+	spf_response->explanation = NULL;
+
+	buflen = SPF_SMTP_COMMENT_SIZE + 1;
+	buf = malloc(buflen);
+	if (buf == NULL)
+		return SPF_E_NO_MEMORY;
+	memset(buf, '\0', buflen);
+
+	err = SPF_request_get_exp(spf_server, spf_request,
+					spf_response, spf_record, &buf, &buflen);
+	if (err != SPF_E_SUCCESS) {
+		free(buf);
+		return err;
+	}
+
+	spf_response->explanation = buf;
+
+	return SPF_E_SUCCESS;
+}
+
+static SPF_errcode_t
+SPF_i_set_smtp_comment(SPF_response_t *spf_response)
+{
+	SPF_server_t	*spf_server;
+	SPF_request_t	*spf_request;
+	char			 buf[SPF_SMTP_COMMENT_SIZE];
 
 	SPF_ASSERT_NOTNULL(spf_response);
 	spf_request = spf_response->spf_request;
@@ -67,39 +103,24 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 		case SPF_RESULT_FAIL:
 		case SPF_RESULT_SOFTFAIL:
 		case SPF_RESULT_NONE:
-			spf_record = spf_response->spf_record_exp;
-			SPF_ASSERT_NOTNULL(spf_record);
 
-			buflen = SPF_SMTP_COMMENT_SIZE + 1;
-			buf = malloc(buflen);
-			if (buf == NULL)
-				return SPF_E_NO_MEMORY;
-			memset(buf, '\0', buflen);
-
-			err = SPF_request_get_exp(spf_server, spf_request,
-							spf_response, spf_record, &buf, &buflen);
-
-			/* buf should now be malloc'd */
-			if (buf == NULL || buf[0] == '\0')
+			/* XXX Shevek isn't sure what is the reason for this? */
+			if (! spf_response->explanation)
 				break;
-			/* Someone might have realloc'd us smaller? */
-			if (buflen < SPF_SMTP_COMMENT_SIZE + 1) {
-				char	*tmp = realloc(buf, SPF_SMTP_COMMENT_SIZE + 1);
-				if (!tmp) {
-					free(buf);
-					return SPF_E_NO_MEMORY;
-				}
-				buf = tmp;
-			}
+			if (! spf_response->explanation[0])
+				break;
 
-			len = strlen(buf);
-			if (len < SPF_SMTP_COMMENT_SIZE)
-				snprintf(&buf[len], SPF_SMTP_COMMENT_SIZE - len - 1,
-						" : Reason: %s",
-						SPF_strreason(spf_response->reason));
-			buf[SPF_SMTP_COMMENT_SIZE] = '\0';
+			memset(buf, '\0', sizeof(buf));
+			snprintf(buf, "%s : Reason: %s", SPF_SMTP_COMMENT_SIZE - 1,
+					spf_response->explanation,
+					SPF_strreason(spf_response->reason));
+			buf[SPF_SMTP_COMMENT_SIZE - 1] = '\0';
 
-			spf_response->smtp_comment = SPF_sanitize(spf_server, buf);
+			/* It doesn't really hurt much if this fails. */
+			spf_response->smtp_comment = strdup(buf);
+			if (! spf_response->smtp_comment)
+				return SPF_E_NO_MEMORY;
+
 			break;
 		case SPF_RESULT_INVALID:
 		case SPF_RESULT_NEUTRAL:
@@ -107,11 +128,10 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 		case SPF_RESULT_TEMPERROR:
 		case SPF_RESULT_PERMERROR:
 		default:
-			err = SPF_E_SUCCESS;
 			break;
 	}
 
-	return err;
+	return SPF_E_SUCCESS;
 }
 
 static SPF_errcode_t
@@ -374,6 +394,7 @@ SPF_i_done(SPF_response_t *spf_response,
 	spf_response->reason = reason;
 	spf_response->err = err;
 
+	SPF_i_set_explanation(spf_response);
 	SPF_i_set_smtp_comment(spf_response);
 	SPF_i_set_header_comment(spf_response);
 	SPF_i_set_received_spf(spf_response);
