@@ -202,48 +202,51 @@ const char *
 code(response)
 	Mail::SPF_XS::Response	response
 	CODE:
-		switch (SPF_response_result(response)) {
-			default:
-			case SPF_RESULT_INVALID:
-				RETVAL = "invalid";
-				break;
-			case SPF_RESULT_NEUTRAL:
-				RETVAL = "neutral";
-				break;
-			case SPF_RESULT_PASS:
-				RETVAL = "pass";
-				break;
-			case SPF_RESULT_FAIL:
-				RETVAL = "fail";
-				break;
-			case SPF_RESULT_SOFTFAIL:
-				RETVAL = "softfail";
-				break;
-			case SPF_RESULT_NONE:
-				RETVAL = "none";
-				break;
-			case SPF_RESULT_TEMPERROR:
-				RETVAL = "temperror";
-				break;
-			case SPF_RESULT_PERMERROR:
-				RETVAL = "permerror";
-				break;
-		}
+		RETVAL = SPF_strresult(SPF_response_result(response));
+	OUTPUT:
+		RETVAL
+
+const char *
+reason(response)
+	Mail::SPF_XS::Response	response
+	CODE:
+		RETVAL = SPF_strreason(SPF_response_reason(response));
+	OUTPUT:
+		RETVAL
+
+const char *
+error(response)
+	Mail::SPF_XS::Response	response
+	CODE:
+		RETVAL = SPF_strerror(SPF_response_errcode(response));
+	OUTPUT:
+		RETVAL
+
+const char *
+explanation(response)
+	Mail::SPF_XS::Response	response
+	CODE:
+		RETVAL = SPF_response_get_explanation(response);
+		// RETVAL = response->smtp_comment;
 	OUTPUT:
 		RETVAL
 
 SV *
 string(response)
 	Mail::SPF_XS::Response	response
+	PREINIT:
+		const char	*exp;
 	CODE:
 		if (response == NULL) {
 			RETVAL = newSVpvf("(null)");
 		}
 		else {
-			RETVAL = newSVpvf("result=%s, reason=\"%s\", error=%s",
+			exp = SPF_response_get_explanation(response);
+			RETVAL = newSVpvf("result=%s, reason=\"%s\", error=%s, explanation=\"%s\"",
 						SPF_strresult(SPF_response_result(response)),
 						SPF_strreason(SPF_response_reason(response)),
-						SPF_strerror(SPF_response_errcode(response)));
+						SPF_strerror(SPF_response_errcode(response)),
+						exp ? exp : "(null)");
 		}
 	OUTPUT:
 		RETVAL

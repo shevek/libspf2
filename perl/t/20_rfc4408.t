@@ -3,13 +3,14 @@ use warnings;
 use Test::More;
 eval "use Mail::SPF::Test";
 plan skip_all => "Mail::SPF::Test required for testing SPF code" if $@;
+use String::Escape qw(unquote);
 
 use Mail::SPF_XS qw(:all);
 
 my $suite = new_from_yaml_file Mail::SPF::Test('t/rfc4408-tests.yml');
 
 my $tests = 0;
-$tests += scalar($_->test_cases) foreach $suite->scenarios;
+$tests += scalar($_->test_cases) * 2 foreach $suite->scenarios;
 plan tests => $tests;
 
 foreach my $scenario ($suite->scenarios) {
@@ -18,16 +19,19 @@ foreach my $scenario ($suite->scenarios) {
 	});
 	$server->resolver->add('test.com', ns_t_a, NETDB_SUCCESS, '127.0.0.8');
 	foreach my $case ($scenario->test_cases) {
+		# next unless $case->name eq 'nolocalpart';
 		print "Test case ", $case->name, "\n";
 
 		# use Data::Dumper;
 		# print Dumper([ $scenario->records ]);
 		for my $record ($scenario->records) {
 			print "Adding record " . $record->string . "\n";
+			my $type = $record->type;
+			$type = 'TXT' if $type eq 'SPF';
 			$server->resolver->add($record->name,
-					Net::DNS::typesbyname($record->type),
+					Net::DNS::typesbyname($type),
 					NETDB_SUCCESS,
-					$record->rdatastr);
+					unquote($record->rdatastr));
 		}
 
 		my $request = Mail::SPF_XS::Request->new({
@@ -45,9 +49,16 @@ foreach my $scenario ($suite->scenarios) {
 		diag(
 			$case->name . " result:\n" .
 			"Expected: " .  join(' or ', map("'$_'", $case->expected_results)) . "\n" .
-			" Got: " .  "'" .  $response->code .  "'")
+			" Got: " . $response->code)
 				if not $ok;
 		ok($ok);
 
+		$ok = $case->expected_explanation eq $response->explanation;
+		diag(
+			$case->name . " explanation:\n" .
+			"Expected: " .  $case->expected_explanation . "\n" .
+			" Got: " . $response->explanation)
+				if not $ok;
+		ok($ok);
 	}
 }
