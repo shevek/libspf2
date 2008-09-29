@@ -478,8 +478,8 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 			if ( p + len > end )	/* Don't re-parse the CIDR mask */
 				len = end - p;
 			if (spf_server->debug)
-				SPF_debugf("Adding string literal (%d): '%*.*s'",
-								(int)len, (int)len, (int)len, p);
+				SPF_debugf("Adding string literal (%lu): '%*.*s'",
+								(unsigned long)len, (int)len, (int)len, p);
 			memcpy( dst, p, len );
 			ds_len += len;
 			dst += len;
@@ -872,6 +872,10 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 	size_t				 len;
 
 	SPF_errcode_t		 err;
+
+	if (spf_server->debug)
+		SPF_debugf("Adding modifier name=%d@%s, value=%s",
+						name_len, mod_name, *mod_value);
 
 	memset(buf, 'A', sizeof(buf));
 	memset(spf_modifier, 0, sizeof(SPF_mod_t));
