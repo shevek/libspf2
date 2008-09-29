@@ -354,6 +354,9 @@ SPF_dns_cache_rr_fixup(SPF_dns_cache_config_t *spfhook,
 }
 
 
+/**
+ * Can return NULL on out-of-memory condition.
+ */
 static SPF_dns_rr_t *
 SPF_dns_cache_lookup(SPF_dns_server_t *spf_dns_server,
 				const char *domain, ns_type rr_type, int should_cache)

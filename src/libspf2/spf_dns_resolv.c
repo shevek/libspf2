@@ -206,6 +206,10 @@ SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 
 }
 
+/**
+ * Can return NULL on out-of-memory condition.
+ * Should return an NXDOMAIN or appropriate rr in all other error cases.
+ */
 static SPF_dns_rr_t *
 SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 				const char *domain, ns_type rr_type, int should_cache)
@@ -259,6 +263,8 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 
 	responselen = 2048;
 	responsebuf = (u_char *)malloc(responselen);
+	if (! responsebuf)
+		return NULL;	/* NULL always means OOM from DNS lookup. */
 	memset(responsebuf, 0, responselen);
 
 	/*
