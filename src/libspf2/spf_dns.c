@@ -49,7 +49,7 @@ SPF_dns_debug_pre(SPF_dns_server_t *spf_dns_server, const char *domain,
 				ns_type rr_type, int should_cache)
 {
 	if (spf_dns_server->debug) {
-		SPF_debugf("DNS %s lookup:  %s  %s (%d)",
+		SPF_debugf("DNS[%s] lookup: %s %s (%d)",
 			spf_dns_server->name, domain,
 			( (rr_type == ns_t_a)       ? "A" :
 			  (rr_type == ns_t_aaaa)    ? "AAAA" :
@@ -64,11 +64,14 @@ SPF_dns_debug_pre(SPF_dns_server_t *spf_dns_server, const char *domain,
 }
 
 static void
-SPF_dns_debug_post(SPF_dns_server_t *spf_dns_server, SPF_dns_rr_t*spfrr)
+SPF_dns_debug_post(SPF_dns_server_t *spf_dns_server, SPF_dns_rr_t *spfrr)
 {
 	if (spf_dns_server->debug) {
-		SPF_debugf( "DNS %s found:  %s  %s (%d)  "
-				"TTL: %ld  RR found: %d  herrno: %d  source: %s",
+		char	ip4_buf[ INET_ADDRSTRLEN ];
+		char	ip6_buf[ INET6_ADDRSTRLEN ];
+		int		i;
+
+		SPF_debugf("DNS[%s] found: %s %s (%d)",
 			spf_dns_server->name, spfrr->domain,
 			( (spfrr->rr_type == ns_t_a)       ? "A" :
 			  (spfrr->rr_type == ns_t_aaaa)    ? "AAAA" :
@@ -78,12 +81,45 @@ SPF_dns_debug_post(SPF_dns_server_t *spf_dns_server, SPF_dns_rr_t*spfrr)
 			  (spfrr->rr_type == ns_t_any)     ? "ANY" :
 			  (spfrr->rr_type == ns_t_invalid) ? "BAD" :
 			  "??" ),
-			spfrr->rr_type, (long)spfrr->ttl, spfrr->num_rr, spfrr->herrno,
+			spfrr->rr_type);
+		SPF_debugf("    TTL: %ld  RR found: %d  herrno: %d  source: %s",
+			(long)spfrr->ttl, spfrr->num_rr, spfrr->herrno,
 			(spfrr->source
 				? (spfrr->source->name
 					? spfrr->source->name
 					: "(unnamed source)")
 				: "(null source)"));
+		for (i = 0; i < spfrr->num_rr; i++) {
+			switch (spfrr->rr_type) {
+				case ns_t_a:
+					SPF_debugf("    - A: %s",
+							inet_ntop(AF_INET, &(spfrr->rr[i]->a),
+								ip4_buf, sizeof(ip4_buf)));
+					break;
+					
+				case ns_t_ptr:
+					SPF_debugf("    - PTR: %s", spfrr->rr[i]->ptr);
+					break;
+					
+				case ns_t_mx:
+					SPF_debugf("    - MX: %s", spfrr->rr[i]->mx);
+					break;
+					
+				case ns_t_txt:
+					SPF_debugf("    - TXT: %s", spfrr->rr[i]->txt);
+					break;
+					
+				case ns_t_aaaa:
+					SPF_debugf("    - AAAA: %s",
+							inet_ntop(AF_INET6, &(spfrr->rr[i]->aaaa),
+								ip6_buf, sizeof(ip6_buf)));
+					break;
+					
+				default:
+					SPF_debugf("    - Unknown RR type");
+					break;
+			}
+		}
 	}
 }
 
@@ -93,13 +129,15 @@ SPF_dns_free(SPF_dns_server_t *spf_dns_server)
 	SPF_dns_server_t	*layer_below;
 
 	SPF_ASSERT_NOTNULL(spf_dns_server);
-	SPF_ASSERT_NOTNULL(spf_dns_server->destroy);
+	// SPF_ASSERT_NOTNULL(spf_dns_server->destroy);
 	layer_below = spf_dns_server->layer_below;
 
-	spf_dns_server->destroy(spf_dns_server);
-
-	if (layer_below != NULL)
-		SPF_dns_free(layer_below);
+	/* If this is not set, we assume someone else knows, and will destroy it. */
+	if (spf_dns_server->destroy) {
+		spf_dns_server->destroy(spf_dns_server);
+		if (layer_below != NULL)
+			SPF_dns_free(layer_below);
+	}
 }
 
 SPF_dns_rr_t *
