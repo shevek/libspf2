@@ -77,19 +77,11 @@ SPF_server_set_rec_dom_ghbn(SPF_server_t *sp)
 	return SPF_E_SUCCESS;
 }
 
-SPF_server_t *
-SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
+static void
+SPF_server_new_common_pre(SPF_server_t *sp, int debug)
 {
-	SPF_response_t		*spf_response;
-	SPF_dns_server_t	*dc_r;
-	SPF_dns_server_t	*dc_c;
-	SPF_dns_server_t	*dc_z;
-	SPF_server_t		*sp;
 	SPF_errcode_t		 err;
 
-	sp = (SPF_server_t *)malloc(sizeof(SPF_server_t));
-	if (! sp)
-		return sp;
 	memset(sp, 0, sizeof(SPF_server_t));
 
 	sp->max_dns_mech = SPF_MAX_DNS_MECH;
@@ -100,6 +92,46 @@ SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
 	err = SPF_server_set_rec_dom_ghbn(sp);
 	if (err != SPF_E_SUCCESS)
 		SPF_error("Failed to set rec_dom using gethostname()");
+}
+
+static void
+SPF_server_new_common_post(SPF_server_t *sp)
+{
+	SPF_response_t		*spf_response;
+	SPF_errcode_t		 err;
+
+	spf_response = NULL;
+	err = SPF_server_set_explanation(sp, SPF_DEFAULT_EXP,
+					&spf_response);
+	if (SPF_response_messages(spf_response) > 0)
+		SPF_error("Response errors compiling default explanation");
+	if (err != SPF_E_SUCCESS)
+		SPF_errorf("Error code %d compiling default explanation", err);
+	if (spf_response)
+		SPF_response_free(spf_response);
+
+	spf_response = NULL;
+	err = SPF_server_set_localpolicy(sp, "", 0, &spf_response);
+	if (SPF_response_messages(spf_response) > 0)
+		SPF_error("Response errors compiling default whitelist");
+	if (err != SPF_E_SUCCESS)
+		SPF_errorf("Error code %d compiling default whitelist", err);
+	if (spf_response)
+		SPF_response_free(spf_response);
+}
+
+SPF_server_t *
+SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
+{
+	SPF_dns_server_t	*dc_r;
+	SPF_dns_server_t	*dc_c;
+	SPF_dns_server_t	*dc_z;
+	SPF_server_t		*sp;
+
+	sp = (SPF_server_t *)malloc(sizeof(SPF_server_t));
+	if (! sp)
+		return sp;
+	SPF_server_new_common_pre(sp, debug);
 
 	switch (dnstype) {
 		case SPF_DNS_RESOLV:
@@ -130,33 +162,35 @@ SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
 			SPF_errorf("Unknown DNS type %d", dnstype);
 	}
 
-	spf_response = NULL;
-	err = SPF_server_set_explanation(sp, SPF_DEFAULT_EXP,
-					&spf_response);
-	if (SPF_response_messages(spf_response) > 0)
-		SPF_error("Response errors compiling default explanation");
-	if (err != SPF_E_SUCCESS)
-		SPF_errorf("Error code %d compiling default explanation", err);
-	if (spf_response)
-		SPF_response_free(spf_response);
-
-	spf_response = NULL;
-	err = SPF_server_set_localpolicy(sp, "", 0, &spf_response);
-	if (SPF_response_messages(spf_response) > 0)
-		SPF_error("Response errors compiling default whitelist");
-	if (err != SPF_E_SUCCESS)
-		SPF_errorf("Error code %d compiling default whitelist", err);
-	if (spf_response)
-		SPF_response_free(spf_response);
+	SPF_server_new_common_post(sp);
 
 	return sp;
 }
 
+SPF_server_t *
+SPF_server_new_dns(SPF_dns_server_t *dns, int debug)
+{
+	SPF_server_t	*sp;
+
+	sp = (SPF_server_t *)malloc(sizeof(SPF_server_t));
+	if (! sp)
+		return sp;
+	SPF_server_new_common_pre(sp, debug);
+	sp->resolver = dns;
+	SPF_server_new_common_post(sp);
+	return sp;
+}
+
+/**
+ * This function destroys the DNS layer as well.
+ * If the (custom) DNS layer has no destructor,
+ * then this cannot and does not destroy it.
+ */
 void
 SPF_server_free(SPF_server_t *sp)
 {
-	/* XXX We have to destroy the underlying DNS layer as well. */
-	SPF_dns_free(sp->resolver);
+	if (sp->resolver)	// Never false, but let's be defensive.
+		SPF_dns_free(sp->resolver);
 	if (sp->local_policy)
 		SPF_record_free(sp->local_policy);
 	if (sp->explanation)
@@ -301,17 +335,20 @@ SPF_server_get_record(SPF_server_t *spf_server,
 
 	rr_txt = SPF_dns_lookup(resolver, domain, ns_t_txt, TRUE);
 
-	switch( rr_txt->herrno ) {
+	switch (rr_txt->herrno) {
 		case HOST_NOT_FOUND:
+			if (spf_server->debug > 0)
+				SPF_debugf("get_record(%s): HOST_NOT_FOUND", domain);
 			SPF_dns_rr_free(rr_txt);
 			spf_response->result = SPF_RESULT_NONE;
 			spf_response->reason = SPF_REASON_FAILURE;
-			return SPF_response_add_error(spf_response, 
-SPF_E_NOT_SPF,
+			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 					"Host '%s' not found.", domain);
 			break;
 
 		case NO_DATA:
+			if (spf_server->debug > 0)
+				SPF_debugf("get_record(%s): NO_DATA", domain);
 			SPF_dns_rr_free(rr_txt);
 			spf_response->result = SPF_RESULT_NONE;
 			spf_response->reason = SPF_REASON_FAILURE;
@@ -320,15 +357,21 @@ SPF_E_NOT_SPF,
 			break;
 
 		case TRY_AGAIN:
+			if (spf_server->debug > 0)
+				SPF_debugf("get_record(%s): TRY_AGAIN", domain);
 			SPF_dns_rr_free(rr_txt);
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
 					"Temporary DNS failure for '%s'.", domain);
 			break;
 
 		case NETDB_SUCCESS:
+			if (spf_server->debug > 0)
+				SPF_debugf("get_record(%s): NETDB_SUCCESS", domain);
 			break;
 
 		default:
+			if (spf_server->debug > 0)
+				SPF_debugf("get_record(%s): UNKNOWN_ERROR", domain);
 			SPF_dns_rr_free(rr_txt);
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
 					"Unknown DNS failure for '%s': %d.",
@@ -349,6 +392,9 @@ SPF_E_NOT_SPF,
 	/* check for multiple SPF records */
 	num_found = 0;
 	for( i = 0; i < rr_txt->num_rr; i++ ) {
+		if (spf_server->debug > 1)
+			SPF_debugf("Comparing '%s' with '%s'",
+					SPF_VER_STR " ", rr_txt->rr[i]->txt);
 		if ( strncmp( rr_txt->rr[i]->txt,
 					  SPF_VER_STR " ", sizeof( SPF_VER_STR " " ) - 1) == 0 )
 		{

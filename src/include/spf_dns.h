@@ -89,7 +89,7 @@ typedef int	ns_type;
 #define ns_t_spf	99
 #endif
 
-#ifndef ns_t_invalid
+#if ! HAVE_DECL_NS_T_INVALID
 #define	ns_t_invalid	0
 #endif
 
@@ -134,6 +134,11 @@ typedef int (*SPF_dns_add_cache_t)( SPF_server_t *spf_server,
 
 struct SPF_dns_server_struct
 {
+	/** The destructor for this SPF_dns_server_t. If this is NULL, then
+	 * the structure is assumed to be shared between multiple SPF_server_t
+	 * objects, and is not freed when the server is destroyed, or by any call
+	 * to SPF_dns_free(). In this case, it is assumed that somebody else knows,
+	 * and will free the resolver at the appropriate object. */
     SPF_dns_destroy_t	 destroy;
 
     SPF_dns_lookup_t	 lookup;

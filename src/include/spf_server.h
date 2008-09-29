@@ -73,6 +73,7 @@ enum SPF_server_dnstype_enum {
 } SPF_server_dnstype_t;
 
 SPF_server_t	*SPF_server_new(SPF_server_dnstype_t dnstype,int debug);
+SPF_server_t	*SPF_server_new_dns(SPF_dns_server_t *dns,int debug);
 void			 SPF_server_free(SPF_server_t *sp);
 SPF_errcode_t	 SPF_server_set_rec_dom(SPF_server_t *sp,
 					const char *dom);
