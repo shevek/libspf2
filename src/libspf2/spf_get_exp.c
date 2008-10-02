@@ -156,29 +156,34 @@ SPF_request_get_exp(SPF_server_t *spf_server,
 		return resolver->get_exp(spf_server, *bufp, bufp, buflenp);
 
 	rr_txt = SPF_dns_lookup(resolver, *bufp, ns_t_txt, TRUE);
-
-	switch( rr_txt->herrno )
-	{
-	case HOST_NOT_FOUND:
-	case NO_DATA:
+	if (rr_txt == NULL) {
+		SPF_dns_rr_free(rr_txt);
 		RETURN_DEFAULT_EXP();
-		break;
-
-	case TRY_AGAIN:
-		RETURN_DEFAULT_EXP();
-		break;
-
-	case NETDB_SUCCESS:
-		break;
-
-	default:
-		SPF_warning("unknown DNS lookup error code");
-		RETURN_DEFAULT_EXP();
-		break;
 	}
 
-	if ( rr_txt->num_rr == 0 )
-	{
+	switch (rr_txt->herrno) {
+		case HOST_NOT_FOUND:
+		case NO_DATA:
+			SPF_dns_rr_free(rr_txt);
+			RETURN_DEFAULT_EXP();
+			break;
+
+		case TRY_AGAIN:
+			SPF_dns_rr_free(rr_txt);
+			RETURN_DEFAULT_EXP();
+			break;
+
+		case NETDB_SUCCESS:
+			break;
+
+		default:
+			SPF_warning("Unknown DNS lookup error code");
+			SPF_dns_rr_free(rr_txt);
+			RETURN_DEFAULT_EXP();
+			break;
+	}
+
+	if (rr_txt->num_rr == 0) {
 		SPF_response_add_warn(spf_response, SPF_E_NOT_SPF,
 				"No TXT records returned from DNS lookup");
 		RETURN_DEFAULT_EXP();
@@ -198,6 +203,7 @@ SPF_request_get_exp(SPF_server_t *spf_server,
 	if (err != SPF_E_SUCCESS) {
 		if (spf_macro)
 			SPF_macro_free(spf_macro);
+		SPF_dns_rr_free(rr_txt);
 		RETURN_DEFAULT_EXP();
 	}
 
@@ -206,6 +212,7 @@ SPF_request_get_exp(SPF_server_t *spf_server,
 					SPF_macro_data(spf_macro), spf_macro->macro_len,
 					bufp, buflenp);
 	SPF_macro_free(spf_macro);
+	SPF_dns_rr_free(rr_txt);
 
 	return err;
 }

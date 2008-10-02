@@ -1218,14 +1218,17 @@ SPF_record_interpret(SPF_record_t *spf_record,
 						rr_a->num_rr, lookup, rr_a->herrno );
 
 			if( rr_a->herrno == TRY_AGAIN ) {
+				SPF_dns_rr_free(rr_a);
 				SPF_FREE_LOOKUP_DATA();
 				return DONE_TEMPERR(SPF_E_DNS_ERROR);
 			}
 			if ( rr_a->num_rr > 0 ) {
+				SPF_dns_rr_free(rr_a);
 				SPF_FREE_LOOKUP_DATA();
 				return DONE_MECH(mech->prefix_type);
 			}
 
+			SPF_dns_rr_free(rr_a);
 			break;
 
 		case MECH_ALL:
