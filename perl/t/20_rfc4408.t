@@ -13,7 +13,8 @@ my $tests = 0;
 $tests += scalar($_->test_cases) * 2 foreach $suite->scenarios;
 plan tests => $tests;
 
-my $casename = 'alltimeout';
+my $casename = undef;
+# $casename = 'alltimeout';
 
 foreach my $scenario ($suite->scenarios) {
 	if ($casename) {
