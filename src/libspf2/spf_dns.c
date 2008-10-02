@@ -51,15 +51,7 @@ SPF_dns_debug_pre(SPF_dns_server_t *spf_dns_server, const char *domain,
 	if (spf_dns_server->debug) {
 		SPF_debugf("DNS[%s] lookup: %s %s (%d)",
 			spf_dns_server->name, domain,
-			( (rr_type == ns_t_a)       ? "A" :
-			  (rr_type == ns_t_aaaa)    ? "AAAA" :
-			  (rr_type == ns_t_mx)      ? "MX" :
-			  (rr_type == ns_t_txt)     ? "TXT" :
-			  (rr_type == ns_t_ptr)     ? "PTR" :
-			  (rr_type == ns_t_any)     ? "ANY" :
-			  (rr_type == ns_t_invalid) ? "BAD" :
-			  "??" ),
-			rr_type );
+			SPF_strrrtype(rr_type), rr_type);
 	}
 }
 
@@ -71,17 +63,10 @@ SPF_dns_debug_post(SPF_dns_server_t *spf_dns_server, SPF_dns_rr_t *spfrr)
 		char	ip6_buf[ INET6_ADDRSTRLEN ];
 		int		i;
 
-		SPF_debugf("DNS[%s] found: %s %s (%d)",
-			spf_dns_server->name, spfrr->domain,
-			( (spfrr->rr_type == ns_t_a)       ? "A" :
-			  (spfrr->rr_type == ns_t_aaaa)    ? "AAAA" :
-			  (spfrr->rr_type == ns_t_mx)      ? "MX" :
-			  (spfrr->rr_type == ns_t_txt)     ? "TXT" :
-			  (spfrr->rr_type == ns_t_ptr)     ? "PTR" :
-			  (spfrr->rr_type == ns_t_any)     ? "ANY" :
-			  (spfrr->rr_type == ns_t_invalid) ? "BAD" :
-			  "??" ),
-			spfrr->rr_type);
+		SPF_debugf("DNS[%s] found record", spf_dns_server->name);
+		SPF_debugf("    DOMAIN: %s  TYPE: %s (%d)",
+			spfrr->domain,
+			SPF_strrrtype(spfrr->rr_type), spfrr->rr_type);
 		SPF_debugf("    TTL: %ld  RR found: %d  herrno: %d  source: %s",
 			(long)spfrr->ttl, spfrr->num_rr, spfrr->herrno,
 			(spfrr->source
@@ -96,25 +81,29 @@ SPF_dns_debug_post(SPF_dns_server_t *spf_dns_server, SPF_dns_rr_t *spfrr)
 							inet_ntop(AF_INET, &(spfrr->rr[i]->a),
 								ip4_buf, sizeof(ip4_buf)));
 					break;
-					
+
 				case ns_t_ptr:
 					SPF_debugf("    - PTR: %s", spfrr->rr[i]->ptr);
 					break;
-					
+
 				case ns_t_mx:
 					SPF_debugf("    - MX: %s", spfrr->rr[i]->mx);
 					break;
-					
+
 				case ns_t_txt:
 					SPF_debugf("    - TXT: %s", spfrr->rr[i]->txt);
 					break;
-					
+
+				case ns_t_spf:
+					SPF_debugf("    - SPF: %s", spfrr->rr[i]->txt);
+					break;
+
 				case ns_t_aaaa:
 					SPF_debugf("    - AAAA: %s",
 							inet_ntop(AF_INET6, &(spfrr->rr[i]->aaaa),
 								ip6_buf, sizeof(ip6_buf)));
 					break;
-					
+
 				default:
 					SPF_debugf("    - Unknown RR type");
 					break;
