@@ -63,18 +63,20 @@
 
 /* ********************************************************************* */
 
-/* SPF_strerror() translates the SPF error number into a readable string */
+/** SPF_strerror() translates the SPF error number into a readable string */
 const char *SPF_strerror( SPF_errcode_t spf_err );
 
 
-/* SPF_strresult() translates the SPF result number into a readable string */
+/** SPF_strresult() translates the SPF result number into a readable string */
 const char *SPF_strresult( SPF_result_t result );
-/* SPF_strreason() translates the SPF reason number into a readable string */
+/** SPF_strreason() translates the SPF reason number into a readable string */
 const char *SPF_strreason( SPF_reason_t reason );
 
 /* This returns the version information library.  Useful if the library
  * is a shared library and may differ from when the application was compiled.
  */
 void SPF_get_lib_version( int *major, int *minor, int *patch );
+
+const char *SPF_strrrtype(ns_type rr_type);
 
 #endif

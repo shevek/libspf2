@@ -31,8 +31,11 @@
 #include "spf_internal.h"
 
 
+/**
+ * Returns the version numbers of this library.
+ */
 void
-SPF_get_lib_version( int *major, int *minor, int *patch )
+SPF_get_lib_version(int *major, int *minor, int *patch)
 {
 	*major = SPF_LIB_VERSION_MAJOR;
 	*minor = SPF_LIB_VERSION_MINOR;
@@ -41,21 +44,27 @@ SPF_get_lib_version( int *major, int *minor, int *patch )
 
 
 
+/**
+ * Sanitizes a string for printing.
+ *
+ * This replaces all nonprintable characters in str with a '?'.
+ * The source string is modified in-place.
+ */
 char *
-SPF_sanitize( SPF_server_t *spf_server, char *str )
+SPF_sanitize(SPF_server_t *spf_server, char *str)
 {
 	char *p;
 	
-		SPF_ASSERT_NOTNULL(spf_server);
+	SPF_ASSERT_NOTNULL(spf_server);
 
-	if ( !spf_server->sanitize )
+	if (! spf_server->sanitize)
 		return str;
 
-	if ( str == NULL )
+	if (str == NULL)
 		return str;
 	
-	for( p = str; *p != '\0'; p++ )
-		if ( !isprint( (unsigned char)*p ) )
+	for (p = str; *p != '\0'; p++)
+		if (! isprint( (unsigned char)*p ))
 			*p = '?';
 
 	return str;
@@ -65,85 +74,103 @@ SPF_sanitize( SPF_server_t *spf_server, char *str )
 
 
 
-/* To spf_util.c */
+/**
+ * Converts an SPF result to a short human-readable string.
+ */
 const char *
-SPF_strresult( SPF_result_t result )
+SPF_strresult(SPF_result_t result)
 {
-	switch( result )
-	{
+	switch (result) {
 		case SPF_RESULT_INVALID:
-		return "(invalid)";
-		break;
+			return "(invalid)";
+			break;
 
-	case SPF_RESULT_PASS:				/* +								*/
-		return "pass";
-		break;
+		case SPF_RESULT_PASS:				/* +							*/
+			return "pass";
+			break;
 
-	case SPF_RESULT_FAIL:				/* -								*/
-		return "fail";
-		break;
+		case SPF_RESULT_FAIL:				/* -							*/
+			return "fail";
+			break;
 
-	case SPF_RESULT_SOFTFAIL:				/* ~								*/
-		return "softfail";
-		break;
+		case SPF_RESULT_SOFTFAIL:			/* ~							*/
+			return "softfail";
+			break;
 
-	case SPF_RESULT_NEUTRAL:				/* ?								*/
-		return "neutral";
-		break;
+		case SPF_RESULT_NEUTRAL:			/* ?							*/
+			return "neutral";
+			break;
 
-	case SPF_RESULT_PERMERROR:				/* permanent error				*/
-		return "unknown (permanent error)";
-		break;
+		case SPF_RESULT_PERMERROR:			/* permanent error				*/
+			return "unknown (permanent error)";
+			break;
 
-	case SPF_RESULT_TEMPERROR:				/* temporary error				*/
-		return "error (temporary)";
-		break;
+		case SPF_RESULT_TEMPERROR:			/* temporary error				*/
+			return "error (temporary)";
+			break;
 
-	case SPF_RESULT_NONE:				/* no SPF record found				*/
-		return "none";
-		break;
+		case SPF_RESULT_NONE:				/* no SPF record found			*/
+			return "none";
+			break;
 
-	default:
-		return "(error: unknown result)";
-		break;
+		default:
+			return "(error: unknown result)";
+			break;
 	}
 }
 
 
 
-/* To spf_util.c */
+/**
+ * Converts an SPF reason to a short human-readable string.
+ */
 const char *
-SPF_strreason( SPF_reason_t reason )
+SPF_strreason(SPF_reason_t reason)
 {
-	switch( reason )
-	{
-	case SPF_REASON_NONE:
-		return "none";
-		break;
+	switch (reason) {
+		case SPF_REASON_NONE:
+			return "none";
+			break;
+			
+		case SPF_REASON_LOCALHOST:
+			return "localhost";
+			break;
+			
+		case SPF_REASON_LOCAL_POLICY:
+			return "local policy";
+			break;
+			
+		case SPF_REASON_MECH:
+			return "mechanism";
+			break;
+			
+		case SPF_REASON_DEFAULT:
+			return "default";
+			break;
+			
+		case SPF_REASON_2MX:
+			return "secondary MX";
+			break;
+			
+		default:
+			return "(invalid reason)";
+			break;
 		
-	case SPF_REASON_LOCALHOST:
-		return "localhost";
-		break;
-		
-	case SPF_REASON_LOCAL_POLICY:
-		return "local policy";
-		break;
-		
-	case SPF_REASON_MECH:
-		return "mechanism";
-		break;
-		
-	case SPF_REASON_DEFAULT:
-		return "default";
-		break;
-		
-	case SPF_REASON_2MX:
-		return "secondary MX";
-		break;
-		
-	default:
-		return "(invalid reason)";
-		break;
-		
+	}
+}
+
+const char *
+SPF_strrrtype(ns_type rr_type)
+{
+	switch (rr_type) {
+		case ns_t_a:       return "A";
+		case ns_t_aaaa:    return "AAAA";
+		case ns_t_any:     return "ANY";
+		case ns_t_invalid: return "BAD";
+		case ns_t_mx:      return "MX";
+		case ns_t_ptr:     return "PTR";
+		case ns_t_spf:     return "SPF";
+		case ns_t_txt:     return "TXT";
+		default:           return "??";
 	}
 }
