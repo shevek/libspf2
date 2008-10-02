@@ -13,26 +13,40 @@ my $tests = 0;
 $tests += scalar($_->test_cases) * 2 foreach $suite->scenarios;
 plan tests => $tests;
 
+my $casename = 'alltimeout';
+
 foreach my $scenario ($suite->scenarios) {
+	if ($casename) {
+		my $found = undef;
+		foreach my $case ($scenario->test_cases) {
+			$found = 1 if $case->name eq $casename;
+		}
+		next unless $found;
+	}
+
 	my $server = new Mail::SPF_XS::Server({
 		dnstype	=> SPF_DNS_ZONE,
 	});
-	$server->resolver->add('test.com', ns_t_a, NETDB_SUCCESS, '127.0.0.8');
+	# $server->resolver->add('test.com', ns_t_a, NETDB_SUCCESS, '127.0.0.8');
+
+	for my $record ($scenario->records) {
+		print "Adding record " . $record->string . "\n";
+		my $type = $record->type;
+		$type = 'TXT' if $type eq 'SPF';
+		$server->resolver->add($record->name,
+				Net::DNS::typesbyname($type),
+				NETDB_SUCCESS,
+				unquote($record->rdatastr));
+	}
+
 	foreach my $case ($scenario->test_cases) {
-		# next unless $case->name eq 'nolocalpart';
+		if ($casename) {
+			next unless $case->name eq $casename;
+		}
 		print "Test case ", $case->name, "\n";
 
 		# use Data::Dumper;
 		# print Dumper([ $scenario->records ]);
-		for my $record ($scenario->records) {
-			print "Adding record " . $record->string . "\n";
-			my $type = $record->type;
-			$type = 'TXT' if $type eq 'SPF';
-			$server->resolver->add($record->name,
-					Net::DNS::typesbyname($type),
-					NETDB_SUCCESS,
-					unquote($record->rdatastr));
-		}
 
 		my $request = Mail::SPF_XS::Request->new({
 			scope           => $case->scope,
