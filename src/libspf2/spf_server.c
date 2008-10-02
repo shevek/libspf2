@@ -392,9 +392,11 @@ SPF_server_get_record(SPF_server_t *spf_server,
 	/* check for multiple SPF records */
 	num_found = 0;
 	for( i = 0; i < rr_txt->num_rr; i++ ) {
+		/*
 		if (spf_server->debug > 1)
 			SPF_debugf("Comparing '%s' with '%s'",
 					SPF_VER_STR " ", rr_txt->rr[i]->txt);
+		*/
 		if ( strncmp( rr_txt->rr[i]->txt,
 					  SPF_VER_STR " ", sizeof( SPF_VER_STR " " ) - 1) == 0 )
 		{
