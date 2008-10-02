@@ -111,7 +111,7 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 				break;
 
 			memset(buf, '\0', sizeof(buf));
-			snprintf(buf, "%s : Reason: %s", SPF_SMTP_COMMENT_SIZE - 1,
+			snprintf(buf, SPF_SMTP_COMMENT_SIZE - 1, "%s : Reason: %s",
 					spf_response->explanation,
 					SPF_strreason(spf_response->reason));
 			buf[SPF_SMTP_COMMENT_SIZE - 1] = '\0';
