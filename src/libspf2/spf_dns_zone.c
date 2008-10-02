@@ -89,42 +89,53 @@ static inline void *SPF_spfhook2voidp( SPF_dns_zone_config_t *spfhook )
 
 
 
+/**
+ * Setting 'exact' to true causes an exact match, including all wildcards,
+ * and is used for adding records.
+ */
 static SPF_dns_rr_t *
-SPF_dns_find_zone(SPF_dns_server_t *spf_dns_server,
-				const char *domain, ns_type rr_type)
+SPF_dns_zone_find(SPF_dns_server_t *spf_dns_server,
+				const char *domain, ns_type rr_type,
+				int exact)
 {
     SPF_dns_zone_config_t	*spfhook;
     int		i;
 
-	spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
+	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
 
-    if (strncmp(domain, "*.", 2) == 0) {
-		for( i = 0; i < spfhook->num_zone; i++ ) {
-			if ( spfhook->zone[i]->rr_type == rr_type
-			  && strcmp( spfhook->zone[i]->domain, domain ) == 0 )
-			return spfhook->zone[i];
+	SPF_debugf("zone: Searching for RR %s (%d)", domain, rr_type);
+
+	/* If the record we want or are adding starts with '*.' then it must match
+	 * exactly. */
+    if (exact || strncmp(domain, "*.", 2) == 0) {
+		for (i = 0; i < spfhook->num_zone; i++) {
+			if (spfhook->zone[i]->rr_type == rr_type
+					&& strcasecmp(spfhook->zone[i]->domain, domain) == 0)
+				return spfhook->zone[i];
 		}
+		SPF_debugf("zone: Exact not found");
     }
 	else {
-		size_t	domain_len = strlen( domain );
+		/* We are looking up a record, so lookup-matching semantics apply. */
+		size_t	domain_len = strlen(domain);
 
-		for( i = 0; i < spfhook->num_zone; i++ ) {
-			if ( spfhook->zone[i]->rr_type != rr_type
-			  && spfhook->zone[i]->rr_type != ns_t_any )
-			continue;
+		for (i = 0; i < spfhook->num_zone; i++) {
+			if (spfhook->zone[i]->rr_type != rr_type
+					&& spfhook->zone[i]->rr_type != ns_t_any)
+				continue;
 
-			if ( strncmp( spfhook->zone[i]->domain, "*.", 2 ) == 0 ) {
-				size_t	zdomain_len;
-				zdomain_len = strlen( spfhook->zone[i]->domain ) - 2;
+			if (strncmp(spfhook->zone[i]->domain, "*.", 2) == 0) {
+				size_t	zdomain_len = strlen(spfhook->zone[i]->domain) - 2;
 				if ((zdomain_len <= domain_len)
-					 && strcmp(spfhook->zone[i]->domain + 2,
-						domain + (domain_len - zdomain_len)) == 0 )
+					 && strcasecmp(spfhook->zone[i]->domain + 2,
+						domain + (domain_len - zdomain_len)) == 0)
 					return spfhook->zone[i];
 			}
-			else if (strcmp(spfhook->zone[i]->domain, domain) == 0) {
+			else if (strcasecmp(spfhook->zone[i]->domain, domain) == 0) {
 				return spfhook->zone[i];
 			}
 		}
+		SPF_debugf("zone: Non-exact not found");
 	}
 
     return NULL;
@@ -139,18 +150,18 @@ SPF_dns_zone_lookup(SPF_dns_server_t *spf_dns_server,
     SPF_dns_zone_config_t	*spfhook;
     SPF_dns_rr_t			*spfrr;
 
-    spfrr = SPF_dns_find_zone( spf_dns_server, domain, rr_type );
-    if (spfrr) {
+	spfrr = SPF_dns_zone_find(spf_dns_server, domain, rr_type, FALSE);
+	if (spfrr) {
 		SPF_dns_rr_dup(&spfrr, spfrr);
 		return spfrr;
 	}
 
-    if (spf_dns_server->layer_below) {
+	if (spf_dns_server->layer_below) {
 		return SPF_dns_lookup(spf_dns_server->layer_below,
 						domain, rr_type, should_cache);
 	}
 
-	spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
+	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
 	SPF_dns_rr_dup(&spfrr, spfhook->nxdomain);
 
 	return spfrr;
@@ -158,20 +169,27 @@ SPF_dns_zone_lookup(SPF_dns_server_t *spf_dns_server,
 
 
 SPF_errcode_t
-SPF_dns_zone_add_str( SPF_dns_server_t *spf_dns_server,
+SPF_dns_zone_add_str(SPF_dns_server_t *spf_dns_server,
 				const char *domain, ns_type rr_type,
-				SPF_dns_stat_t herrno, const char *data )
+				SPF_dns_stat_t herrno, const char *data)
 {
     SPF_dns_zone_config_t	*spfhook;
-    SPF_dns_rr_t		*spfrr;
+    SPF_dns_rr_t			*spfrr;
 
     int		err;
     int		cnt;
 
-	spfhook = SPF_voidp2spfhook( spf_dns_server->hook );
+	if (rr_type == ns_t_any) {
+		if (data)
+			SPF_error("RR type ANY can not have data.");
+		if (herrno == NETDB_SUCCESS)
+			SPF_error("RR type ANY must return a DNS error code.");
+	}
+
+	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
 
     /* try to find an existing record */
-    spfrr = SPF_dns_find_zone( spf_dns_server, domain, rr_type );
+    spfrr = SPF_dns_zone_find(spf_dns_server, domain, rr_type, TRUE);
 
     /* create a new record */
 	if ( spfrr == NULL ) {
@@ -207,12 +225,6 @@ SPF_dns_zone_add_str( SPF_dns_server_t *spf_dns_server,
 		/* random lexical scope */
 		/* Should this really be in this condition? */
 		{
-			if ( rr_type == ns_t_any ) {
-				if ( data )
-					SPF_error( "RR type ANY can not have data.");
-				if ( herrno == NETDB_SUCCESS )
-					SPF_error( "RR type ANY must return a DNS error code.");
-			}
 
 			/* We succeeded with the add, but with no data. */
 			if ( herrno != NETDB_SUCCESS )
