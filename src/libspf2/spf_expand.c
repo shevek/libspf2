@@ -13,6 +13,11 @@
  * These licenses can be found with the distribution in the file LICENSES
  */
 
+/**
+ * @file
+ * @brief Expansion routine for SPF macros.
+ */
+
 #include "spf_sys_config.h"
 
 
@@ -65,8 +70,10 @@ SPF_delim_valid(SPF_data_t *d, char c)
 			|| ( d->dv.delim_under && c == '_' ) );
 }
 
-/* This could better collect errors, like the compiler does. */
-/* This requires that *bufp be either malloced to *buflenp, or NULL
+/**
+ * This could better collect errors, like the compiler does.
+ * This requires that *bufp be either malloced to *buflenp, or NULL
+ * This may realloc *bufp.
  */
 SPF_errcode_t
 SPF_record_expand_data(SPF_server_t *spf_server,
@@ -77,11 +84,11 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 {
 	SPF_data_t		*d, *data_end;
 
-	size_t		len;
-	const char		*p_err;
+	size_t		 len;
+	const char	*p_err;
 	char		*p, *p_end;
-	const char		*p_read;
-	const char		*p_read_end;
+	const char	*p_read;
+	const char	*p_read_end;
 	char		*p_write;
 	char		*p2, *p2_end;
 
