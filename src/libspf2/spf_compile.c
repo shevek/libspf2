@@ -477,10 +477,12 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 		if (len > 0) {				/* An optimisation */
 			if ( p + len > end )	/* Don't re-parse the CIDR mask */
 				len = end - p;
+			/*
 			if (spf_server->debug)
 				SPF_debugf("Adding string literal (%lu): '%*.*s'",
 								(unsigned long)len, (int)len, (int)len, p);
-			memcpy( dst, p, len );
+			*/
+			memcpy(dst, p, len);
 			ds_len += len;
 			dst += len;
 			p += len;
