@@ -112,6 +112,7 @@ new(class, args)
 		SPF_server_t	*spf_server;
 		SV				**svp;
 		SPF_server_dnstype_t	dnstype;
+		int						debug;
 	CODE:
 		(void)class;
 		svp = hv_fetch(args, "dnstype", 7, FALSE);
@@ -124,7 +125,12 @@ new(class, args)
 		else {
 			dnstype = SPF_DNS_RESOLV;
 		}
-		spf_server = SPF_server_new(dnstype, 0);
+		svp = hv_fetch(args, "debug", 5, FALSE);
+		if (svp && SvIOK(*svp))
+			debug = SvIV(*svp);
+		else
+			debug = 0;
+		spf_server = SPF_server_new(dnstype, debug);
 		RETVAL = spf_server;
 	OUTPUT:
 		RETVAL
