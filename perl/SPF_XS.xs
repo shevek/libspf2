@@ -271,6 +271,7 @@ string(response)
 	Mail::SPF_XS::Response	response
 	PREINIT:
 		const char	*exp;
+		int			 i;
 	CODE:
 		if (response == NULL) {
 			RETVAL = newSVpvf("(null)");
@@ -282,6 +283,15 @@ string(response)
 						SPF_strreason(SPF_response_reason(response)),
 						SPF_strerror(SPF_response_errcode(response)),
 						exp ? exp : "(null)");
+			if (response->errors_length) {
+				sv_catpv(RETVAL, ", errors={");
+				for (i = 0; i < response->errors_length; i++) {
+					sv_catpvf(RETVAL, " (%d)%s",
+							response->errors[i].code,
+							response->errors[i].message);
+				}
+				sv_catpv(RETVAL, " }");
+			}
 		}
 	OUTPUT:
 		RETVAL
