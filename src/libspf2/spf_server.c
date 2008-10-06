@@ -405,8 +405,8 @@ lookup:
 			SPF_debugf("Comparing '%s' with '%s'",
 					SPF_VER_STR " ", rr_txt->rr[i]->txt);
 		*/
-		if ( strncmp( rr_txt->rr[i]->txt,
-					  SPF_VER_STR " ", sizeof( SPF_VER_STR " " ) - 1) == 0 )
+		if (strncasecmp( rr_txt->rr[i]->txt,
+					  SPF_VER_STR " ", sizeof( SPF_VER_STR " " ) - 1) == 0)
 		{
 			if ( spf_server->debug > 0 )
 				SPF_debugf( "found SPF record: %s", rr_txt->rr[i]->txt );
@@ -434,7 +434,7 @@ lookup:
 	SPF_dns_rr_free(rr_txt);
 
 	/* FIXME:  support multiple versions */
-	if ( err != SPF_E_SUCCESS )
+	if (err != SPF_E_SUCCESS)
 		return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 				"Failed to compile SPF record for '%s'", domain);
 

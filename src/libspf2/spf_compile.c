@@ -1097,7 +1097,7 @@ SPF_record_compile(SPF_server_t *spf_server,
 	 */
 	p = record;
 
-	if ( strncmp( p, SPF_VER_STR, sizeof( SPF_VER_STR )-1 ) != 0 )
+	if (strncasecmp(p, SPF_VER_STR, sizeof(SPF_VER_STR) - 1) != 0)
 		return SPF_response_add_error_ptr(spf_response, SPF_E_NOT_SPF,
 						NULL, p,
 						"Could not find a valid SPF record");
