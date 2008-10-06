@@ -162,6 +162,10 @@ SPF_strerror( SPF_errcode_t spf_c_err )
 	return "include: or redirect= caused unlimited recursion";
 	break;
 
+	case SPF_E_MULTIPLE_RECORDS:
+	return "Multiple SPF or TXT records for domain.";
+	break;
+
     default:
 	return "Unknown SPF error code";
 	break;

@@ -15,7 +15,7 @@ plan tests => $tests;
 
 my $casename = undef;
 # $casename = 'alltimeout';
-$casename = 'case-insensitive';
+$casename = 'multispf2';
 
 foreach my $scenario ($suite->scenarios) {
 	if ($casename) {

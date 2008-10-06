@@ -149,6 +149,7 @@ enum SPF_errcode_t {
 								mechanism will be ignored */
 ,	SPF_E_INCLUDE_RETURNED_NONE	/* If an include recursive query returns none it's a perm error */
 ,	SPF_E_RECURSIVE			/* Recursive include */
+,	SPF_E_MULTIPLE_RECORDS	/* Multiple SPF or TXT records found */
 } SPF_errcode_t;
 
 typedef

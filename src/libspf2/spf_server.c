@@ -335,7 +335,7 @@ SPF_server_get_record(SPF_server_t *spf_server,
 						spf_response, spf_recordp);
 
 	rr_type = ns_t_spf;
-lookup:
+retry:
 	rr_txt = SPF_dns_lookup(resolver, domain, rr_type, TRUE);
 
 	switch (rr_txt->herrno) {
@@ -352,12 +352,12 @@ lookup:
 		case NO_DATA:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): NO_DATA", domain);
+			SPF_dns_rr_free(rr_txt);
 			/* I am VERY, VERY sorry. Shevek. */
 			if (rr_type == ns_t_spf) {
 				rr_type = ns_t_txt;
-				goto lookup;
+				goto retry;
 			}
-			SPF_dns_rr_free(rr_txt);
 			spf_response->result = SPF_RESULT_NONE;
 			spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
@@ -389,6 +389,10 @@ lookup:
 
 	if (rr_txt->num_rr == 0) {
 		SPF_dns_rr_free(rr_txt);
+		if (rr_type == ns_t_spf) {
+			rr_type = ns_t_txt;
+			goto retry;
+		}
 		return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 				"No TXT records returned from DNS lookup for '%s'",
 				domain);
@@ -416,14 +420,19 @@ lookup:
 		}
 	}
 
-	if ( num_found == 0 ) {
+	if (num_found == 0) {
 		SPF_dns_rr_free(rr_txt);
 		return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 				"No SPF records for '%s'", domain);
 	}
-	if ( num_found > 1 ) {
+	if (num_found > 1) {
 		SPF_dns_rr_free(rr_txt);
-		return SPF_response_add_error(spf_response, SPF_E_RESULT_UNKNOWN,
+		// rfc4408 requires permerror here.
+		/* XXX This could be refactored with SPF_i_done. */
+		spf_response->result = SPF_RESULT_PERMERROR;
+		spf_response->reason = SPF_REASON_FAILURE;
+		spf_response->err = SPF_E_MULTIPLE_RECORDS;
+		return SPF_response_add_error(spf_response, SPF_E_MULTIPLE_RECORDS,
 				"Multiple SPF records for '%s'", domain);
 	}
 
@@ -433,7 +442,7 @@ lookup:
 					rr_txt->rr[idx_found]->txt );
 	SPF_dns_rr_free(rr_txt);
 
-	/* FIXME:  support multiple versions */
+	/* FIXME: support multiple versions */
 	if (err != SPF_E_SUCCESS)
 		return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 				"Failed to compile SPF record for '%s'", domain);
