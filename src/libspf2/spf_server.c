@@ -312,6 +312,7 @@ SPF_server_get_record(SPF_server_t *spf_server,
 	SPF_dns_rr_t			*rr_txt;
 	SPF_errcode_t			 err;
 	const char				*domain;
+	ns_type					 rr_type;
 	int						 num_found;
 	int						 idx_found;
 	int						 i;
@@ -329,11 +330,13 @@ SPF_server_get_record(SPF_server_t *spf_server,
 
 	resolver = spf_server->resolver;
 
-	if ( resolver->get_spf )
+	if (resolver->get_spf)
 		return resolver->get_spf(spf_server, spf_request,
 						spf_response, spf_recordp);
 
-	rr_txt = SPF_dns_lookup(resolver, domain, ns_t_txt, TRUE);
+	rr_type = ns_t_spf;
+lookup:
+	rr_txt = SPF_dns_lookup(resolver, domain, rr_type, TRUE);
 
 	switch (rr_txt->herrno) {
 		case HOST_NOT_FOUND:
@@ -344,17 +347,22 @@ SPF_server_get_record(SPF_server_t *spf_server,
 			spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 					"Host '%s' not found.", domain);
-			break;
+			// break;
 
 		case NO_DATA:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): NO_DATA", domain);
+			/* I am VERY, VERY sorry. Shevek. */
+			if (rr_type == ns_t_spf) {
+				rr_type = ns_t_txt;
+				goto lookup;
+			}
 			SPF_dns_rr_free(rr_txt);
 			spf_response->result = SPF_RESULT_NONE;
 			spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 					"No DNS data for '%s'.", domain);
-			break;
+			// break;
 
 		case TRY_AGAIN:
 			if (spf_server->debug > 0)
@@ -362,7 +370,7 @@ SPF_server_get_record(SPF_server_t *spf_server,
 			SPF_dns_rr_free(rr_txt);
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
 					"Temporary DNS failure for '%s'.", domain);
-			break;
+			// break;
 
 		case NETDB_SUCCESS:
 			if (spf_server->debug > 0)
@@ -376,10 +384,10 @@ SPF_server_get_record(SPF_server_t *spf_server,
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
 					"Unknown DNS failure for '%s': %d.",
 					domain, rr_txt->herrno);
-			break;
+			// break;
 	}
 
-	if ( rr_txt->num_rr == 0 ) {
+	if (rr_txt->num_rr == 0) {
 		SPF_dns_rr_free(rr_txt);
 		return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 				"No TXT records returned from DNS lookup for '%s'",

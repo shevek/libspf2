@@ -368,6 +368,7 @@ SPF_dns_zone_new(SPF_dns_server_t *layer_below,
 		return NULL;
     }
 
+	/* XXX This might have to return NO_DATA sometimes. */
     spfhook->nxdomain = SPF_dns_rr_new_init(spf_dns_server,
 					"", ns_t_any, 24 * 60 * 60, HOST_NOT_FOUND);
 	if (spfhook->nxdomain == NULL) {
