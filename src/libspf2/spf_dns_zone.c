@@ -103,7 +103,8 @@ SPF_dns_zone_find(SPF_dns_server_t *spf_dns_server,
 
 	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
 
-	SPF_debugf("zone: Searching for RR %s (%d)", domain, rr_type);
+	if (spf_dns_server->debug)
+		SPF_debugf("zone: Searching for RR %s (%d)", domain, rr_type);
 
 	/* If the record we want or are adding starts with '*.' then it must match
 	 * exactly. */
@@ -113,7 +114,8 @@ SPF_dns_zone_find(SPF_dns_server_t *spf_dns_server,
 					&& strcasecmp(spfhook->zone[i]->domain, domain) == 0)
 				return spfhook->zone[i];
 		}
-		SPF_debugf("zone: Exact not found");
+		if (spf_dns_server->debug)
+			SPF_debugf("zone: Exact not found");
     }
 	else {
 		/* We are looking up a record, so lookup-matching semantics apply. */
@@ -121,8 +123,12 @@ SPF_dns_zone_find(SPF_dns_server_t *spf_dns_server,
 
 		for (i = 0; i < spfhook->num_zone; i++) {
 			if (spfhook->zone[i]->rr_type != rr_type
-					&& spfhook->zone[i]->rr_type != ns_t_any)
+					&& spfhook->zone[i]->rr_type != ns_t_any) {
+				if (spf_dns_server->debug)
+					SPF_debugf("zone: Ignoring record rrtype %d",
+							spfhook->zone[i]->rr_type);
 				continue;
+			}
 
 			if (strncmp(spfhook->zone[i]->domain, "*.", 2) == 0) {
 				size_t	zdomain_len = strlen(spfhook->zone[i]->domain) - 2;
@@ -135,7 +141,8 @@ SPF_dns_zone_find(SPF_dns_server_t *spf_dns_server,
 				return spfhook->zone[i];
 			}
 		}
-		SPF_debugf("zone: Non-exact not found");
+		if (spf_dns_server->debug)
+			SPF_debugf("zone: Non-exact not found");
 	}
 
     return NULL;
