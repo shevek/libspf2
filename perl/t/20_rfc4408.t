@@ -15,7 +15,7 @@ plan tests => $tests;
 
 my $casename = undef;
 # $casename = 'alltimeout';
-$casename = 'nolocalpart';
+$casename = 'case-insensitive';
 
 foreach my $scenario ($suite->scenarios) {
 	if ($casename) {
