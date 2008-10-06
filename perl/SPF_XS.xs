@@ -100,6 +100,7 @@ BOOT:
 	EXPORT_INTEGER(ns_t_txt);
 
 	EXPORT_INTEGER(NETDB_SUCCESS);
+	EXPORT_INTEGER(TRY_AGAIN);
 }
 
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Server
@@ -195,6 +196,34 @@ DESTROY(request)
 	Mail::SPF_XS::Request	request
 	CODE:
 		SPF_request_free(request);
+
+SV *
+string(request)
+	Mail::SPF_XS::Request	request
+	PREINIT:
+		char	buf[INET_ADDRSTRLEN];
+	CODE:
+		if (request == NULL) {
+			RETVAL = newSVpvf("(null)");
+		}
+		else {
+			memset(buf, 0, sizeof(buf));
+			if (request->client_ver == AF_INET) {
+				inet_ntop(AF_INET, &(request->ipv4), buf, sizeof(buf));
+			}
+			else if (request->client_ver == AF_INET6) {
+				inet_ntop(AF_INET6, &(request->ipv6), buf, sizeof(buf));
+			}
+			else {
+				snprintf(buf, sizeof(buf), "Unknown family %d",
+								request->client_ver);
+			}
+			RETVAL = newSVpvf("ip=%s, identity=%s",
+				buf,
+				request->env_from);
+		}
+	OUTPUT:
+		RETVAL
 
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Response
 

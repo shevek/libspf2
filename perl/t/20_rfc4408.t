@@ -15,6 +15,7 @@ plan tests => $tests;
 
 my $casename = undef;
 # $casename = 'alltimeout';
+$casename = 'nolocalpart';
 
 foreach my $scenario ($suite->scenarios) {
 	if ($casename) {
@@ -27,13 +28,15 @@ foreach my $scenario ($suite->scenarios) {
 
 	my $server = new Mail::SPF_XS::Server({
 		dnstype	=> SPF_DNS_ZONE,
+		debug	=> 4,
 	});
 	# $server->resolver->add('test.com', ns_t_a, NETDB_SUCCESS, '127.0.0.8');
 
 	for my $record ($scenario->records) {
 		print "Adding record " . $record->string . "\n";
 		my $type = $record->type;
-		$type = 'TXT' if $type eq 'SPF';
+		# $type = 'TXT' if $type eq 'SPF';
+		# TRY_AGAIN if it's a timeout
 		$server->resolver->add($record->name,
 				Net::DNS::typesbyname($type),
 				NETDB_SUCCESS,
@@ -56,6 +59,8 @@ foreach my $scenario ($suite->scenarios) {
 			helo_identity   => $case->helo_identity
 		});
 
+		print "Request is " . $request->string, "\n";
+
 		my $response = $server->process($request);
 
 		print "Response is " . $response->string, "\n";
@@ -68,12 +73,12 @@ foreach my $scenario ($suite->scenarios) {
 				if not $ok;
 		ok($ok);
 
-		$ok = $case->expected_explanation eq $response->explanation;
-		diag(
-			$case->name . " explanation:\n" .
-			"Expected: " .  $case->expected_explanation . "\n" .
-			" Got: " . $response->explanation)
-				if not $ok;
-		ok($ok);
+#		$ok = $case->expected_explanation eq $response->explanation;
+#		diag(
+#			$case->name . " explanation:\n" .
+#			"Expected: " .  $case->expected_explanation . "\n" .
+#			" Got: " . $response->explanation)
+#				if not $ok;
+#		ok($ok);
 	}
 }
