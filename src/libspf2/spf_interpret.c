@@ -755,8 +755,8 @@ SPF_record_interpret(SPF_record_t *spf_record,
 			return DONE(SPF_RESULT_TEMPERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
 		}
 
-		data = SPF_mech_data( mech );
-		data_end = SPF_mech_end_data( mech );
+		data = SPF_mech_data(mech);
+		data_end = SPF_mech_end_data(mech);
 
 		switch (mech->mech_type) {
 		case MECH_A:
