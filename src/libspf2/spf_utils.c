@@ -102,11 +102,11 @@ SPF_strresult(SPF_result_t result)
 			break;
 
 		case SPF_RESULT_PERMERROR:			/* permanent error				*/
-			return "unknown (permanent error)";
+			return "permerror";
 			break;
 
 		case SPF_RESULT_TEMPERROR:			/* temporary error				*/
-			return "error (temporary)";
+			return "temperror";
 			break;
 
 		case SPF_RESULT_NONE:				/* no SPF record found			*/
