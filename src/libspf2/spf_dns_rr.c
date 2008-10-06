@@ -228,6 +228,7 @@ SPF_dns_rr_dup(SPF_dns_rr_t **dstp, SPF_dns_rr_t *src)
 				break;
 				
 			case ns_t_txt:
+			case ns_t_spf:
 				SPF_DNS_RR_REALLOC(dst, i, strlen(src->rr[i]->txt) + 1);
 				strcpy(dst->rr[i]->txt, src->rr[i]->txt);
 				break;
@@ -238,6 +239,8 @@ SPF_dns_rr_dup(SPF_dns_rr_t **dstp, SPF_dns_rr_t *src)
 				break;
 				
 			default:
+				SPF_warningf("Attempt to dup unknown rr type %d",
+								dst->rr_type);
 				break;
 		}
 	}
