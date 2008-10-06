@@ -32,6 +32,16 @@ cat >src/include/spf_lib_version.h <<_EOF_VERSION
 #endif
 _EOF_VERSION
 
+PERL_SUBDIRS=""
+AC_SUBST([PERL_SUBDIRS])
+AC_ARG_ENABLE(perl,
+[  --enable-perl     Builds the Perl/XS interface to libspf2],
+[
+	PERL_SUBDIRS="perl"
+	AC_CONFIG_COMMANDS([perl-Makefile], [
+		cd perl && perl Makefile.PL
+	])
+])
 
 # Checks for programs.
 AC_PROG_CC

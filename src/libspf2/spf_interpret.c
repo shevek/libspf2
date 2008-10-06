@@ -747,7 +747,9 @@ SPF_record_interpret(SPF_record_t *spf_record,
 	for (m = 0; m < spf_record->num_mech; m++) {
 
 		/* This is as good a place as any. */
+		/* XXX Rip this out and put it into a macro which can go into inner loops. */
 		if (spf_response->num_dns_mech > spf_server->max_dns_mech
+			 /* XXX Remove this second condition. */
 			 || spf_response->num_dns_mech > SPF_MAX_DNS_MECH) {
 			SPF_FREE_LOOKUP_DATA();
 			return DONE(SPF_RESULT_TEMPERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
