@@ -254,7 +254,7 @@ AC_CHECK_FUNCS([strchr strcspn strdup strerror])
 AC_CHECK_FUNCS([strcasecmp strncasecmp strspn strtoul])
 AC_CHECK_FUNCS([gethostbyname inet_ntoa select strrchr strstr strtol])
 
-AC_REPLACE_FUNCS([getopt_long_only])
+AC_REPLACE_FUNCS([getopt_long_only strncasecmp])
 AC_REPLACE_FUNCS([__ns_initparse __ns_name_uncompress __ns_get16 __ns_msg_getflag])
 
 AC_CONFIG_FILES([Makefile

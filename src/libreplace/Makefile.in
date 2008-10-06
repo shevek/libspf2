@@ -41,7 +41,7 @@ subdir = src/libreplace
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	__ns_get16.c __ns_initparse.c __ns_msg_getflag.c \
 	__ns_name_uncompress.c getopt_long_only.c malloc.c memcmp.c \
-	realloc.c
+	realloc.c strncasecmp.c
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -62,7 +62,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	$(DEPDIR)/__ns_name_uncompress.Plo \
 @AMDEP_TRUE@	$(DEPDIR)/getopt_long_only.Plo \
 @AMDEP_TRUE@	$(DEPDIR)/malloc.Plo $(DEPDIR)/memcmp.Plo \
-@AMDEP_TRUE@	$(DEPDIR)/realloc.Plo
+@AMDEP_TRUE@	$(DEPDIR)/realloc.Plo $(DEPDIR)/strncasecmp.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
@@ -259,6 +259,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/malloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/memcmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/realloc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/strncasecmp.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
