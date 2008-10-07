@@ -334,6 +334,7 @@ SPF_server_get_record(SPF_server_t *spf_server,
 		return resolver->get_spf(spf_server, spf_request,
 						spf_response, spf_recordp);
 
+	/* I am VERY, VERY sorry about the gotos. Shevek. */
 	rr_type = ns_t_spf;
 retry:
 	rr_txt = SPF_dns_lookup(resolver, domain, rr_type, TRUE);
@@ -343,6 +344,10 @@ retry:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): HOST_NOT_FOUND", domain);
 			SPF_dns_rr_free(rr_txt);
+			if (rr_type == ns_t_spf) {
+				rr_type = ns_t_txt;
+				goto retry;
+			}
 			spf_response->result = SPF_RESULT_NONE;
 			spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
@@ -353,7 +358,6 @@ retry:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): NO_DATA", domain);
 			SPF_dns_rr_free(rr_txt);
-			/* I am VERY, VERY sorry. Shevek. */
 			if (rr_type == ns_t_spf) {
 				rr_type = ns_t_txt;
 				goto retry;
@@ -403,7 +407,7 @@ retry:
 
 	/* check for multiple SPF records */
 	num_found = 0;
-	for( i = 0; i < rr_txt->num_rr; i++ ) {
+	for (i = 0; i < rr_txt->num_rr; i++) {
 		/*
 		if (spf_server->debug > 1)
 			SPF_debugf("Comparing '%s' with '%s'",
@@ -422,6 +426,12 @@ retry:
 
 	if (num_found == 0) {
 		SPF_dns_rr_free(rr_txt);
+		if (rr_type == ns_t_spf) {
+			rr_type = ns_t_txt;
+			goto retry;
+		}
+		spf_response->result = SPF_RESULT_NONE;
+		spf_response->reason = SPF_REASON_FAILURE;
 		return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 				"No SPF records for '%s'", domain);
 	}
@@ -431,7 +441,6 @@ retry:
 		/* XXX This could be refactored with SPF_i_done. */
 		spf_response->result = SPF_RESULT_PERMERROR;
 		spf_response->reason = SPF_REASON_FAILURE;
-		spf_response->err = SPF_E_MULTIPLE_RECORDS;
 		return SPF_response_add_error(spf_response, SPF_E_MULTIPLE_RECORDS,
 				"Multiple SPF records for '%s'", domain);
 	}
