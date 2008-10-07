@@ -103,21 +103,25 @@ SPF_server_new_common_post(SPF_server_t *sp)
 	spf_response = NULL;
 	err = SPF_server_set_explanation(sp, SPF_DEFAULT_EXP,
 					&spf_response);
-	if (SPF_response_messages(spf_response) > 0)
-		SPF_error("Response errors compiling default explanation");
 	if (err != SPF_E_SUCCESS)
 		SPF_errorf("Error code %d compiling default explanation", err);
-	if (spf_response)
+	if (spf_response) {
+		/* XXX Print the errors?! */
+		if (SPF_response_messages(spf_response) > 0)
+			SPF_error("Response errors compiling default explanation");
 		SPF_response_free(spf_response);
+	}
 
 	spf_response = NULL;
 	err = SPF_server_set_localpolicy(sp, "", 0, &spf_response);
-	if (SPF_response_messages(spf_response) > 0)
-		SPF_error("Response errors compiling default whitelist");
 	if (err != SPF_E_SUCCESS)
 		SPF_errorf("Error code %d compiling default whitelist", err);
-	if (spf_response)
+	if (spf_response) {
+		/* XXX Print the errors?! */
+		if (SPF_response_messages(spf_response) > 0)
+			SPF_error("Response errors compiling default whitelist");
 		SPF_response_free(spf_response);
+	}
 }
 
 SPF_server_t *
@@ -311,6 +315,7 @@ SPF_server_get_record(SPF_server_t *spf_server,
 	SPF_dns_server_t		*resolver;
 	SPF_dns_rr_t			*rr_txt;
 	SPF_errcode_t			 err;
+	SPF_dns_stat_t			 herrno;
 	const char				*domain;
 	ns_type					 rr_type;
 	int						 num_found;
@@ -384,10 +389,11 @@ retry:
 		default:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): UNKNOWN_ERROR", domain);
+			herrno = rr_txt->herrno;	// Avoid use-after-free
 			SPF_dns_rr_free(rr_txt);
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
 					"Unknown DNS failure for '%s': %d.",
-					domain, rr_txt->herrno);
+					domain, herrno);
 			// break;
 	}
 

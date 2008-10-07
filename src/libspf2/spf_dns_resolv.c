@@ -103,6 +103,7 @@ SPF_dns_resolv_init_key(void)
 }
 #endif
 
+/** XXX ns_rr is 1048 bytes, pass a pointer. */
 static void
 SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 				const u_char *responsebuf, size_t responselen,
@@ -114,94 +115,92 @@ SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 	int		prio;
 	int		err;
 
-	if (spf_dns_server->debug > 1) {
-		switch (ns_rr_type(rr)) {
-			case ns_t_a:
-				if (rdlen != 4)
-					SPF_debugf("A: wrong rdlen %lu", (unsigned long)rdlen);
-				else
-					SPF_debugf("A: %s",
-						inet_ntop(AF_INET, rdata,
-							ip4_buf, sizeof(ip4_buf)));
-				break;
+	switch (ns_rr_type(rr)) {
+		case ns_t_a:
+			if (rdlen != 4)
+				SPF_debugf("A: wrong rdlen %lu", (unsigned long)rdlen);
+			else
+				SPF_debugf("A: %s",
+					inet_ntop(AF_INET, rdata,
+						ip4_buf, sizeof(ip4_buf)));
+			break;
 
-			case ns_t_aaaa:
-				if (rdlen != 16)
-					SPF_debugf("AAAA: wrong rdlen %lu", (unsigned long)rdlen);
-				else
-					SPF_debugf("AAAA: %s",
-						inet_ntop(AF_INET6, rdata,
-							ip6_buf, sizeof(ip6_buf)));
-				break;
+		case ns_t_aaaa:
+			if (rdlen != 16)
+				SPF_debugf("AAAA: wrong rdlen %lu", (unsigned long)rdlen);
+			else
+				SPF_debugf("AAAA: %s",
+					inet_ntop(AF_INET6, rdata,
+						ip6_buf, sizeof(ip6_buf)));
+			break;
 
-			case ns_t_ns:
-				err = ns_name_uncompress(responsebuf,
-							  responsebuf + responselen,
-							  rdata,
-							  name_buf, sizeof(name_buf));
-				if (err < 0)		/* 0 or -1 */
-					SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
-							err, strerror(errno), errno);
-				else
-					SPF_debugf("NS: %s", name_buf);
-				break;
+		case ns_t_ns:
+			err = ns_name_uncompress(responsebuf,
+						  responsebuf + responselen,
+						  rdata,
+						  name_buf, sizeof(name_buf));
+			if (err < 0)		/* 0 or -1 */
+				SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+						err, strerror(errno), errno);
+			else
+				SPF_debugf("NS: %s", name_buf);
+			break;
 
-			case ns_t_cname:
-				err = ns_name_uncompress(responsebuf,
-							  responsebuf + responselen,
-							  rdata,
-							  name_buf, sizeof(name_buf));
-				if ( err < 0 )		/* 0 or -1 */
-					SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
-							err, strerror(errno), errno );
-				else
-					SPF_debugf("CNAME: %s", name_buf);
-				break;
+		case ns_t_cname:
+			err = ns_name_uncompress(responsebuf,
+						  responsebuf + responselen,
+						  rdata,
+						  name_buf, sizeof(name_buf));
+			if ( err < 0 )		/* 0 or -1 */
+				SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+						err, strerror(errno), errno );
+			else
+				SPF_debugf("CNAME: %s", name_buf);
+			break;
 
-			case ns_t_mx:
-				if (rdlen < NS_INT16SZ) {
-					SPF_debugf("MX: rdlen too short: %lu", (unsigned long)rdlen);
-					break;
-				}
-				prio = ns_get16(rdata);
-				err = ns_name_uncompress(responsebuf,
-								responsebuf + responselen,
-								rdata + NS_INT16SZ,
-								name_buf, sizeof(name_buf));
-				if (err < 0)		/* 0 or -1 */
-					SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
-							err, strerror(errno), errno);
-				else
-					SPF_debugf("MX: %d %s", prio, name_buf);
+		case ns_t_mx:
+			if (rdlen < NS_INT16SZ) {
+				SPF_debugf("MX: rdlen too short: %lu", (unsigned long)rdlen);
 				break;
+			}
+			prio = ns_get16(rdata);
+			err = ns_name_uncompress(responsebuf,
+							responsebuf + responselen,
+							rdata + NS_INT16SZ,
+							name_buf, sizeof(name_buf));
+			if (err < 0)		/* 0 or -1 */
+				SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+						err, strerror(errno), errno);
+			else
+				SPF_debugf("MX: %d %s", prio, name_buf);
+			break;
 
-			case ns_t_txt:
-				if (rdlen < 1) {
-					SPF_debugf("TXT: rdlen too short: %lu", (unsigned long)rdlen);
-					break;
-				}
-				/* XXX I think this is wrong/unsafe. Shevek. */
-				/* XXX doesn't parse the different TXT "sections" */
-				SPF_debugf("TXT: (%d) \"%.*s\"",
-						rdlen, rdlen - 1, rdata + 1);
+		case ns_t_txt:
+			if (rdlen < 1) {
+				SPF_debugf("TXT: rdlen too short: %lu", (unsigned long)rdlen);
 				break;
+			}
+			/* XXX I think this is wrong/unsafe. Shevek. */
+			/* XXX doesn't parse the different TXT "sections" */
+			SPF_debugf("TXT: (%d) \"%.*s\"",
+					rdlen, rdlen - 1, rdata + 1);
+			break;
 
-			case ns_t_ptr:
-				err = ns_name_uncompress(responsebuf,
-								responsebuf + responselen,
-								rdata,
-								name_buf, sizeof(name_buf));
-				if (err < 0)		/* 0 or -1 */
-					SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
-							err, strerror(errno), errno);
-				else
-					SPF_debugf("PTR: %s", name_buf);
-				break;
+		case ns_t_ptr:
+			err = ns_name_uncompress(responsebuf,
+							responsebuf + responselen,
+							rdata,
+							name_buf, sizeof(name_buf));
+			if (err < 0)		/* 0 or -1 */
+				SPF_debugf("ns_name_uncompress failed: err = %d  %s (%d)",
+						err, strerror(errno), errno);
+			else
+				SPF_debugf("PTR: %s", name_buf);
+			break;
 
-			default:
-				SPF_debugf("not parsed:  type: %d", ns_rr_type(rr));
-				break;
-		}
+		default:
+			SPF_debugf("not parsed:  type: %d", ns_rr_type(rr));
+			break;
 	}
 
 }
@@ -400,8 +399,9 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 
 			rdata = ns_rr_rdata(rr);
 
-			SPF_dns_resolv_debug(spf_dns_server, rr,
-					responsebuf, responselen, rdata, rdlen);
+			if (spf_dns_server->debug > 1)
+				SPF_dns_resolv_debug(spf_dns_server, rr,
+						responsebuf, responselen, rdata, rdlen);
 
 			/* And now, if we aren't the answer section, we skip the section. */
 			if (ns_sects[ns_sect].number != ns_s_an)

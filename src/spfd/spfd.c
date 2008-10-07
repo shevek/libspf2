@@ -639,7 +639,7 @@ daemon_bind_unix()
 	}
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, spfd_config.path);
+	strncpy(addr.sun_path, spfd_config.path, sizeof(addr.sun_path) - 1);
 	if (unlink(spfd_config.path) < 0) {
 		if (errno != ENOENT) {
 			perror("unlink");
@@ -911,9 +911,14 @@ daemon_main()
 				req->sock = spfd_state.sock_udp;
 				req->datalen = recvfrom(spfd_state.sock_udp, buf,4095,0,
 					(struct sockaddr *)(&req->addr.in), &req->addrlen);
-				buf[req->datalen] = '\0';
-				req->data = strdup(buf);
-				pthread_create(&th, &attr, handle_datagram, req);
+				if (req->datalen >= 0) {
+					buf[req->datalen] = '\0';
+					req->data = strdup(buf);
+					pthread_create(&th, &attr, handle_datagram, req);
+				}
+				else {
+					free(req);
+				}
 			}
 		}
 		if (spfd_state.sock_tcp) {
@@ -923,7 +928,10 @@ daemon_main()
 				// printf("TCP\n");
 				req->sock = accept(spfd_state.sock_tcp,
 					(struct sockaddr *)(&req->addr.in), &req->addrlen);
-				pthread_create(&th, &attr, handle_stream, req);
+				if (req->sock >= 0)
+					pthread_create(&th, &attr, handle_stream, req);
+				else
+					free(req);
 			}
 		}
 		if (spfd_state.sock_unix) {
@@ -933,7 +941,10 @@ daemon_main()
 				// printf("UNIX\n");
 				req->sock = accept(spfd_state.sock_unix,
 					(struct sockaddr *)(&req->addr.un), &req->addrlen);
-				pthread_create(&th, &attr, handle_stream, req);
+				if (req->sock >= 0)
+					pthread_create(&th, &attr, handle_stream, req);
+				else
+					free(req);
 			}
 		}
 	}

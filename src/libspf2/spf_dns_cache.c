@@ -58,8 +58,15 @@
 #include "spf_dns_cache.h"
 
 
-/*
- * this is really little more than a proof-of-concept cache.
+/**
+ * @file
+ *
+ * Implements a simple cache using a list hash. There is no reclaim
+ * list, since GNU malloc has clue.
+ *
+ * This original description from Wayne is no longer true:
+ *
+ * This is really little more than a proof-of-concept cache.
  *
  * The cache size is fixed and uses the CRC-32 function as a hash
  * generator.  Little is done about hash collisions, no alternate hash
@@ -369,11 +376,12 @@ SPF_dns_cache_lookup(SPF_dns_server_t *spf_dns_server,
 
 	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
 
-    pthread_mutex_lock(&(spfhook->cache_lock));
-
-	/* XXX Can this be done outside the lock? */
+	/* max_hash_len and cache_size are constant, so this be done
+	 * outside the lock. */
 	idx = hash(spfhook, domain, 0 /* spfhook->hash_mask+rr_type */);
 	idx &= (spfhook->cache_size - 1);
+
+    pthread_mutex_lock(&(spfhook->cache_lock));
 
 	bucket = SPF_dns_cache_bucket_find(spfhook, domain, rr_type, idx);
 	if (bucket != NULL) {
@@ -451,6 +459,7 @@ SPF_dns_cache_free( SPF_dns_server_t *spf_dns_server )
 				}
 			}
 			free(spfhook->cache);
+			spfhook->cache = NULL;
 		}
 
 		pthread_mutex_unlock(&(spfhook->cache_lock));

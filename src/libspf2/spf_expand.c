@@ -431,7 +431,13 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 		/* finish up */
 		len = snprintf( p, p_end - p, "%s", var );
 		p += len;
-		if ( p_end - p <= 0 ) return SPF_E_INTERNAL_ERROR;
+		if (p_end - p <= 0) {
+			if (munged_var)
+				free(munged_var);
+			if (url_var)
+				free(url_var);
+			return SPF_E_INTERNAL_ERROR;
+		}
 
 		if (munged_var)
 			free(munged_var);

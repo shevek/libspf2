@@ -200,16 +200,11 @@ SPF_dns_zone_add_str(SPF_dns_server_t *spf_dns_server,
 
     /* create a new record */
 	if ( spfrr == NULL ) {
-		spfrr = SPF_dns_rr_new_init( spf_dns_server,
-						domain, rr_type, 24*60*60, herrno );
-		if ( spfrr == NULL )
-			return SPF_E_NO_MEMORY;
-
+		/* First make sure we have space for it. */
 		if ( spfhook->num_zone == spfhook->zone_buf_len ) {
 			int				new_len;
 			SPF_dns_rr_t	**new_zone;
 			int				i;
-
 
 			new_len = spfhook->zone_buf_len
 					+ (spfhook->zone_buf_len >> 2) + 4;
@@ -225,18 +220,17 @@ SPF_dns_zone_add_str(SPF_dns_server_t *spf_dns_server,
 			spfhook->zone = new_zone;
 		}
 
-
+		/* Now make the new record. */
+		spfrr = SPF_dns_rr_new_init(spf_dns_server,
+						domain, rr_type, 24*60*60, herrno);
+		if (spfrr == NULL)
+			return SPF_E_NO_MEMORY;
 		spfhook->zone[spfhook->num_zone] = spfrr;
 		spfhook->num_zone++;
 
-		/* random lexical scope */
-		/* Should this really be in this condition? */
-		{
-
-			/* We succeeded with the add, but with no data. */
-			if ( herrno != NETDB_SUCCESS )
-				return SPF_E_SUCCESS;
-		}
+		/* We succeeded with the add, but with no data. */
+		if (herrno != NETDB_SUCCESS)
+			return SPF_E_SUCCESS;
 	}
 
 #define SPF_RR_TRY_REALLOC(rr, i, s) do { \
