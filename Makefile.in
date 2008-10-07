@@ -182,7 +182,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
-EXTRA_DIST = bootstrap LICENSES INSTALL README TODO win32
+EXTRA_DIST = bootstrap LICENSES INSTALL README TODO win32 perl
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -612,8 +612,11 @@ uninstall-info: uninstall-info-recursive
 
 dist-hook:
 	@for file in $(EXTRA_DIST); do \
-		find $(distdir)/$$file -name .svn | xargs rm -rf; \
+		find $(distdir)/$$file -name .svn | xargs rm -rf ; \
 	done
+	@if [ -f perl/Makefile ] ; then \
+		make -C perl clean ; \
+	fi
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
