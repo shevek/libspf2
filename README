@@ -10,6 +10,15 @@
 /**
  * @mainpage Introduction to libspf2
 
+ * @par Recipes
+
+An example client implementation is in spf_example.c with a little
+more error checking. The basic cases are as follows:
+
+@code
+	SPF_server_t	*spf_server = SPF_server_new(SPF_DNS_CACHE, 1);
+@endcode
+
  * @par Authors
 
  - Current maintainer: Shevek <libspf2@anarres.org>

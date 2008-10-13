@@ -30,6 +30,7 @@
 #include "spf_dns.h"
 #include "spf_log.h"
 
+
 #define SPF_VERSION 1
 #define SPF_VER_STR "v=spf1"
 

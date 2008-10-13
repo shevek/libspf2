@@ -105,7 +105,6 @@ enum SPF_reason_enum {
 ,	SPF_REASON_2MX			/* sent from a secondary MX	*/
 } SPF_reason_t;
 
-
 /**
  * error codes returned by various SPF functions.  (including SPF_compile()
  * and SPF_id2str(), spf_result(), etc.).
@@ -116,40 +115,40 @@ enum SPF_reason_enum {
 
 typedef
 enum SPF_errcode_t {
-	SPF_E_SUCCESS	 = 0	/* No errors			*/
-,	SPF_E_NO_MEMORY			/* Out of memory		*/
-,	SPF_E_NOT_SPF			/* Could not find a valid SPF record */
-,	SPF_E_SYNTAX			/* Syntax error			*/
-,	SPF_E_MOD_W_PREF		/* Modifiers can not have prefixes */
-,	SPF_E_INVALID_CHAR		/* Invalid character found	*/
-,	SPF_E_UNKNOWN_MECH		/* Unknown mechanism found	*/
-,	SPF_E_INVALID_OPT		/* Invalid option found		*/
-,	SPF_E_INVALID_CIDR		/* Invalid CIDR length		*/
-,	SPF_E_MISSING_OPT		/* Required option is missing	*/
-,	SPF_E_INTERNAL_ERROR	/* Internal programming error	*/
-,	SPF_E_INVALID_ESC		/* Invalid %-escape character	*/
-,	SPF_E_INVALID_VAR		/* Invalid macro variable	*/
-,	SPF_E_BIG_SUBDOM		/* Subdomain truncation depth too large */
-,	SPF_E_INVALID_DELIM		/* Invalid delimiter character	*/
-,	SPF_E_BIG_STRING		/* Option string too long	*/
-,	SPF_E_BIG_MECH			/* Too many mechanisms		*/
-,	SPF_E_BIG_MOD			/* Too many modifiers		*/
-,	SPF_E_BIG_DNS			/* Mechanisms used too many DNS lookups */
-,	SPF_E_INVALID_IP4		/* Invalid IPv4 address literal	*/
-,	SPF_E_INVALID_IP6		/* Invalid IPv6 address literal	*/
-,	SPF_E_INVALID_PREFIX	/* Invalid mechanism prefix	*/
-,	SPF_E_RESULT_UNKNOWN	/* SPF result is \"unknown\"	*/
-,	SPF_E_UNINIT_VAR		/* Uninitialized variable	*/
-,	SPF_E_MOD_NOT_FOUND		/* Modifier not found		*/
-,	SPF_E_NOT_CONFIG		/* Not configured		*/
-,	SPF_E_DNS_ERROR			/* DNS lookup failure		*/
-,	SPF_E_BAD_HOST_IP		/* Invalid hostname (an IP address?) */
-,	SPF_E_BAD_HOST_TLD		/* Hostname has a missing or invalid TLD */
-,	SPF_E_MECH_AFTER_ALL	/* Mechanisms found after the \"all:\"
+	SPF_E_SUCCESS	 = 0	/**< No errors			*/
+,	SPF_E_NO_MEMORY			/**< Out of memory		*/
+,	SPF_E_NOT_SPF			/**< Could not find a valid SPF record */
+,	SPF_E_SYNTAX			/**< Syntax error			*/
+,	SPF_E_MOD_W_PREF		/**< Modifiers can not have prefixes */
+,	SPF_E_INVALID_CHAR		/**< Invalid character found	*/
+,	SPF_E_UNKNOWN_MECH		/**< Unknown mechanism found	*/
+,	SPF_E_INVALID_OPT		/**< Invalid option found		*/
+,	SPF_E_INVALID_CIDR		/**< Invalid CIDR length		*/
+,	SPF_E_MISSING_OPT		/**< Required option is missing	*/
+,	SPF_E_INTERNAL_ERROR	/**< Internal programming error	*/
+,	SPF_E_INVALID_ESC		/**< Invalid %-escape character	*/
+,	SPF_E_INVALID_VAR		/**< Invalid macro variable	*/
+,	SPF_E_BIG_SUBDOM		/**< Subdomain truncation depth too large */
+,	SPF_E_INVALID_DELIM		/**< Invalid delimiter character	*/
+,	SPF_E_BIG_STRING		/**< Option string too long	*/
+,	SPF_E_BIG_MECH			/**< Too many mechanisms		*/
+,	SPF_E_BIG_MOD			/**< Too many modifiers		*/
+,	SPF_E_BIG_DNS			/**< Mechanisms used too many DNS lookups */
+,	SPF_E_INVALID_IP4		/**< Invalid IPv4 address literal	*/
+,	SPF_E_INVALID_IP6		/**< Invalid IPv6 address literal	*/
+,	SPF_E_INVALID_PREFIX	/**< Invalid mechanism prefix	*/
+,	SPF_E_RESULT_UNKNOWN	/**< SPF result is \"unknown\"	*/
+,	SPF_E_UNINIT_VAR		/**< Uninitialized variable	*/
+,	SPF_E_MOD_NOT_FOUND		/**< Modifier not found		*/
+,	SPF_E_NOT_CONFIG		/**< Not configured		*/
+,	SPF_E_DNS_ERROR			/**< DNS lookup failure		*/
+,	SPF_E_BAD_HOST_IP		/**< Invalid hostname (an IP address?) */
+,	SPF_E_BAD_HOST_TLD		/**< Hostname has a missing or invalid TLD */
+,	SPF_E_MECH_AFTER_ALL	/**< Mechanisms found after the \"all:\"
 								mechanism will be ignored */
-,	SPF_E_INCLUDE_RETURNED_NONE	/* If an include recursive query returns none it's a perm error */
-,	SPF_E_RECURSIVE			/* Recursive include */
-,	SPF_E_MULTIPLE_RECORDS	/* Multiple SPF or TXT records found */
+,	SPF_E_INCLUDE_RETURNED_NONE	/**< If an include recursive query returns none it's a perm error */
+,	SPF_E_RECURSIVE			/**< Recursive include */
+,	SPF_E_MULTIPLE_RECORDS	/**< Multiple SPF or TXT records found */
 } SPF_errcode_t;
 
 typedef
