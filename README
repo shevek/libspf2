@@ -19,6 +19,8 @@ more error checking. The basic cases are as follows:
 	SPF_server_t	*spf_server = SPF_server_new(SPF_DNS_CACHE, 1);
 @endcode
 
+XXX TODO: COMPLETE NEW RECIPES SECTION IN OVERVIEW
+
  * @par Authors
 
  - Current maintainer: Shevek <libspf2@anarres.org>
