@@ -311,6 +311,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 							domain, rr_type, 0, SPF_h_errno);
 		}
 		else if (dns_len > responselen) {
+			char	*tmp;
 			/* We managed a lookup but our buffer was too small. */
 			responselen = dns_len + (dns_len >> 1);
 #if 0
@@ -321,7 +322,12 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 								domain, rr_type, 0, SPF_h_errno);
 			}
 #endif
-			responsebuf = realloc(responsebuf, responselen);
+			tmp = realloc(responsebuf, responselen);
+			if (!tmp) {
+				free(responsebuf);
+				return NULL;
+			}
+			responsebuf = tmp;
 		}
 		else {
 			/* We managed a lookup, and our buffer was large enough. */
@@ -337,6 +343,10 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 	 */
 	spfrr = SPF_dns_rr_new_init(spf_dns_server,
 					domain, rr_type, 0, NETDB_SUCCESS);
+	if (!spfrr) {
+		free(responsebuf);
+		return NULL;
+	}
 
 	err = ns_initparse(responsebuf, responselen, &ns_handle);
 
