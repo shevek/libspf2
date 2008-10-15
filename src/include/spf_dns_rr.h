@@ -22,6 +22,8 @@
 #include "spf_dns.h"
 
 /**
+ * Data from a DNS RR.
+ *
  * The strings in this union are usually  malloc'ed larger than the
  * size of the union.  Only create pointers to it!
  */
@@ -36,30 +38,36 @@ union
 } SPF_dns_rr_data_t;
 
 /**
+ * A DNS packet.
+ *
+ * This structure does not semantically match the DNS packet
+ * structure. It assumes that only one RR type was of interest,
+ * and that all RRs in the packet are of that type.
+ *
  * This is also used in spf_dns_zone.c
  */
 typedef
 struct SPF_dns_rr_struct
 {
     /* query information */
-    char				*domain;		/* FQDN queried for		*/
-    size_t				 domain_buf_len;/* alloced size of domain	*/
+    char				*domain;		/**< FQDN queried for.		*/
+    size_t				 domain_buf_len;/**< Alloced size of domain.	*/
 
-    ns_type				 rr_type;		/* type of RR queried for	*/
+    ns_type				 rr_type;		/**< Type of RR queried for.	*/
 
     /* answer information */
-    int					 num_rr;	/* number of RR returned in rr	*/
-    SPF_dns_rr_data_t	**rr;		/* rr set returned		*/
-    size_t				*rr_buf_len;/* alloced size of each rr	*/
-    int					 rr_buf_num;/* number of RR allocated	*/
+    int					 num_rr;	/**< Number of RR returned in RR.	*/
+    SPF_dns_rr_data_t	**rr;		/**< RR set returned.		*/
+    size_t				*rr_buf_len;/**< Alloced size of each RR.	*/
+    int					 rr_buf_num;/**< Number of RR allocated.	*/
 
-    time_t				 ttl;		/* raw TTL			*/
-    time_t				 utc_ttl;	/* TTL adjusted to UTC		*/
-    SPF_dns_stat_t		 herrno;	/* h_error returned from query	*/
+    time_t				 ttl;		/**< Raw TTL.			*/
+    time_t				 utc_ttl;	/**< TTL adjusted to UTC.		*/
+    SPF_dns_stat_t		 herrno;	/**< h_error returned from query.	*/
 
     /* misc information */
-    void				*hook;		/* used by DNS layers		*/
-    SPF_dns_server_t	*source;	/* which layer created this RR  */
+    void				*hook;		/**< Used by DNS layers.		*/
+    SPF_dns_server_t	*source;	/**< Which layer created this RR.  */
 } SPF_dns_rr_t;
 
 SPF_dns_rr_t	*SPF_dns_rr_new(void);
