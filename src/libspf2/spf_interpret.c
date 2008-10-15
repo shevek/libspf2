@@ -86,6 +86,7 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 {
 	SPF_server_t	*spf_server;
 	SPF_request_t	*spf_request;
+	SPF_errcode_t	 err;
 	char			 buf[SPF_SMTP_COMMENT_SIZE];
 
 	SPF_ASSERT_NOTNULL(spf_response);
@@ -102,13 +103,12 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 	switch (spf_response->result) {
 		case SPF_RESULT_FAIL:
 		case SPF_RESULT_SOFTFAIL:
+		case SPF_RESULT_NEUTRAL:
 		case SPF_RESULT_NONE:
 
-			/* XXX Shevek isn't sure what is the reason for this? */
-			if (! spf_response->explanation)
-				break;
-			if (! spf_response->explanation[0])
-				break;
+			err = SPF_i_set_explanation(spf_response);
+			if (err != SPF_E_SUCCESS)
+				return err;
 
 			memset(buf, '\0', sizeof(buf));
 			snprintf(buf, SPF_SMTP_COMMENT_SIZE, "%s : Reason: %s",
@@ -123,7 +123,6 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 
 			break;
 		case SPF_RESULT_INVALID:
-		case SPF_RESULT_NEUTRAL:
 		case SPF_RESULT_PASS:
 		case SPF_RESULT_TEMPERROR:
 		case SPF_RESULT_PERMERROR:
@@ -262,8 +261,8 @@ SPF_i_set_header_comment(SPF_response_t *spf_response)
 		break;
 	}
 
-	if( spf_source )
-		free( spf_source );
+	if (spf_source)
+		free(spf_source);
 
 	spf_response->header_comment = SPF_sanitize(spf_server, buf);
 
@@ -377,6 +376,14 @@ SPF_i_set_received_spf(SPF_response_t *spf_response)
 #define DONE_PERMERR(err) DONE(SPF_RESULT_PERMERROR,SPF_REASON_NONE,err)
 #define DONE_MECH(result) DONE(result, SPF_REASON_MECH, SPF_E_SUCCESS)
 
+/**
+ * This must be called with EITHER
+ * spf_response->spf_record_exp != NULL
+ *   OR
+ * result in { SPF_RESULT_PASS SPF_RESULT_INVALID
+ *		SPF_RESULT_TEMPERROR SPF_RESULT_PERMERROR }
+ * or the library will abort when it tries to generate an explanation.
+ */
 SPF_errcode_t
 SPF_i_done(SPF_response_t *spf_response,
 	SPF_result_t result, SPF_reason_t reason, SPF_errcode_t err)
@@ -394,7 +401,6 @@ SPF_i_done(SPF_response_t *spf_response,
 	spf_response->reason = reason;
 	spf_response->err = err;
 
-	SPF_i_set_explanation(spf_response);
 	SPF_i_set_smtp_comment(spf_response);
 	SPF_i_set_header_comment(spf_response);
 	SPF_i_set_received_spf(spf_response);
@@ -632,6 +638,8 @@ SPF_record_interpret(SPF_record_t *spf_record,
 	SPF_ASSERT_NOTNULL(spf_response);
 	spf_server = spf_record->spf_server;
 	SPF_ASSERT_NOTNULL(spf_server);
+
+	SPF_ASSERT_NOTNULL(spf_response->spf_record_exp);
 
 	if (depth > 20)
 		return DONE_PERMERR(SPF_E_RECURSIVE);
@@ -1088,6 +1096,8 @@ SPF_record_interpret(SPF_record_t *spf_record,
 					return DONE_PERMERR( err );
 			}
 
+			SPF_ASSERT_NOTNULL(spf_record_subr);
+
 			/*
 			 * If we are a redirect which is not within the scope
 			 * of any include.
@@ -1096,6 +1106,7 @@ SPF_record_interpret(SPF_record_t *spf_record,
 				save_spf_response = NULL;
 				if (spf_response->spf_record_exp == spf_record)
 					spf_response->spf_record_exp = spf_record_subr;
+				SPF_ASSERT_NOTNULL(spf_response->spf_record_exp);
 			}
 			else {
 				save_spf_response = spf_response;
@@ -1107,6 +1118,7 @@ SPF_record_interpret(SPF_record_t *spf_record,
 					return DONE_TEMPERR(SPF_E_NO_MEMORY);
 				}
 				spf_response->spf_record_exp = spf_record;
+				SPF_ASSERT_NOTNULL(spf_response->spf_record_exp);
 			}
 			/*
 			 * find out whether this configuration passes

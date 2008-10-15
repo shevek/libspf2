@@ -232,7 +232,9 @@ SPF_request_prepare(SPF_request_t *sr)
 	return SPF_E_SUCCESS;
 }
  
-/* The common tail-end of a few methods below. */
+/**
+ * The common tail-end of a few methods below.
+ */
 static SPF_errcode_t
 SPF_request_query_record(SPF_request_t *spf_request,
 				SPF_response_t *spf_response,
@@ -258,7 +260,9 @@ SPF_request_query_record(SPF_request_t *spf_request,
 	return err;
 }
 
-/* The big entry point */
+/**
+ * The big entry point.
+ */
 SPF_errcode_t
 SPF_request_query_mailfrom(SPF_request_t *spf_request,
 				SPF_response_t **spf_responsep)
@@ -320,7 +324,7 @@ SPF_request_query_fallback(SPF_request_t *spf_request,
 					spf_record, err);
 }
 
-/*
+/**
  * This replaces _2mx
  *
  * build record as SPF_VER_STR " mx:%s"
