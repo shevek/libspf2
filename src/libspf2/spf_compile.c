@@ -876,8 +876,8 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 	SPF_errcode_t		 err;
 
 	if (spf_server->debug)
-		SPF_debugf("Adding modifier name=%d@%s, value=%s",
-						name_len, mod_name, *mod_value);
+		SPF_debugf("Adding modifier name=%lu@%s, value=%s",
+						(unsigned long)name_len, mod_name, *mod_value);
 
 	memset(buf, 'A', sizeof(buf));
 	memset(spf_modifier, 0, sizeof(SPF_mod_t));
