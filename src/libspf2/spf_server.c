@@ -381,6 +381,14 @@ retry:
 					"Temporary DNS failure for '%s'.", domain);
 			// break;
 
+		case NO_RECOVERY:
+			if (spf_server->debug > 0)
+				SPF_debugf("get_record(%s): NO_RECOERY", domain);
+			SPF_dns_rr_free(rr_txt);
+			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
+					"Unrecoverable DNS failure for '%s'.", domain);
+			// break;
+
 		case NETDB_SUCCESS:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): NETDB_SUCCESS", domain);

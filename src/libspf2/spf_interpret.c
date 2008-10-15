@@ -111,7 +111,7 @@ SPF_i_set_smtp_comment(SPF_response_t *spf_response)
 				break;
 
 			memset(buf, '\0', sizeof(buf));
-			snprintf(buf, SPF_SMTP_COMMENT_SIZE - 1, "%s : Reason: %s",
+			snprintf(buf, SPF_SMTP_COMMENT_SIZE, "%s : Reason: %s",
 					spf_response->explanation,
 					SPF_strreason(spf_response->reason));
 			buf[SPF_SMTP_COMMENT_SIZE - 1] = '\0';
@@ -748,11 +748,9 @@ SPF_record_interpret(SPF_record_t *spf_record,
 
 		/* This is as good a place as any. */
 		/* XXX Rip this out and put it into a macro which can go into inner loops. */
-		if (spf_response->num_dns_mech > spf_server->max_dns_mech
-			 /* XXX Remove this second condition. */
-			 || spf_response->num_dns_mech > SPF_MAX_DNS_MECH) {
+		if (spf_response->num_dns_mech > spf_server->max_dns_mech) {
 			SPF_FREE_LOOKUP_DATA();
-			return DONE(SPF_RESULT_TEMPERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
+			return DONE(SPF_RESULT_PERMERROR, SPF_REASON_NONE, SPF_E_BIG_DNS);
 		}
 
 		data = SPF_mech_data(mech);
