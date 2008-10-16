@@ -17,6 +17,8 @@
 #define INC_SPF_RESPONSE
 
 /**
+ * @file
+ *
  * Results from an SPF check
  *
  * The results of the SPF check (as defined by the official SPF spec)
@@ -75,7 +77,7 @@
 
 typedef
 enum SPF_result_enum {
-	SPF_RESULT_INVALID = 0,		/* We should never return this. */
+	SPF_RESULT_INVALID = 0,		/**< We should never return this. */
 	SPF_RESULT_NEUTRAL,
 	SPF_RESULT_PASS,
 	SPF_RESULT_FAIL,
@@ -98,11 +100,11 @@ typedef
 enum SPF_reason_enum {
 	SPF_REASON_NONE			= 0
 ,	SPF_REASON_FAILURE
-,	SPF_REASON_LOCALHOST	/* localhost always gets a free ride */
-,	SPF_REASON_LOCAL_POLICY	/* local policy caused the match */
-,	SPF_REASON_MECH			/* mechanism caused the match	*/
-,	SPF_REASON_DEFAULT		/* ran off the end of the rec	*/
-,	SPF_REASON_2MX			/* sent from a secondary MX	*/
+,	SPF_REASON_LOCALHOST	/**< localhost always gets a free ride */
+,	SPF_REASON_LOCAL_POLICY	/**< local policy caused the match */
+,	SPF_REASON_MECH			/**< mechanism caused the match	*/
+,	SPF_REASON_DEFAULT		/**< ran off the end of the rec	*/
+,	SPF_REASON_2MX			/**< sent from a secondary MX	*/
 } SPF_reason_t;
 
 /**
@@ -182,9 +184,9 @@ struct SPF_response_struct {
 
 	/* The errors */
 	SPF_error_t		*errors;
-	unsigned short	 errors_size;		/* Allocated */
-	unsigned short	 errors_length;		/* Used */
-	unsigned short	 num_errors;		/* Excluding warnings */
+	unsigned short	 errors_size;		/**< Allocated */
+	unsigned short	 errors_length;		/**< Used */
+	unsigned short	 num_errors;		/**< Excluding warnings */
 
 	/* Stuff which lets us get there. */
 	int				 num_dns_mech;
@@ -206,20 +208,20 @@ const char		*SPF_response_get_header_comment(SPF_response_t *rp);
 const char		*SPF_response_get_smtp_comment(SPF_response_t *rp);
 const char		*SPF_response_get_explanation(SPF_response_t *rp);
 
-	/* How many warnings were generated? */
+	/** How many warnings were generated? */
 int				 SPF_response_messages(SPF_response_t *rp);
-	/* How many errors were generated? */
+	/** How many errors were generated? */
 int				 SPF_response_errors(SPF_response_t *rp);
-	/* Errors + warnings */
+	/** Errors + warnings */
 int				 SPF_response_warnings(SPF_response_t *rp);
-	/* Get an individual message */
+	/** Returns an individual message */
 SPF_error_t		*SPF_response_message(SPF_response_t *rp, int idx);
 
 SPF_errcode_t	 SPF_error_code(SPF_error_t *err);
 const char *	 SPF_error_message(SPF_error_t *err);
 char			 SPF_error_errorp(SPF_error_t *err);
 
-	/* Internal functions for adding errors. */
+	/** Internal functions for adding errors. */
 
 SPF_errcode_t	 SPF_response_add_error_ptr(SPF_response_t *rp,
 					SPF_errcode_t code,

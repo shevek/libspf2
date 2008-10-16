@@ -15,11 +15,50 @@
 An example client implementation is in spf_example.c with a little
 more error checking. The basic cases are as follows:
 
+The SPF server is reusable, and thread-safe. It must be freed using
+SPF_server_free.
+
 @code
-	SPF_server_t	*spf_server = SPF_server_new(SPF_DNS_CACHE, 1);
+	SPF_server_t	*spf_server = SPF_server_new(SPF_DNS_CACHE, 0);
 @endcode
 
-XXX TODO: COMPLETE NEW RECIPES SECTION IN OVERVIEW
+Create a request, and set the relevant fields in it. Each setter
+method returns an SPF_errcode_t, which will inform you of error
+conditions, such as out-of-memory or invalid argument.
+
+@code
+	SPF_request_t	*spf_request = SPF_request_new(spf_server);
+	SPF_request_set_ipv4_str(spf_request, "123.45.6.7");
+	SPF_request_set_env_from(spf_request, "clientdomain.com");
+@endcode
+
+Now that we have built a query, we may execute it. It will use the
+SPF_server_t which was passed to the query constructor. As usual, the
+SPF_request_query_mailfrom method returns an error code, although
+much richer errors are returned inside the SPF_response_t - see
+spf_response.h for more details of that API.
+
+@code
+	SPF_response_t	*spf_response = NULL;
+	SPF_request_query_mailfrom(spf_request, &spf_response);
+	printf("Result is %s\n",
+			SPF_strresult(SPF_response_result(spf_response)));
+@endcode
+
+When we have finished with the response, we must free it and the
+request.
+
+@code
+	SPF_response_free(spf_response);
+	SPF_request_free(spf_request);
+@endcode
+
+We can execute many requests in parallel threads on the same server,
+but before the program exits, we must free the server.
+
+@code
+	SPF_server_free(spf_server);
+@endcode
 
  * @par Authors
 
