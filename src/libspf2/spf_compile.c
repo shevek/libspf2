@@ -809,8 +809,10 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 				const SPF_mechtype_t *mechtype, int prefix,
 				const char **mech_value)
 {
-	char				 buf[sizeof(SPF_mech_t) + SPF_MAX_MECH_LEN];
-			__attribute__((aligned(4)));
+	/* If this buffer is an irregular size, intel gcc does not align
+	 * it properly, and all hell breaks loose. */
+	char				 buf[SPF_RECORD_BUFSIZ]
+			__attribute__((aligned(_ALIGN_SZ)));
 	SPF_mech_t			*spf_mechanism = (SPF_mech_t *)buf;
 	SPF_data_t			*data;
 	size_t				 data_len;
@@ -964,8 +966,10 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 				const char *mod_name, size_t name_len,
 				const char **mod_value)
 {
-	char				 buf[sizeof(SPF_mod_t) + SPF_MAX_MOD_LEN]
-			__attribute__((aligned(4)));
+	/* If this buffer is an irregular size, intel gcc does not align
+	 * it properly, and all hell breaks loose. */
+	char				 buf[SPF_RECORD_BUFSIZ]
+			__attribute__((aligned(_ALIGN_SZ)));
 	SPF_mod_t			*spf_modifier = (SPF_mod_t *)buf;
 	SPF_data_t			*data;
 	size_t				 data_len;
