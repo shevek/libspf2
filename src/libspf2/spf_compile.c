@@ -124,20 +124,20 @@ SPF_c_ensure_capacity(void **datap, size_t *sizep, size_t length)
 static SPF_errcode_t
 SPF_c_parse_cidr_ip6(SPF_response_t *spf_response,
 				unsigned char *maskp,
-				const char **startp, const char **endp)
+				const char *start, const char *end)
 {
 	int		 mask;
 
-	mask = strtoul(*startp + 1, NULL, 10);
+	mask = strtoul(start + 1, NULL, 10);
 
 	if (mask > 128) {
 		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CIDR,
-						NULL, *startp,
+						NULL, start,
 						"Invalid IPv6 CIDR netmask (>128)");
 	}
 	else if (mask == 0) {
 		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CIDR,
-						NULL, *startp,
+						NULL, start,
 						"Invalid IPv6 CIDR netmask (=0)");
 	}
 	else if (mask == 128) {
@@ -152,20 +152,20 @@ SPF_c_parse_cidr_ip6(SPF_response_t *spf_response,
 static SPF_errcode_t
 SPF_c_parse_cidr_ip4(SPF_response_t *spf_response,
 				unsigned char *maskp,
-				const char **startp, const char **endp)
+				const char *start, const char *end)
 {
 	int		 mask;
 
-	mask = strtoul(*startp + 1, NULL, 10);
+	mask = strtoul(start + 1, NULL, 10);
 
 	if ( mask > 32 ) {
 		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CIDR,
-						NULL, *startp,
+						NULL, start,
 						"Invalid IPv4 CIDR netmask (>32)");
 	}
 	else if ( mask == 0 ) {
 		return SPF_response_add_error_ptr(spf_response, SPF_E_INVALID_CIDR,
-						NULL, *startp,
+						NULL, start,
 						"Invalid IPv4 CIDR netmask (=0)");
 	}
 	else if ( mask == 32 ) {
@@ -177,14 +177,17 @@ SPF_c_parse_cidr_ip4(SPF_response_t *spf_response,
 	return SPF_E_SUCCESS;
 }
 
+/**
+ * Modifies *endp if a CIDR is found. startp is not used.
+ */
 static SPF_errcode_t
 SPF_c_parse_cidr(SPF_response_t *spf_response,
 				SPF_data_cidr_t *data,
 				const char **startp, const char **endp)
 {
 	SPF_errcode_t		 err;
-	const char				*start;
-	const char				*end;
+	const char			*start;
+	const char			*end;
 
 	end = *endp;
 	start = end - 1;
@@ -192,7 +195,10 @@ SPF_c_parse_cidr(SPF_response_t *spf_response,
 	memset(data, 0, sizeof(SPF_data_cidr_t));
 	data->parm_type = PARM_CIDR;
 
-	/* find the beginning of the CIDR length notation */
+	/* Find the beginning of the CIDR length notation.
+	 * XXX This assumes that there is a non-digit in the string.
+	 * This is always true for SPF records with domainspecs, since
+	 * there has to be an = or a : before it. */
 	while( isdigit( (unsigned char)( *start ) ) )
 		start--;
 
@@ -203,7 +209,7 @@ SPF_c_parse_cidr(SPF_response_t *spf_response,
 	if ( start != (end - 1)  &&  *start == '/' ) {
 		if ( start[-1] == '/' ) {
 			/* get IPv6 CIDR length */
-			err = SPF_c_parse_cidr_ip6(spf_response, &data->ipv6, &start, &end);
+			err = SPF_c_parse_cidr_ip6(spf_response, &data->ipv6, start, end);
 			if (err)
 					return err;
 			/* now back up and see if there is a ipv4 cidr length */
@@ -214,7 +220,7 @@ SPF_c_parse_cidr(SPF_response_t *spf_response,
 
 			/* get IPv4 CIDR length */
 			if ( start != (end - 1)  &&  *start == '/' ) {
-				err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, &start, &end);
+				err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, start, end);
 				if (err)
 					return err;
 				*endp = start;
@@ -225,7 +231,7 @@ SPF_c_parse_cidr(SPF_response_t *spf_response,
 		}
 		else {
 			/* get IPv4 CIDR length */
-			err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, &start, &end);
+			err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, start, end);
 			if (err)
 				return err;
 			*endp = start;
@@ -441,31 +447,38 @@ SPF_c_parse_var(SPF_response_t *spf_response, SPF_data_var_t *data,
 			}														\
 		} while(0)
 
+/**
+ * Parses an SPF macro string.
+ *
+ * @param spf_server The SPF server on whose behalf the record is being compiled.
+ * @param spf_response The SPF response in which to store errors.
+ * @param data Output buffer pointer.
+ * @param data_len Output parameter for amount of data written to output buffer.
+ * @param start Input buffer pointer, not modified.
+ * @param end Input buffer end pointer, not modified.
+ * @param max_len The maximum data length to parse. XXX FIXME
+ * @param big_err The error code to return on an over-length condition.
+ * @param is_mod True if this is a modifier.
+ */
 static SPF_errcode_t
 SPF_c_parse_macro(SPF_server_t *spf_server,
 				SPF_response_t *spf_response,
 				SPF_data_t *data, size_t *data_len,
-				const char **startp, const char **endp,
+				const char *start, const char *end,
 				size_t max_len, SPF_errcode_t big_err,
 				int is_mod)
 {
 	SPF_errcode_t		 err;
 			/* Generic parsing iterators and boundaries */
-	const char			*start;
-	const char			*end;
 	const char			*p;
 	size_t				len;
 			/* For parsing strings. */
 	char				*dst;
 	size_t				 ds_len;
 
-	start = *startp;
-	end = *endp;
-
 	/*
 	 * Create the data blocks
 	 */
-
 	p = start;
 
 	/* Initialise the block as a string. If ds_len == 0 later, we
@@ -538,7 +551,7 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 			else if (*p == ' ')
 				return SPF_response_add_error_ptr(spf_response,
 						SPF_E_INVALID_VAR,
-						*startp, p,
+						start, p,
 						"Unterminated variable?");
 
 
@@ -559,28 +572,35 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 }
 
 /* What a fuck-ugly prototype. */
+/**
+ * Parses an SPF domainspec.
+ *
+ * @param spf_server The SPF server on whose behalf the record is being compiled.
+ * @param spf_response The SPF response in which to store errors.
+ * @param data Output buffer pointer.
+ * @param data_len Output parameter for amount of data written to output buffer.
+ * @param start Input buffer pointer.
+ * @param end Input buffer end pointer.
+ * @param max_len The maximum data length to parse. XXX FIXME
+ * @param big_err The error code to return on an over-length condition.
+ * @param cidr_ok True if a CIDR mask is permitted on this domainspec.
+ * @param is_mod True if this is a modifier.
+ */
 static SPF_errcode_t
 SPF_c_parse_domainspec(SPF_server_t *spf_server,
 				SPF_response_t *spf_response,
 				SPF_data_t *data, size_t *data_len,
-				const char **startp, const char **endp,
+				const char *start, const char *end,
 				size_t max_len, SPF_errcode_t big_err,
 				SPF_cidr_t cidr_ok, int is_mod)
 {
 	SPF_errcode_t		 err;
 			/* Generic parsing iterators and boundaries */
-	const char			*start;
-	const char			*end;
-	const char			*p;
 	size_t				len;
-
-	p = *startp;
-	start = *startp;
-	end = *endp;
 
 	if (spf_server->debug)
 		SPF_debugf("Parsing domainspec starting at %s, cidr is %s",
-						p,
+						start,
 						cidr_ok == CIDR_OPTIONAL ? "optional" :
 						cidr_ok == CIDR_ONLY ? "only" :
 						cidr_ok == CIDR_NONE ? "forbidden" :
@@ -612,25 +632,29 @@ SPF_c_parse_domainspec(SPF_server_t *spf_server,
 	}
 
 	return SPF_c_parse_macro(spf_server, spf_response, data, data_len,
-				&start, &end, max_len, big_err, is_mod);
+				start, end, max_len, big_err, is_mod);
 }
 
 
+/**
+ * Parses the data for an ip4 mechanism.
+ *
+ * When this method is called, start points to the ':'.
+ */
 static SPF_errcode_t
-SPF_c_parse_ip4(SPF_response_t *spf_response, SPF_mech_t *mech, char const **startp)
+SPF_c_parse_ip4(SPF_response_t *spf_response, SPF_mech_t *mech, char const *start)
 {
-	const char				*start;
-	const char				*end;
-	const char				*p;
+	const char			*end;
+	const char			*p;
 
 	char				 buf[ INET_ADDRSTRLEN ];
 	size_t				 len;
-	int						 err;
+	SPF_errcode_t		 err;
 
 	unsigned char		 mask;
 	struct in_addr		*addr;
 
-	start = *startp + 1;
+	start++;
 	len = strcspn(start, " ");
 	end = start + len;
 	p = end - 1;
@@ -639,7 +663,7 @@ SPF_c_parse_ip4(SPF_response_t *spf_response, SPF_mech_t *mech, char const **sta
 	while (isdigit( (unsigned char)(*p) ))
 		p--;
 	if (p != (end - 1) && *p == '/') {
-		err = SPF_c_parse_cidr_ip4(spf_response, &mask, &p, &end);
+		err = SPF_c_parse_cidr_ip4(spf_response, &mask, p, end);
 		if (err)
 			return err;
 		end = p;
@@ -661,12 +685,16 @@ SPF_c_parse_ip4(SPF_response_t *spf_response, SPF_mech_t *mech, char const **sta
 	return SPF_E_SUCCESS;
 }
 
+/**
+ * Parses the data for an ip6 mechanism.
+ *
+ * When this method is called, start points to the ':'.
+ */
 static SPF_errcode_t
-SPF_c_parse_ip6(SPF_response_t *spf_response, SPF_mech_t *mech, char const **startp)
+SPF_c_parse_ip6(SPF_response_t *spf_response, SPF_mech_t *mech, char const *start)
 {
-	const char				*start;
-	const char				*end;
-	const char				*p;
+	const char			*end;
+	const char			*p;
 
 	char				 buf[ INET_ADDRSTRLEN ];
 	size_t				 len;
@@ -675,7 +703,7 @@ SPF_c_parse_ip6(SPF_response_t *spf_response, SPF_mech_t *mech, char const **sta
 	unsigned char		 mask;
 	struct in6_addr		*addr;
 
-	start = *startp + 1;
+	start++;
 	len = strcspn(start, " ");
 	end = start + len;
 	p = end - 1;
@@ -684,7 +712,7 @@ SPF_c_parse_ip6(SPF_response_t *spf_response, SPF_mech_t *mech, char const **sta
 	while (isdigit( (unsigned char)(*p) ))
 		p--;
 	if (p != (end - 1) && *p == '/') {
-		err = SPF_c_parse_cidr_ip6(spf_response, &mask, &p, &end);
+		err = SPF_c_parse_cidr_ip6(spf_response, &mask, p, end);
 		if (err)
 			return err;
 		end = p;
@@ -715,11 +743,11 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 				const char **mech_value)
 {
 	char				 buf[SPF_RECORD_BUFSIZ];
-	SPF_mech_t				*spf_mechanism = (SPF_mech_t *)buf;
-	SPF_data_t				*data;
-	size_t						 data_len;
-	const char				*end;
-	size_t						 len;
+	SPF_mech_t			*spf_mechanism = (SPF_mech_t *)buf;
+	SPF_data_t			*data;
+	size_t				 data_len;
+	const char			*end;
+	size_t				 len;
 
 	SPF_errcode_t		 err;
 
@@ -748,7 +776,7 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 		/* We know the properties of IP4 and IP6. */
 			case MECH_IP4:
 			if (**mech_value == ':') {
-				err = SPF_c_parse_ip4(spf_response, spf_mechanism, mech_value);
+				err = SPF_c_parse_ip4(spf_response, spf_mechanism, *mech_value);
 				data_len = sizeof(struct in_addr);
 			}
 			else {
@@ -761,7 +789,7 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 
 		case MECH_IP6:
 			if (**mech_value == ':') {
-				err = SPF_c_parse_ip6(spf_response, spf_mechanism, mech_value);
+				err = SPF_c_parse_ip6(spf_response, spf_mechanism, *mech_value);
 				data_len = sizeof(struct in6_addr);
 			}
 			else {
@@ -784,7 +812,7 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 					(*mech_value)++;
 					err = SPF_c_parse_domainspec(spf_server,
 									spf_response, data, &data_len,
-									mech_value, &end,
+									*mech_value, end,
 									SPF_MAX_MECH_LEN, SPF_E_BIG_MECH,
 									mechtype->has_cidr, FALSE );
 				}
@@ -805,7 +833,7 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 				else {
 					err = SPF_c_parse_domainspec(spf_server,
 									spf_response, data, &data_len,
-									mech_value, &end,
+									*mech_value, end,
 									SPF_MAX_MECH_LEN, SPF_E_BIG_MECH,
 									CIDR_ONLY, FALSE );
 				}
@@ -903,7 +931,7 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 
 	err = SPF_c_parse_domainspec(spf_server,
 					spf_response, data, &data_len,
-					mod_value, &end,
+					*mod_value, end,
 					SPF_MAX_MOD_LEN, SPF_E_BIG_MOD,
 					CIDR_NONE, TRUE );
 	spf_modifier->data_len = data_len;
@@ -1392,7 +1420,7 @@ SPF_record_compile_macro(SPF_server_t *spf_server,
 
 	err = SPF_c_parse_macro(spf_server, spf_response,
 					data, &spf_macro->macro_len,
-					&record, &end,
+					record, end,
 					SPF_MAX_MOD_LEN, SPF_E_BIG_MOD, TRUE);
 	if (err != SPF_E_SUCCESS)
 		return err;
