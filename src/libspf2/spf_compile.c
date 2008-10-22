@@ -513,6 +513,9 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 	size_t				 ds_avail;
 	size_t				 ds_len;
 
+	if (spf_server->debug)
+		SPF_debugf("Parsing macro starting at %s", src);
+
 	/*
 	 * Create the data blocks
 	 */
@@ -807,6 +810,7 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 				const char **mech_value)
 {
 	char				 buf[sizeof(SPF_mech_t) + SPF_MAX_MECH_LEN];
+			__attribute__((aligned(4)));
 	SPF_mech_t			*spf_mechanism = (SPF_mech_t *)buf;
 	SPF_data_t			*data;
 	size_t				 data_len;
@@ -960,11 +964,13 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 				const char *mod_name, size_t name_len,
 				const char **mod_value)
 {
-	char				 buf[sizeof(SPF_mod_t) + SPF_MAX_MOD_LEN];
+	char				 buf[sizeof(SPF_mod_t) + SPF_MAX_MOD_LEN]
+			__attribute__((aligned(4)));
 	SPF_mod_t			*spf_modifier = (SPF_mod_t *)buf;
 	SPF_data_t			*data;
 	size_t				 data_len;
 	size_t				 len;
+	size_t				 src_len;
 
 	SPF_errcode_t		 err;
 
@@ -992,12 +998,14 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 	data = SPF_mod_data(spf_modifier);
 	data_len = 0;
 
-	err = SPF_c_parse_domainspec(spf_server,
+	src_len = strcspn(*mod_value, " ");
+
+	err = SPF_c_parse_macro(spf_server,
 					spf_response,
 					data, &data_len, SPF_MAX_MOD_LEN,
-					*mod_value, strcspn(*mod_value, " "),
+					*mod_value, src_len,
 					SPF_E_BIG_MOD,
-					CIDR_NONE, TRUE );
+					TRUE );
 	spf_modifier->data_len = data_len;
 	len += data_len;
 
