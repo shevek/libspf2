@@ -17,7 +17,7 @@ for (keys %records) {
 	my $exp = $srv->expand($_);
 	is($exp, $records{$_}, "Expanded $_");
 
-	my $rec = $srv->compile("v=spf1 include:$_");
+	my $rec = $srv->compile("v=spf1 macro=$_");
 	print "Record is " . $rec->string . "\n";
 	my $value = $rec->modifier('macro');
 	is($value, $records{$_}, "Parsed $_");
