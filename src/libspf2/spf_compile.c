@@ -183,14 +183,14 @@ SPF_c_parse_cidr_ip4(SPF_response_t *spf_response,
 static SPF_errcode_t
 SPF_c_parse_cidr(SPF_response_t *spf_response,
 				SPF_data_cidr_t *data,
-				const char **startp, const char **endp)
+				const char *start, const char **endp)
 {
 	SPF_errcode_t		 err;
-	const char			*start;
+	const char			*p;
 	const char			*end;
 
 	end = *endp;
-	start = end - 1;
+	p = end - 1;
 
 	memset(data, 0, sizeof(SPF_data_cidr_t));
 	data->parm_type = PARM_CIDR;
@@ -199,31 +199,31 @@ SPF_c_parse_cidr(SPF_response_t *spf_response,
 	 * XXX This assumes that there is a non-digit in the string.
 	 * This is always true for SPF records with domainspecs, since
 	 * there has to be an = or a : before it. */
-	while( isdigit( (unsigned char)( *start ) ) )
-		start--;
+	while( isdigit( (unsigned char)( *p ) ) )
+		p--;
 
 	/* Something is frying my brain and I can't pull an invariant
 	 * out of this suitable for resetting *endp. So I nested the
 	 * 'if's instead. Perhaps I'll manage to refactor later. */
 
-	if ( start != (end - 1)  &&  *start == '/' ) {
-		if ( start[-1] == '/' ) {
+	if ( p != (end - 1)  &&  *p == '/' ) {
+		if ( p[-1] == '/' ) {
 			/* get IPv6 CIDR length */
-			err = SPF_c_parse_cidr_ip6(spf_response, &data->ipv6, start, end);
+			err = SPF_c_parse_cidr_ip6(spf_response, &data->ipv6, p, end);
 			if (err)
 					return err;
 			/* now back up and see if there is a ipv4 cidr length */
-			end = start - 1;		/* The first '/' */
-			start = end - 1;
-			while( isdigit( (unsigned char)( *start ) ) )
-				start--;
+			end = p - 1;		/* The first '/' */
+			p = end - 1;
+			while( isdigit( (unsigned char)( *p ) ) )
+				p--;
 
 			/* get IPv4 CIDR length */
-			if ( start != (end - 1)  &&  *start == '/' ) {
-				err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, start, end);
+			if ( p != (end - 1)  &&  *p == '/' ) {
+				err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, p, end);
 				if (err)
 					return err;
-				*endp = start;
+				*endp = p;
 			}
 			else {
 				*endp = end;
@@ -231,10 +231,10 @@ SPF_c_parse_cidr(SPF_response_t *spf_response,
 		}
 		else {
 			/* get IPv4 CIDR length */
-			err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, start, end);
+			err = SPF_c_parse_cidr_ip4(spf_response, &data->ipv4, p, end);
 			if (err)
 				return err;
-			*endp = start;
+			*endp = p;
 		}
 	}
 
@@ -612,7 +612,7 @@ SPF_c_parse_domainspec(SPF_server_t *spf_server,
 	 */
 	if ( cidr_ok == CIDR_OPTIONAL  ||  cidr_ok == CIDR_ONLY ) 
 	{
-		err = SPF_c_parse_cidr(spf_response, &data->dc, &start, &end);
+		err = SPF_c_parse_cidr(spf_response, &data->dc, start, &end);
 		if (err != SPF_E_SUCCESS)
 			return err;
 		if (data->dc.ipv4 != 0  ||  data->dc.ipv6 != 0) {
