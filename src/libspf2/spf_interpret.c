@@ -1090,12 +1090,7 @@ SPF_record_interpret(SPF_record_t *spf_record,
 				if (spf_record_subr)
 					SPF_record_free(spf_record_subr);
 				SPF_FREE_LOOKUP_DATA();
-				/* We used to check for SPF_E_DNS_ERROR here.
-				 * Shevek still believes there is a
-				 * class of errors which could be
-				 * returned which cause a TEMPERR,
-				 * e.g. malloc failure. */
-				return DONE_PERMERR(err);
+				return DONE_TEMPERR(err);
 			}
 
 			SPF_ASSERT_NOTNULL(spf_record_subr);
