@@ -9,6 +9,7 @@
 #include "../src/include/spf_request.h"
 #include "../src/include/spf_response.h"
 #include "../src/include/spf_dns_zone.h"
+#include "../src/include/spf_internal.h"
 
 typedef SPF_server_t		*Mail__SPF_XS__Server;
 typedef SPF_record_t		*Mail__SPF_XS__Record;
@@ -151,6 +152,44 @@ resolver(server)
 	OUTPUT:
 		RETVAL
 
+char *
+expand(server, text)
+	Mail::SPF_XS::Server	server
+	const char *			text
+	PREINIT:
+		SPF_response_t	*response = NULL;
+		SPF_request_t	*request;
+		SPF_macro_t		*macro;
+		SPF_errcode_t	 err;
+		char			*buf = NULL;
+		size_t			 buflen = 0;
+	CODE:
+		response = SPF_response_new(NULL);
+		err = SPF_record_compile_macro(server, response, &macro, text);
+		if (err != SPF_E_SUCCESS) {
+			SPF_response_free(response);
+			if (macro)
+				SPF_macro_free(macro);
+			croak("Failed to compile macro: err = %s", SPF_strerror(err));
+		}
+		request = SPF_request_new(server);
+		err = SPF_record_expand_data(server, request, response,
+				SPF_macro_data(macro), SPF_macro_data_len(macro),
+				&buf, &buflen);
+		if (err != SPF_E_SUCCESS) {
+			SPF_response_free(response);
+			if (macro)
+				SPF_macro_free(macro);
+			croak("Failed to expand macro: err = %s", SPF_strerror(err));
+		}
+		SPF_response_free(response);
+		SPF_request_free(request);
+		if (macro)
+			SPF_macro_free(macro);
+		RETVAL = buf;
+	OUTPUT:
+		RETVAL
+
 Mail::SPF_XS::Record
 compile(server, text)
 	Mail::SPF_XS::Server	server
@@ -164,8 +203,9 @@ compile(server, text)
 		err = SPF_record_compile(server, response, &record, text);
 		if (err != SPF_E_SUCCESS) {
 			SPF_response_free(response);
-			croak("Failed to compile record: err = %d", err);
+			croak("Failed to compile record: err = %s", SPF_strerror(err));
 		}
+		SPF_response_free(response);
 		RETVAL = record;
 	OUTPUT:
 		RETVAL
@@ -184,6 +224,48 @@ process(server, request)
 		RETVAL
 
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Record
+
+char *
+modifier(record, name)
+	Mail::SPF_XS::Record	record
+	const char *			name
+	PREINIT:
+		SPF_request_t	*request;
+		SPF_response_t	*response;
+		SPF_errcode_t	 err;
+		char			*buf = NULL;
+		size_t			 buflen = 0;
+	CODE:
+		request = SPF_request_new(NULL);
+		response = SPF_response_new(NULL);
+		err = SPF_record_find_mod_value(record->spf_server,
+						request, response, record, name,
+						&buf, &buflen);
+		if (err != SPF_E_SUCCESS) {
+			SPF_request_free(request);
+			SPF_response_free(response);
+			croak("Failed to find or expand modifier \"%s\": err = %s", name, SPF_strerror(err));
+		}
+		SPF_request_free(request);
+		SPF_response_free(response);
+		RETVAL = buf;
+	OUTPUT:
+		RETVAL
+
+char *
+string(record)
+	Mail::SPF_XS::Record	record
+	PREINIT:
+		char			*buf = NULL;
+		size_t			 buflen = 0;
+		SPF_errcode_t	 err;
+	CODE:
+		err = SPF_record_stringify(record, &buf, &buflen);
+		if (err != SPF_E_SUCCESS)
+			croak("Failed to stringify record: err = %s", SPF_strerror(err));
+		RETVAL = buf;
+	OUTPUT:
+		RETVAL
 
 void
 DESTROY(record)

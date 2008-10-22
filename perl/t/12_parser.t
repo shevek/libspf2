@@ -6,19 +6,23 @@ use Test::More tests => 5;
 use_ok('Mail::SPF_XS');
 
 my $srv = new Mail::SPF_XS::Server({ debug => 4 });
-my $rec;
 
 my %records = (
 	'a%%b%%c%'		=> 'a%b%c%',
 	'%%'			=> '%',
+	'foo'	=> 'foo',
 );
 
 for (keys %records) {
-	$rec = $srv->compile("v=spf1 macro=$_");
-	# XXX This nees to use a modifier, and use get_mod_value
-	ok(1, "Parsed $_");
+	my $exp = $srv->expand($_);
+	is($exp, $records{$_}, "Expanded $_");
 
-	$rec = $srv->compile("v=spf1 macro=$_ -all");
-	# XXX This nees to use a modifier, and use get_mod_value
-	ok(1, "Parsed $_");
+	my $rec = $srv->compile("v=spf1 include:$_");
+	print "Record is " . $rec->string . "\n";
+	my $value = $rec->modifier('macro');
+	is($value, $records{$_}, "Parsed $_");
+
+#	$rec = $srv->compile("v=spf1 macro=$_ -all");
+#	$value = $rec->modifier('macro');
+#	is($value, $records{$_}, "Parsed $_ -all");
 }

@@ -457,7 +457,7 @@ SPF_c_parse_var(SPF_response_t *spf_response, SPF_data_var_t *data,
 			if (ds_len + _len > ds_avail)			\
 				return SPF_response_add_error_ptr(spf_response,	\
 								SPF_E_BIG_STRING, NULL, src,	\
-							"String fragment too long "			\
+							"String literal fragment too long "	\
 							"(%d chars, %d max)",				\
 							ds_len, ds_avail);					\
 		} while(0)
