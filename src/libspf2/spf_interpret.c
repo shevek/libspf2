@@ -1090,7 +1090,10 @@ SPF_record_interpret(SPF_record_t *spf_record,
 				if (spf_record_subr)
 					SPF_record_free(spf_record_subr);
 				SPF_FREE_LOOKUP_DATA();
-				return DONE_TEMPERR(err);
+				if (err == SPF_E_DNS_ERROR)
+					return DONE_TEMPERR( err );
+				else
+					return DONE_PERMERR( err );
 			}
 
 			SPF_ASSERT_NOTNULL(spf_record_subr);
