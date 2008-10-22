@@ -862,7 +862,7 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 					err = SPF_c_parse_domainspec(spf_server,
 									spf_response,
 									data, &data_len, SPF_MAX_MECH_LEN,
-									*mech_value, src_len,
+									*mech_value, src_len - 1,
 									SPF_E_BIG_MECH,
 									mechtype->has_cidr, FALSE);
 				}
