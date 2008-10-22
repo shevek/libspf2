@@ -183,7 +183,7 @@ SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 			/* XXX I think this is wrong/unsafe. Shevek. */
 			/* XXX doesn't parse the different TXT "sections" */
 			SPF_debugf("TXT: (%lu) \"%.*s\"",
-					(unsigned long)rdlen, rdlen - 1, rdata + 1);
+					(unsigned long)rdlen, (int)rdlen - 1, rdata + 1);
 			break;
 
 		case ns_t_ptr:
