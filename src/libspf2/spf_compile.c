@@ -858,11 +858,11 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 							"Mechanism does not permit a value.");
 				}
 				else {
-					(*mech_value)++;
+					(*mech_value)++; src_len--;
 					err = SPF_c_parse_domainspec(spf_server,
 									spf_response,
 									data, &data_len, SPF_MAX_MECH_LEN,
-									*mech_value, src_len - 1,
+									*mech_value, src_len,
 									SPF_E_BIG_MECH,
 									mechtype->has_cidr, FALSE);
 				}
