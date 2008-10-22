@@ -11,6 +11,7 @@
 #include "../src/include/spf_dns_zone.h"
 
 typedef SPF_server_t		*Mail__SPF_XS__Server;
+typedef SPF_record_t		*Mail__SPF_XS__Record;
 typedef SPF_request_t		*Mail__SPF_XS__Request;
 typedef SPF_response_t		*Mail__SPF_XS__Response;
 typedef SPF_dns_server_t	*Mail__SPF_XS__Resolver;
@@ -150,6 +151,25 @@ resolver(server)
 	OUTPUT:
 		RETVAL
 
+Mail::SPF_XS::Record
+compile(server, text)
+	Mail::SPF_XS::Server	server
+	const char *			text
+	PREINIT:
+		SPF_record_t	*record = NULL;
+		SPF_response_t	*response = NULL;
+		SPF_errcode_t	 err;
+	CODE:
+		response = SPF_response_new(NULL);
+		err = SPF_record_compile(server, response, &record, text);
+		if (err != SPF_E_SUCCESS) {
+			SPF_response_free(response);
+			croak("Failed to compile record: err = %d", err);
+		}
+		RETVAL = record;
+	OUTPUT:
+		RETVAL
+
 Mail::SPF_XS::Response
 process(server, request)
 	Mail::SPF_XS::Server	server
@@ -162,6 +182,14 @@ process(server, request)
 		RETVAL = response;
 	OUTPUT:
 		RETVAL
+
+MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Record
+
+void
+DESTROY(record)
+	Mail::SPF_XS::Record	record
+	CODE:
+		SPF_record_free(record);
 
 MODULE = Mail::SPF_XS	PACKAGE = Mail::SPF_XS::Request
 
