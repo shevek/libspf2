@@ -99,7 +99,7 @@ SPF_mechtype_find(int mech_type)
 	return NULL;
 }
 
-WARN_UNUSED_RESULT
+__attribute__((warn_unused_result))
 static int
 SPF_c_ensure_capacity(void **datap, size_t *sizep, size_t length)
 {
@@ -786,7 +786,7 @@ SPF_c_parse_ip6(SPF_response_t *spf_response, SPF_mech_t *mech, char const *star
 
 /* XXX TODO: Make this take (const char *) instead of (const char **)
  * because the caller ignores the modified value. */
-WARN_UNUSED_RESULT
+__attribute__((warn_unused_result))
 static SPF_errcode_t
 SPF_c_mech_add(SPF_server_t *spf_server,
 				SPF_record_t *spf_record, SPF_response_t *spf_response,
@@ -940,7 +940,7 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 	return err;
 }
 
-WARN_UNUSED_RESULT
+__attribute__((warn_unused_result))
 static SPF_errcode_t
 SPF_c_mod_add(SPF_server_t *spf_server,
 				SPF_record_t *spf_record, SPF_response_t *spf_response,

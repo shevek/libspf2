@@ -42,6 +42,10 @@
 # endif
 #endif
 
+#ifdef HAVE_NETDB_H
+# include <netdb.h>
+#endif
+
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 255
 #endif 
@@ -59,7 +63,7 @@
 #include "spf_dns_internal.h"
 
 
-WARN_UNUSED_RESULT
+__attribute__((warn_unused_result))
 static SPF_errcode_t
 SPF_server_set_rec_dom_ghbn(SPF_server_t *sp)
 {
