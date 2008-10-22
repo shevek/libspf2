@@ -182,8 +182,8 @@ SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 			}
 			/* XXX I think this is wrong/unsafe. Shevek. */
 			/* XXX doesn't parse the different TXT "sections" */
-			SPF_debugf("TXT: (%d) \"%.*s\"",
-					rdlen, rdlen - 1, rdata + 1);
+			SPF_debugf("TXT: (%lu) \"%.*s\"",
+					(unsigned long)rdlen, rdlen - 1, rdata + 1);
 			break;
 
 		case ns_t_ptr:
@@ -250,8 +250,8 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 		/* XXX The interface doesn't allow to communicate back failure
 		 * to allocate memory, but SPF_errorf aborts anyway. */
 		if (! res_state)
-			SPF_errorf("Failed to allocate %d bytes for res_state",
-							sizeof(struct __res_state));
+			SPF_errorf("Failed to allocate %lu bytes for res_state",
+							(unsigned long)sizeof(struct __res_state));
 		memset(res_state, 0, sizeof(struct __res_state));
 		if (res_ninit(res_state) != 0)
 			SPF_error("Failed to call res_ninit()");
@@ -408,9 +408,9 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 
 			rdlen = ns_rr_rdlen(rr);
 			if (spf_dns_server->debug > 1)
-				SPF_debugf("name: %s  type: %d  class: %d  ttl: %d  rdlen: %d",
+				SPF_debugf("name: %s  type: %d  class: %d  ttl: %d  rdlen: %lu",
 						ns_rr_name(rr), ns_rr_type(rr), ns_rr_class(rr),
-						ns_rr_ttl(rr), rdlen);
+						ns_rr_ttl(rr), (unsigned long)rdlen);
 
 			if (rdlen <= 0)
 				continue;
