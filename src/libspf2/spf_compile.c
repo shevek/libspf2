@@ -784,6 +784,8 @@ SPF_c_parse_ip6(SPF_response_t *spf_response, SPF_mech_t *mech, char const *star
 }
 
 
+/* XXX TODO: Make this take (const char *) instead of (const char **)
+ * because the caller ignores the modified value. */
 WARN_UNUSED_RESULT
 static SPF_errcode_t
 SPF_c_mech_add(SPF_server_t *spf_server,
