@@ -25,12 +25,15 @@ sub MY::postamble {
 
 $(INST_DYNAMIC) : ../src/libspf2/.libs/libspf2.so.*
 
-.PHONY : aux dep readme
+.PHONY : aux dep readme clean check
 
 aux : readme dep
 
 readme : SPF_XS.pm
 	perldoc -t SPF_XS.pm > README
+
+check :: test
+	# Could use valgrind here.
 
 clean ::
 	rm -f Makefile.old

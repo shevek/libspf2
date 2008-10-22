@@ -22,7 +22,7 @@ Mail::SPF_XS - An XS implementation of Mail::SPF
 
 =head1 DESCRIPTION
 
-This is an interface to the C library libsrs2 for the purpose of
+This is an interface to the C library libspf2 for the purpose of
 testing. While it can be used as an SPF implementation, you can also
 use L<Mail::SPF>, available from CPAN, which is a little more perlish.
 
