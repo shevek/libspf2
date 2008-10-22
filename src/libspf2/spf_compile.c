@@ -552,10 +552,15 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 			break;
 
 		/* Now, we must have a %-escape code, since if we hit a
-		 * space, then we are at the end. */
+		 * space, then we are at the end.
+		 * Incrementing idx consumes the % we hit first, and then
+		 * we switch on the following character, which also
+		 * increments idx. */
 		idx++;
 		switch (src[idx]) {
 		case '%':
+			if (spf_server->debug > 3)
+				SPF_debugf("Adding literal %%");
 			SPF_ENSURE_STRING_AVAIL(1);
 			*dst++ = '%';
 			ds_len++;
@@ -563,6 +568,8 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 			break;
 			
 		case '_':
+			if (spf_server->debug > 3)
+				SPF_debugf("Adding literal space");
 			SPF_ENSURE_STRING_AVAIL(1);
 			*dst++ = ' ';
 			ds_len++;
@@ -570,6 +577,8 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 			break;
 
 		case '-':
+			if (spf_server->debug > 3)
+				SPF_debugf("Adding escaped space");
 			SPF_ENSURE_STRING_AVAIL(3);
 			*dst++ = '%'; *dst++ = '2'; *dst++ = '0';
 			ds_len += 3;
@@ -577,6 +586,8 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 			break;
 
 		default:
+			if (spf_server->debug > 3)
+				SPF_debugf("Adding illegal %%");
 			/* SPF spec says to treat it as a literal, not
 			 * SPF_E_INVALID_ESC */
 			/* FIXME   issue a warning? */
@@ -586,6 +597,8 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 			break;
 
 		case '{':  /*vi:}*/
+			if (spf_server->debug > 3)
+				SPF_debugf("Adding macro");;
 			SPF_FINI_STRING_LITERAL();
 
 			/* this must be a variable */
