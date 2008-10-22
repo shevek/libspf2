@@ -311,7 +311,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 							domain, rr_type, 0, SPF_h_errno);
 		}
 		else if (dns_len > responselen) {
-			u_char	*tmp;
+			void	*tmp;
 			/* We managed a lookup but our buffer was too small. */
 			responselen = dns_len + (dns_len >> 1);
 #if 0
