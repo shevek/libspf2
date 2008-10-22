@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use blib;
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 use_ok('Mail::SPF_XS');
 
@@ -13,3 +13,4 @@ ok(1, 'parse_cidr did not run off start of data');
 
 eval { $rec = $srv->compile("v=spf1 include:" . ('A' x 5120) . " -all"); };
 ok(1, 'compile did not overrun buffer');
+ok(defined $@, 'compile at least threw an error');
