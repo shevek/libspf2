@@ -135,8 +135,8 @@ SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
 	sp = (SPF_server_t *)malloc(sizeof(SPF_server_t));
 	if (! sp)
 		return sp;
-	sp->destroy_resolver = 1;
 	SPF_server_new_common_pre(sp, debug);
+	sp->destroy_resolver = 1;
 
 	switch (dnstype) {
 		case SPF_DNS_RESOLV:
@@ -181,6 +181,7 @@ SPF_server_new_dns(SPF_dns_server_t *dns, int debug)
 	if (! sp)
 		return sp;
 	SPF_server_new_common_pre(sp, debug);
+	sp->destroy_resolver = 0;
 	sp->resolver = dns;
 	SPF_server_new_common_post(sp);
 	return sp;
