@@ -28,12 +28,6 @@
 #define NULL ((void *)0)
 #endif
 
-#ifdef __GNUC__
-#define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
-#else
-#define WARN_UNUSED_RESULT
-#endif
-
 #define array_elem(x) ((long int)(sizeof( x ) / sizeof( *x )))
 
 
