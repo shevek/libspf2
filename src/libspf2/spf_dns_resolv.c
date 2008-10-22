@@ -247,6 +247,8 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 	if (res_spec == NULL) {
 		res_state = (struct __res_state *)
 						malloc(sizeof(struct __res_state));
+		/* XXX The interface doesn't allow to communicate back failure
+		 * to allocate memory, but SPF_errorf aborts anyway. */
 		if (! res_state)
 			SPF_errorf("Failed to allocate %d bytes for res_state",
 							sizeof(struct __res_state));
