@@ -135,6 +135,7 @@ SPF_server_new(SPF_server_dnstype_t dnstype, int debug)
 	sp = (SPF_server_t *)malloc(sizeof(SPF_server_t));
 	if (! sp)
 		return sp;
+	sp->destroy_resolver = 1;
 	SPF_server_new_common_pre(sp, debug);
 
 	switch (dnstype) {
@@ -193,7 +194,7 @@ SPF_server_new_dns(SPF_dns_server_t *dns, int debug)
 void
 SPF_server_free(SPF_server_t *sp)
 {
-	if (sp->resolver)	// Never false, but let's be defensive.
+	if (sp->resolver && sp->destroy_resolver)
 		SPF_dns_free(sp->resolver);
 	if (sp->local_policy)
 		SPF_record_free(sp->local_policy);
