@@ -54,7 +54,7 @@ SPF_dns_rr_new_nxdomain(SPF_dns_server_t *spf_dns_server,
 				const char *domain)
 {
 	return SPF_dns_rr_new_init(spf_dns_server,
-					domain, ns_t_any, 0, NXDOMAIN);
+					domain, ns_t_any, 0, HOST_NOT_FOUND);
 }
 
 SPF_dns_rr_t *

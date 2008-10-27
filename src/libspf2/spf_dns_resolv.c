@@ -211,7 +211,8 @@ SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 
 /**
  * Can return NULL on out-of-memory condition.
- * Should return an NXDOMAIN or appropriate rr in all other error cases.
+ * Should return a HOST_NOT_FOUND or appropriate rr in all other
+ * error cases.
  */
 static SPF_dns_rr_t *
 SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
@@ -621,8 +622,8 @@ SPF_dns_resolv_new(SPF_dns_server_t *layer_below,
 #if HAVE_DECL_RES_NINIT
 	pthread_once(&res_state_control, SPF_dns_resolv_init_key);
 #else
-	if ( res_init() != 0 ) {
-		perror("res_init");
+	if (res_init() != 0) {
+		SPF_warning("Failed to call res_init()");
 		return NULL;
 	}
 #endif

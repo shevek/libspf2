@@ -80,7 +80,7 @@
 #define	ns_t_txt	16
 #define ns_t_aaaa	28
 /* #define ns_t_a6		38 */
-#define	ns_t_any        255		/* Wildcard match. */
+#define	ns_t_any        255		/**< Wildcard match. */
 
 typedef int	ns_type;
 #endif
@@ -100,10 +100,10 @@ typedef int	ns_type;
 
 #if !defined(HAVE_NETDB_H) && !defined(_WIN32)
 #define NETDB_SUCCESS	0
-#define	HOST_NOT_FOUND 	1		/* NXDOMAIN (authoritative answer)*/
-#define	TRY_AGAIN	2		/* SERVFAIL (no authoritative answer)*/
-#define	NO_RECOVERY	3		/* invalid/unimplmeneted query	*/
-#define	NO_DATA		4		/* host found, but no RR of req type*/
+#define	HOST_NOT_FOUND 	1		/**< NXDOMAIN (authoritative answer)*/
+#define	TRY_AGAIN		2		/**< SERVFAIL (no authoritative answer)*/
+#define	NO_RECOVERY		3		/**< invalid/unimplmeneted query	*/
+#define	NO_DATA			4		/**< host found, but no RR of req type*/
 #endif
 typedef int SPF_dns_stat_t;
 
