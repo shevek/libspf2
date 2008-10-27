@@ -92,7 +92,11 @@ static pthread_key_t	res_state_key;
 static void
 SPF_dns_resolv_thread_term(void *arg)
 {
+#ifdef HAVE_DECL_RES_NDESTROY
+	res_ndestroy( (struct __res_state *)arg );
+#else
 	res_nclose( (struct __res_state *)arg );
+#endif
 	free(arg);
 }
 

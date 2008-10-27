@@ -14,6 +14,10 @@
    don't. */
 #undef HAVE_DECL_NS_T_SPF
 
+/* Define to 1 if you have the declaration of `res_ndestroy', and to 0 if you
+   don't. */
+#undef HAVE_DECL_RES_NDESTROY
+
 /* Define to 1 if you have the declaration of `res_ninit', and to 0 if you
    don't. */
 #undef HAVE_DECL_RES_NINIT
