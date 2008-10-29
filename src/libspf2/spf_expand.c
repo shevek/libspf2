@@ -82,10 +82,10 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 				SPF_data_t *data, size_t data_len,
 				char **bufp, size_t *buflenp)
 {
-	SPF_data_t		*d, *data_end;
+	SPF_data_t	*d, *data_end;
 
 	size_t		 len;
-	const char	*p_err;
+	const char	*p_err;	// XXX Check this value, when returned.
 	char		*p, *p_end;
 	const char	*p_read;
 	const char	*p_read_end;
@@ -93,7 +93,7 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 	char		*p2, *p2_end;
 
 
-	const char		*var;
+	const char	*var;
 	char		*munged_var = NULL;
 	char		*url_var = NULL;
 
@@ -105,8 +105,8 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 
 	char		time_buf[ sizeof( "4294967296" ) ]; /* 2^32 seconds max		*/
 
-	int				num_found;
-	int				i;
+	int			num_found;
+	int			i;
 
 
 	/*
@@ -120,6 +120,7 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 	/* data_end = SPF_mech_end_data( mech ); */ /* doesn't work for mods */
 	data_end = (SPF_data_t *)((char *)data + data_len);
 
+#ifndef COMPUTE
 	/*
 	 * make sure the return buffer is big enough
 	 *
@@ -127,10 +128,8 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 	 */
 
 	len = 0;
-	for( d = data; d < data_end; d = SPF_data_next( d ) )
-	{
-		switch( d->ds.parm_type )
-		{
+	for (d = data; d < data_end; d = SPF_data_next(d)) {
+		switch (d->ds.parm_type) {
 		case PARM_CIDR:
 			break;
 
@@ -150,49 +149,55 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 			/* An interpolated variable. Might be any field from
 			 * the SPF_request_t */
 			if ( spf_request->max_var_len > 8 )
-				len += spf_request->max_var_len * 3; /* url encoding				*/
+				len += spf_request->max_var_len * 3; /* url encoding */
 			else
 				len += 8 * 3;
 			break;
 		}
 	}
-	len += sizeof( '\0' );		/* Strictly, ANSI says this is 1. */
+	len += sizeof('\0');		/* Strictly, ANSI says this is 1. */
 
-	if ( *buflenp < len )
-	{
+	if (*buflenp < len) {
 		char		*new_rec;
 		size_t		new_len;
 
 		/* allocate lots so we don't have to remalloc often */
 		new_len = len + 64;
 
-		new_rec = realloc( *bufp, new_len );
-		if ( new_rec == NULL )
+		new_rec = realloc(*bufp, new_len);
+		if (new_rec == NULL)
 			return SPF_E_NO_MEMORY;
 
 		*bufp = new_rec;
 		*buflenp = new_len;
 	}
-	memset( *bufp, '\0', *buflenp );		/* cheaper than NUL at each step */
+	memset(*bufp, '\0', *buflenp);		/* cheaper than NUL at each step */
 	p = *bufp;
 	p_end = *bufp + *buflenp;
+#endif
 
 
-
+#ifdef COMPUTE
+top:
+#endif
 	/*
 	 * expand the data
 	 */
-
 	for (d = data; d < data_end; d = SPF_data_next(d)) {
 		if (d->dc.parm_type == PARM_CIDR)
 			continue;
 
-		if ( d->ds.parm_type == PARM_STRING ) {
-			if ( p_end - (p + d->ds.len) <= 0 )
+		if (d->ds.parm_type == PARM_STRING) {
+#ifdef COMPUTE
+			if (compute_length) {
+				buflen += d->ds.len;
+				continue;
+			}
+#endif
+			if (p_end - (p + d->ds.len) <= 0)
 					SPF_error("Failed to allocate enough memory "
 								"to expand string.");
-
-			memcpy( p, SPF_data_str( d ), d->ds.len );
+			memcpy(p, SPF_data_str(d), d->ds.len);
 			p += d->ds.len;
 			continue;
 		}
@@ -200,8 +205,7 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 		/* Otherwise, it's a variable. */
 
 		var = NULL;
-		switch( d->dv.parm_type )
-		{
+		switch (d->dv.parm_type) {
 		case PARM_LP_FROM:		/* local-part of envelope-sender */
 			var = spf_request->env_from_lp;
 			break;
@@ -219,47 +223,68 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 			break;
 
 		case PARM_CLIENT_IP:		/* SMTP client IP				*/
-			if ( spf_request->client_ver == AF_INET ) {
-				p_err = inet_ntop( AF_INET, &spf_request->ipv4,
-								   ip4_buf, sizeof( ip4_buf ) );
+#ifdef COMPUTE
+			if (compute_length) {
+				len = sizeof(ip6_buf);
+				if (d->dv.url_encode)
+					len *= 3;
+				buflen += len;
+				continue;
+			}
+#endif
+			if (spf_request->client_ver == AF_INET) {
+				p_err = inet_ntop(AF_INET, &spf_request->ipv4,
+								   ip4_buf, sizeof(ip4_buf));
 				var = ip4_buf;
 			}
-			else if ( spf_request->client_ver == AF_INET6 ) {
+			else if (spf_request->client_ver == AF_INET6) {
 				p2 = ip6_rbuf;
-				p2_end = p2 + sizeof( ip6_rbuf );
+				p2_end = p2 + sizeof(ip6_rbuf);
 
-				for( i = 0; i < array_elem( spf_request->ipv6.s6_addr ); i++ )
-				{
-					p2 += snprintf( p2, p2_end - p2, "%.1x.%.1x.",
+				for (i = 0; i < array_elem(spf_request->ipv6.s6_addr); i++) {
+					p2 += snprintf(p2, p2_end - p2, "%.1x.%.1x.",
 									spf_request->ipv6.s6_addr[i] >> 4,
-									spf_request->ipv6.s6_addr[i] & 0xf );
+									spf_request->ipv6.s6_addr[i] & 0xf);
 				}
 
 				/* squash the final '.' */
-				ip6_rbuf[ sizeof( struct in6_addr ) * 4 - 1] = '\0';
+				ip6_rbuf[sizeof(struct in6_addr) * 4 - 1] = '\0';
 
 				var = ip6_rbuf;
 			}
 			break;
 
 		case PARM_CLIENT_IP_P:		/* SMTP client IP (pretty)		*/
-			if ( spf_request->client_ver == AF_INET )
-			{
-				p_err = inet_ntop( AF_INET, &spf_request->ipv4,
-								   ip4_buf, sizeof( ip4_buf ) );
+#ifdef COMPUTE
+			if (compute_length) {
+				len = sizeof(ip6_buf);
+				if (d->dv.url_encode)
+					len *= 3;
+				buflen += len;
+				continue;
+			}
+#endif
+			if (spf_request->client_ver == AF_INET) {
+				p_err = inet_ntop(AF_INET, &spf_request->ipv4,
+								   ip4_buf, sizeof(ip4_buf));
 				var = ip4_buf;
 			}
-			else if ( spf_request->client_ver == AF_INET6 )
-			{
-				p_err = inet_ntop( AF_INET6, &spf_request->ipv6,
-								   ip6_buf, sizeof( ip6_buf ) );
+			else if (spf_request->client_ver == AF_INET6) {
+				p_err = inet_ntop(AF_INET6, &spf_request->ipv6,
+								   ip6_buf, sizeof(ip6_buf));
 				var = ip6_buf;
 			}
 			break;
 
 		case PARM_TIME:				/* time in UTC epoch secs		*/
-			snprintf( time_buf, sizeof( time_buf ), "%ld",
-					  (long int) time( NULL ) );
+#ifdef COMPUTE
+			if (compute_length) {
+				buflen += sizeof(time_buf);
+				continue;
+			}
+#endif
+			snprintf(time_buf, sizeof(time_buf), "%ld",
+					  (long)time(NULL));
 			var = time_buf;
 			break;
 
@@ -270,9 +295,9 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 			break;
 
 		case PARM_CLIENT_VER:		/* IP ver str - in-addr/ip6		*/
-			if ( spf_request->client_ver == AF_INET )
+			if (spf_request->client_ver == AF_INET)
 				var = client_ver_ipv4;
-			else if ( spf_request->client_ver == AF_INET6 )
+			else if (spf_request->client_ver == AF_INET6)
 				var = client_ver_ipv6;
 			break;
 
@@ -289,13 +314,20 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 			break;
 		}
 
-		if ( var == NULL )
+		if (var == NULL)
 			return SPF_E_UNINIT_VAR;
 
+		len = strlen(var);
+#ifdef COMPUTE
+		if (compute_length) {
+			if (d->dv.url_encode)
+				len *= 3;
+			buflen += len;
+			continue;
+		}
+#endif
 
 		/* Now we put 'var' through the munging procedure. */
-
-		len = strlen(var);
 		munged_var = (char *)malloc(len + 1);
 		if (munged_var == NULL)
 			return SPF_E_NO_MEMORY;
@@ -306,7 +338,9 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 
 		/* reverse */
 
-		if ( d->dv.rev ) {
+/* The following code confuses both me and Coverity. Shevek. */
+
+		if (d->dv.rev) {
 			p_read = p_read_end - 1;
 
 			while ( p_read >= var ) {
@@ -341,7 +375,7 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 			p_read = var;
 
 			while (p_read < p_read_end) {
-					if (SPF_delim_valid(d, *p_read))
+				if (SPF_delim_valid(d, *p_read))
 					*p_write++ = '.';
 				else
 					*p_write++ = *p_read;
@@ -365,7 +399,7 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 					num_found++;
 				if (num_found == d->dv.num_rhs)
 					break;
-					p_write--;
+				p_write--;
 			}
 			p_write++;		/* Move to just after the '.' */
 			/* This moves the '\0' as well. */
@@ -446,6 +480,14 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 			free(url_var);
 		url_var = NULL;
 	}
+
+#ifdef COMPUTE
+	if (compute_length) {
+		compute_length = 0;
+		/* Do something about (re-)allocating the buffer. */
+		goto top;
+	}
+#endif
 
 	*p++ = '\0';
 
