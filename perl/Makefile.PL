@@ -11,7 +11,9 @@ WriteMakefile(
     ABSTRACT_FROM	=> "SPF_XS.pm",
 	AUTHOR			=> 'Shevek <cpan@anarres.org>',
 	PREREQ_PM		=> {
-					'Mail::SPF'		=> 0.30,
+					# 'Mail::SPF'		=> 0.30,
+					'String::Escape'	=> 0,
+					'Test::More'		=> 0,
 						},
 	OPTIMIZE		=> $cflags,
 	LIBS			=> [ '-L../src/libspf2/.libs -lspf2', ],
