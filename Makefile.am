@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS = foreign
 
 EXTRA_DIST		= bootstrap LICENSES INSTALL README TODO win32 perl
 
-SUBDIRS = src @PERL_SUBDIRS@ docs
+SUBDIRS = src @PERL_SUBDIRS@
 
 dist-hook:
 	@for file in $(EXTRA_DIST); do \
