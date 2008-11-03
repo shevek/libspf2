@@ -55,6 +55,8 @@
 #include "spf_record.h"
 
 
+// #define COMPUTE
+
 static const char		client_ver_ipv4[] = "in-addr";
 static const char		client_ver_ipv6[] = "ip6";
 
@@ -107,6 +109,14 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 
 	int			num_found;
 	int			i;
+#ifdef COMPUTE
+	int			buflen;
+	int			compute_length;
+	SPF_errcode_t	 err;
+
+	buflen = 1;	/* For the terminating '\0' */
+	compute_length = 1;
+#endif
 
 
 	/*
@@ -194,6 +204,7 @@ top:
 				continue;
 			}
 #endif
+			/* This should NEVER happen now. */
 			if (p_end - (p + d->ds.len) <= 0)
 					SPF_error("Failed to allocate enough memory "
 								"to expand string.");
@@ -279,7 +290,9 @@ top:
 		case PARM_TIME:				/* time in UTC epoch secs		*/
 #ifdef COMPUTE
 			if (compute_length) {
-				buflen += sizeof(time_buf);
+				len = sizeof(time_buf);
+				/* This never gets bigger using URL encoding. */
+				buflen += len;
 				continue;
 			}
 #endif
@@ -463,7 +476,7 @@ top:
 
 
 		/* finish up */
-		len = snprintf( p, p_end - p, "%s", var );
+		len = snprintf(p, p_end - p, "%s", var);
 		p += len;
 		if (p_end - p <= 0) {
 			if (munged_var)
@@ -485,6 +498,11 @@ top:
 	if (compute_length) {
 		compute_length = 0;
 		/* Do something about (re-)allocating the buffer. */
+		err = SPF_realloc(bufp, buflenp, buflen);
+		if (err != SPF_E_SUCCESS)
+			return err;
+		p = *bufp;
+		p_end = *bufp + *buflenp;
 		goto top;
 	}
 #endif

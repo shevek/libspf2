@@ -54,7 +54,8 @@ SPF_record_stringify_data(SPF_data_t *data, SPF_data_t *data_end,
 	if (debug)
 		SPF_debugf(" string data: Building");
 
-	if ( p_end - p <= 0 ) return SPF_E_INTERNAL_ERROR;
+	if (p_end - p <= 0)
+		return SPF_E_INTERNAL_ERROR;
 
 	cidr_data = NULL;
 	if ( data < data_end && data->dc.parm_type == PARM_CIDR )
@@ -82,46 +83,40 @@ SPF_record_stringify_data(SPF_data_t *data, SPF_data_t *data_end,
 				SPF_debugf(" string data: String is [%d] '%*.*s'",
 						data->ds.len, data->ds.len, data->ds.len, s);
 
-			if ( p_end - (p + data->ds.len) <= 0 ) return SPF_E_INTERNAL_ERROR;
+			if (p_end - (p + data->ds.len) <= 0)
+				return SPF_E_INTERNAL_ERROR;
 
-			while( s < s_end )
-			{
-				if ( *s == ' ' )
-				{
+			while (s < s_end) {
+				if (*s == ' ') {
 					*p++ = '%';
 					*p++ = '_';
 					s++;
 				}
-				else if ( *s == '%' )
-				{
+				else if (*s == '%') {
 					*p++ = '%';
 					s++;
-					if ( s[0] == '2' && s[1] == '0' )
-					{
+					if (s[0] == '2' && s[1] == '0') {
 						*p++ = '-';
 						s += 2;
 					}
-					else
-					{
+					else {
 						*p++ = '%';
-						*p++ = *s++;
+						// *p++ = '%';
 					}
 				}
-					
-				else
-				{
+				else {
 					*p++ = *s++;
 				}
 			}
 
-			if ( p_end - p <= 0 ) return SPF_E_INTERNAL_ERROR;
+			if (p_end - p <= 0)
+				return SPF_E_INTERNAL_ERROR;
 		}
-		else if ( data->dc.parm_type == PARM_CIDR )
-		{
+		else if (data->dc.parm_type == PARM_CIDR) {
+			/* Two CIDRs in a row is invalid. */
 			return SPF_E_INVALID_CIDR;
 		}
-		else
-		{
+		else {
 			len = snprintf( p, p_end - p, "%%{" );
 			p += len;
 			if ( p_end - p <= 0 ) return SPF_E_INTERNAL_ERROR;
@@ -288,23 +283,10 @@ SPF_record_stringify( SPF_record_t *spf_record, char **bufp, size_t *buflenp)
 		+ spf_record->mech_len * 4 + spf_record->mod_len * 4 /* data */
 		+ sizeof( "\0" );
 	
-	if ( *buflenp < len )
-	{
-		char		*new_rec;
-		size_t		new_len;
-		
-		/* FIXME  dup code */
-		/* allocate lots so we don't have to remalloc often */
-		new_len = len + 64;
+	err = SPF_realloc(bufp, buflenp, len);
+	if (err != SPF_E_SUCCESS)
+		return err;
 
-		new_rec = realloc( *bufp, new_len );
-		if ( new_rec == NULL )
-			return SPF_E_NO_MEMORY;
-
-		*bufp = new_rec;
-		*buflenp = new_len;
-	}
-	memset( *bufp, '\0', *buflenp );		/* cheaper than NUL at each step */
 	p = *bufp;
 	p_end = *bufp + *buflenp;
 
@@ -315,10 +297,10 @@ SPF_record_stringify( SPF_record_t *spf_record, char **bufp, size_t *buflenp)
 	/*
 	 * generate SPF version string
 	 */
-
-	len = snprintf( p, p_end - p, "v=spf%d", spf_record->version );
+	len = snprintf(p, p_end - p, "v=spf%d", spf_record->version);
 	p += len;
-	if ( p_end - p <= 0 ) return SPF_E_INTERNAL_ERROR;
+	if (p_end - p <= 0)
+		return SPF_E_INTERNAL_ERROR;
 		
 
 	/*
@@ -326,10 +308,9 @@ SPF_record_stringify( SPF_record_t *spf_record, char **bufp, size_t *buflenp)
 	 */
 	
 	mech = spf_record->mech_first;
-	for( i = 0; i < spf_record->num_mech; i++ )
-	{
+	for (i = 0; i < spf_record->num_mech; i++) {
 		if (debug)
-			SPF_debugf("stringify: Handling item  %d/%d at %p",
+			SPF_debugf("stringify: Handling mechanism %d/%d at %p",
 							i, spf_record->num_mech, mech);
 		if ( p_end - p <= 1 ) return SPF_E_INTERNAL_ERROR;
 		*p++ = ' ';
@@ -465,6 +446,9 @@ SPF_record_stringify( SPF_record_t *spf_record, char **bufp, size_t *buflenp)
 	mod = spf_record->mod_first;
 	for( i = 0; i < spf_record->num_mod; i++ )
 	{
+		if (debug)
+			SPF_debugf("stringify: Handling modifier %d/%d at %p",
+							i, spf_record->num_mod, mod);
 		if ( p_end - p <= 1 ) return SPF_E_INTERNAL_ERROR;
 		*p++ = ' ';
 		

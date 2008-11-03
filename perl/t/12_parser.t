@@ -5,10 +5,13 @@ use Test::More tests => 13;
 
 use_ok('Mail::SPF_XS');
 
-my $srv = new Mail::SPF_XS::Server({ debug => 0 });
+my $srv = new Mail::SPF_XS::Server({ debug => 4 });
 
 my %records = (
-	'a%%b%%c%'		=> 'a%b%c%',
+	# This is illegal, and will re-stringify to a%%b%%c%%
+	# 'a%%b%%c%'		=> 'a%b%c%',
+
+	'a%%b%%c%%'		=> 'a%b%c%',
 	'%%'			=> '%',
 	'foo'	=> 'foo',
 );

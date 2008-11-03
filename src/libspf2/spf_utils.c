@@ -174,3 +174,30 @@ SPF_strrrtype(ns_type rr_type)
 		default:           return "??";
 	}
 }
+
+/**
+ * This is NOT a general-purpose realloc. It is used only for
+ * text buffers. It will allocate at least 64 bytes of storage.
+ */
+SPF_errcode_t
+SPF_realloc(char **bufp, size_t *buflenp, int buflen)
+{
+	char		*buf;
+
+	if (*buflenp < buflen) {
+		if (buflen < 64)
+			buflen = 64;
+		buf = realloc(*bufp, buflen);
+		if (buf == NULL)
+			return SPF_E_NO_MEMORY;
+
+		*bufp = buf;
+		*buflenp = buflen;
+	}
+	else {
+		SPF_ASSERT_NOTNULL(*bufp);
+	}
+
+	memset(*bufp, '\0', *buflenp);	
+	return SPF_E_SUCCESS;
+}

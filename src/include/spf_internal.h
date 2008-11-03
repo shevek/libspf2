@@ -139,6 +139,8 @@ char *SPF_sanitize( SPF_server_t *spf_server, char *str );
 
 void SPF_print_sizeof(void);
 
+SPF_errcode_t SPF_realloc(char **bufp, size_t *buflenp, int buflen);
+
 
 /**
  * A wrapper for reporting errors from sub-functions.
