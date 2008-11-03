@@ -153,19 +153,21 @@ SPF_request_set_env_from(SPF_request_t *sr, const char *from)
 		sr->env_from = strdup(from);
 		if (! sr->env_from)
 			return SPF_E_NO_MEMORY;
-		*cp = '\0';
-		sr->env_from_lp = strdup(from);
+
+		len = cp - from;
+		sr->env_from_lp = malloc(len + 1);
 		if (!sr->env_from_lp) {
 			SPF_FREE(sr->env_from);
 			return SPF_E_NO_MEMORY;
 		}
+		strncpy(sr->env_from_lp, from, len);
+		sr->env_from_lp[len] = '\0';
 		sr->env_from_dp = strdup(cp + 1);
 		if (!sr->env_from_dp) {
 			SPF_FREE(sr->env_from);
 			SPF_FREE(sr->env_from_lp);
 			return SPF_E_NO_MEMORY;
 		}
-		*cp = '@';
 	}
 	else {
 		if (cp == from) from++; /* "@domain.example" */
