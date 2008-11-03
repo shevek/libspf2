@@ -117,6 +117,8 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 
 	buflen = 1;	/* For the terminating '\0' */
 	compute_length = 1;
+	p = NULL;
+	p_end = NULL;
 #endif
 
 
