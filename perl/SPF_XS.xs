@@ -173,6 +173,9 @@ expand(server, text)
 			croak("Failed to compile macro: err = %s", SPF_strerror(err));
 		}
 		request = SPF_request_new(server);
+		/* Deliberately very long, for testing. */
+		SPF_request_set_env_from(request,
+			"env-from-local-part@env-from-domain-part.com");
 		err = SPF_record_expand_data(server, request, response,
 				SPF_macro_data(macro), SPF_macro_data_len(macro),
 				&buf, &buflen);

@@ -109,6 +109,8 @@ struct SPF_data_str_struct
 {
     unsigned char	parm_type;
     unsigned char	len;	/* XXX Does this need to be size_t? */
+    unsigned char	__unused0;
+    unsigned char	__unused1;
     /* text: (char[len]) follows */
 } SPF_data_str_t;
 

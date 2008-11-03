@@ -61,6 +61,9 @@ enum SPF_domspec_enum {
  */
 #define SPF_RECORD_BUFSIZ	  4096
 
+#define ALIGN_DECL(decl) union { double d; long l; decl } __attribute__((aligned(_ALIGN_SZ))) u
+#define ALIGNED_DECL(var) u.var
+
 
 
 typedef
@@ -110,6 +113,7 @@ SPF_c_ensure_capacity(void **datap, size_t *sizep, size_t length)
 		void	*tmp = realloc(*datap, size);
 		if (!tmp)
 			return -1;
+		// memset(tmp + *sizep, 'C', (size - *sizep));
 		*datap = tmp;
 		*sizep = size;
 	}
@@ -448,6 +452,8 @@ SPF_c_parse_var(SPF_response_t *spf_response, SPF_data_var_t *data,
 #define SPF_INIT_STRING_LITERAL(_avail)	do { \
 			data->ds.parm_type = PARM_STRING;						\
 			data->ds.len = 0;										\
+			/* Magic numbers for x/Nc in gdb. */					\
+			data->ds.__unused0 = 0xba; data->ds.__unused1 = 0xbe;	\
 			dst = SPF_data_str( data );								\
 			ds_avail = _avail;										\
 			ds_len = 0;												\
@@ -516,6 +522,12 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 	if (spf_server->debug)
 		SPF_debugf("Parsing macro starting at %s", src);
 
+#if 0
+	if ((void *)data != _align_ptr((void *)data))
+		SPF_errorf("Data pointer %p is not aligned: Cannot compile.",
+		data);
+#endif
+
 	/*
 	 * Create the data blocks
 	 */
@@ -527,6 +539,8 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 
 	// while ( p != end ) {
 	while (idx < src_len) {
+		if (spf_server->debug > 3)
+			SPF_debugf("Current data is at %p", data);
 		/* Either the unit is terminated by a space, or we hit a %.
 		 * We should only hit a space if we run past src_len. */
 		len = strcspn(&src[idx], " %");	// XXX Also tab?
@@ -590,7 +604,8 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 
 		default:
 			if (spf_server->debug > 3)
-				SPF_debugf("Adding illegal %%");
+				SPF_debugf("Adding illegal %%-follower '%c' at %d",
+				src[idx], idx);
 			/* SPF spec says to treat it as a literal, not
 			 * SPF_E_INVALID_ESC */
 			/* FIXME   issue a warning? */
@@ -600,9 +615,9 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 			break;
 
 		case '{':  /*vi:}*/
-			if (spf_server->debug > 3)
-				SPF_debugf("Adding macro");;
 			SPF_FINI_STRING_LITERAL();
+			if (spf_server->debug > 3)
+				SPF_debugf("Adding macro, data is at %p", data);
 
 			/* this must be a variable */
 			idx++;
@@ -622,6 +637,8 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 			len = SPF_data_len(data);
 			SPF_ADD_LEN_TO(*data_used, len, data_avail);
 			data = SPF_data_next( data );
+			if (spf_server->debug > 3)
+				SPF_debugf("Next data is at %p", data);
 
 			SPF_INIT_STRING_LITERAL(data_avail - *data_used);
 
@@ -811,9 +828,10 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 {
 	/* If this buffer is an irregular size, intel gcc does not align
 	 * it properly, and all hell breaks loose. */
-	char				 buf[SPF_RECORD_BUFSIZ]
-			__attribute__((aligned(_ALIGN_SZ)));
-	SPF_mech_t			*spf_mechanism = (SPF_mech_t *)buf;
+ALIGN_DECL(
+	char				 buf[SPF_RECORD_BUFSIZ];
+);
+	SPF_mech_t			*spf_mechanism = (SPF_mech_t *)ALIGNED_DECL(buf);
 	SPF_data_t			*data;
 	size_t				 data_len;
 	size_t				 len;
@@ -821,7 +839,7 @@ SPF_c_mech_add(SPF_server_t *spf_server,
 
 	SPF_errcode_t		 err;
 
-	memset(buf, 'B', sizeof(buf));	/* Poison the buffer. */
+	memset(u.buf, 'B', sizeof(u.buf));	/* Poison the buffer. */
 	memset(spf_mechanism, 0, sizeof(SPF_mech_t));
 
 	if (spf_server->debug)
@@ -968,9 +986,10 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 {
 	/* If this buffer is an irregular size, intel gcc does not align
 	 * it properly, and all hell breaks loose. */
-	char				 buf[SPF_RECORD_BUFSIZ]
-			__attribute__((aligned(_ALIGN_SZ)));
-	SPF_mod_t			*spf_modifier = (SPF_mod_t *)buf;
+ALIGN_DECL(
+	char				 buf[SPF_RECORD_BUFSIZ];
+);
+	SPF_mod_t			*spf_modifier = (SPF_mod_t *)u.buf;
 	SPF_data_t			*data;
 	size_t				 data_len;
 	size_t				 len;
@@ -982,7 +1001,7 @@ SPF_c_mod_add(SPF_server_t *spf_server,
 		SPF_debugf("Adding modifier name=%lu@%s, value=%s",
 						(unsigned long)name_len, mod_name, *mod_value);
 
-	memset(buf, 'A', sizeof(buf));
+	memset(u.buf, 'A', sizeof(u.buf));
 	memset(spf_modifier, 0, sizeof(SPF_mod_t));
 
 	if ( name_len > SPF_MAX_MOD_LEN )
@@ -1482,8 +1501,10 @@ SPF_record_compile_macro(SPF_server_t *spf_server,
 								SPF_macro_t **spf_macrop,
 								const char *record)
 {
+ALIGN_DECL(
 	char			 buf[sizeof(SPF_macro_t) + SPF_MAX_MOD_LEN];
-	SPF_macro_t		*spf_macro = (SPF_macro_t *)buf;
+);
+	SPF_macro_t		*spf_macro = (SPF_macro_t *)ALIGNED_DECL(buf);
 	SPF_data_t		*data;
 	SPF_errcode_t	 err;
 	size_t			 size;
@@ -1503,7 +1524,7 @@ SPF_record_compile_macro(SPF_server_t *spf_server,
 	*spf_macrop = (SPF_macro_t *)malloc(size);
 	if (!*spf_macrop)
 		return SPF_E_NO_MEMORY;
-	memcpy(*spf_macrop, buf, size);
+	memcpy(*spf_macrop, ALIGNED_DECL(buf), size);
 
 	return SPF_E_SUCCESS;
 }

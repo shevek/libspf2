@@ -55,7 +55,8 @@
 #include "spf_record.h"
 
 
-// #define COMPUTE
+#define COMPUTE
+// #define DEBUG
 
 static const char		client_ver_ipv4[] = "in-addr";
 static const char		client_ver_ipv6[] = "ip6";
@@ -189,11 +190,17 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 
 #ifdef COMPUTE
 top:
+#ifdef DEBUG
+	fprintf(stderr, "Pass start compute_length=%d\n", compute_length);
+#endif
 #endif
 	/*
 	 * expand the data
 	 */
 	for (d = data; d < data_end; d = SPF_data_next(d)) {
+#ifdef DEBUG
+		fprintf(stderr, " Item type=%d at %p\n", d->dc.parm_type, d);
+#endif
 		if (d->dc.parm_type == PARM_CIDR)
 			continue;
 
@@ -323,6 +330,9 @@ top:
 			break;
 
 		default:
+#ifdef DEBUG
+			fprintf(stderr, "Invalid variable %d\n", d->dv.parm_type);
+#endif
 			return SPF_E_INVALID_VAR;
 			break;
 		}
@@ -493,6 +503,9 @@ top:
 			free(url_var);
 		url_var = NULL;
 	}
+#ifdef DEBUG
+	fprintf(stderr, "Pass end compute_length=%d\n", compute_length);
+#endif
 
 #ifdef COMPUTE
 	if (compute_length) {

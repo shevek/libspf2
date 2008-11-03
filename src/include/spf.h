@@ -58,7 +58,7 @@
 #define SPF_DEFAULT_SANITIZE	  1
 #define SPF_DEFAULT_WHITELIST	  "include:spf.trusted-forwarder.org"
 #define SPF_EXP_MOD_NAME	"exp-text"
-#define SPF_DEFAULT_EXP		  "Please see http://www.openspf.org/Why?id=%{S}&ip=%{C}&receiver=%{R}"
+#define SPF_DEFAULT_EXP		  "Please%_see%_http://www.openspf.org/Why?id=%{S}&ip=%{C}&receiver=%{R}"
 
 
 
