@@ -45,6 +45,7 @@
 #ifdef HAVE_NETDB_H
 # include <netdb.h>
 #endif
+#include <ctype.h>
 
 
 #include "spf.h"
@@ -66,8 +67,6 @@
  *
  * Note that wildcards mean that a domain could match more than one
  * record.  The most specific record should match.
- *
- * Also, SPF records could be byte-compiled.
  */
 
 
@@ -120,6 +119,11 @@ SPF_dns_zone_find(SPF_dns_server_t *spf_dns_server,
 	else {
 		/* We are looking up a record, so lookup-matching semantics apply. */
 		size_t	domain_len = strlen(domain);
+		/* Real resolver would strip trailing '.', so we have to.
+		 * FIXME: doesn't handle wildcard cases - we don't use
+		 * those in test suite. */
+		if (domain_len && domain[domain_len - 1] == '.')
+			--domain_len;
 
 		for (i = 0; i < spfhook->num_zone; i++) {
 			if (spfhook->zone[i]->rr_type != rr_type
@@ -133,11 +137,17 @@ SPF_dns_zone_find(SPF_dns_server_t *spf_dns_server,
 			if (strncmp(spfhook->zone[i]->domain, "*.", 2) == 0) {
 				size_t	zdomain_len = strlen(spfhook->zone[i]->domain) - 2;
 				if ((zdomain_len <= domain_len)
-					 && strcasecmp(spfhook->zone[i]->domain + 2,
-						domain + (domain_len - zdomain_len)) == 0)
+					 && strncasecmp(
+								spfhook->zone[i]->domain + 2,
+								domain + (domain_len - zdomain_len),
+								zdomain_len) == 0)
 					return spfhook->zone[i];
 			}
-			else if (strcasecmp(spfhook->zone[i]->domain, domain) == 0) {
+			else if (strncasecmp(
+						spfhook->zone[i]->domain,
+						domain,
+						domain_len) == 0 &&
+					strlen(spfhook->zone[i]->domain) == domain_len) {
 				return spfhook->zone[i];
 			}
 		}
@@ -259,6 +269,10 @@ SPF_dns_zone_add_str(SPF_dns_server_t *spf_dns_server,
 			break;
 
 		case ns_t_mx:
+			/* Caller passes priority<sp>domain.  We don't use or
+			 * store priority, so discard it. */
+			while (isdigit(*data)) data++;
+			while (isspace(*data)) data++;
 			SPF_RR_TRY_REALLOC(spfrr, cnt, strlen( data ) + 1);
 			strcpy( spfrr->rr[cnt]->mx, data );
 			break;

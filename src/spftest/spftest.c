@@ -19,7 +19,7 @@
 /*
  * NOTE:
  *
- * This is just a text bed that can be used while developing the
+ * This is just a test bed that can be used while developing the
  * library.  It is not intended to make sense or to be useful.
  */
 
