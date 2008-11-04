@@ -433,14 +433,15 @@ retry:
 			SPF_debugf("Comparing '%s' with '%s'",
 					SPF_VER_STR " ", rr_txt->rr[i]->txt);
 		*/
-		if (strncasecmp( rr_txt->rr[i]->txt,
-					  SPF_VER_STR " ", sizeof( SPF_VER_STR " " ) - 1) == 0)
-		{
-			if ( spf_server->debug > 0 )
-				SPF_debugf( "found SPF record: %s", rr_txt->rr[i]->txt );
-
-			num_found++;
-			idx_found = i;
+		if (strncasecmp(rr_txt->rr[i]->txt,
+					  SPF_VER_STR, sizeof(SPF_VER_STR) - 1) == 0) {
+			char	e = rr_txt->rr[i]->txt[sizeof(SPF_VER_STR) - 1];
+			if (e == ' ' || e == '\0') {
+				if (spf_server->debug > 0)
+					SPF_debugf("found SPF record: %s", rr_txt->rr[i]->txt);
+				num_found++;
+				idx_found = i;
+			}
 		}
 	}
 
