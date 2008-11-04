@@ -283,6 +283,5 @@ AC_CONFIG_FILES([Makefile
                  src/spfquery/Makefile
                  src/spftest/Makefile
                  src/spfd/Makefile
-                 src/spf_example/Makefile
-                 tests/Makefile])
+                 src/spf_example/Makefile])
 AC_OUTPUT
