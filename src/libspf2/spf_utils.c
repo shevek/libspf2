@@ -195,7 +195,8 @@ SPF_realloc(char **bufp, size_t *buflenp, int buflen)
 		buf = realloc(*bufp, buflen);
 		if (buf == NULL)
 			return SPF_E_NO_MEMORY;
-		memset(buf + *buflenp, '\0', buflen - *buflenp);	
+
+		// memset(buf + *buflenp, '\0', buflen - *buflenp);	
 		*bufp = buf;
 		*buflenp = buflen;
 	}
@@ -203,5 +204,6 @@ SPF_realloc(char **bufp, size_t *buflenp, int buflen)
 		SPF_ASSERT_NOTNULL(*bufp);
 	}
 
+	memset(*bufp, '\0', *buflenp);
 	return SPF_E_SUCCESS;
 }
