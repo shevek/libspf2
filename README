@@ -65,7 +65,7 @@ but before the program exits, we must free the server.
  - Current maintainer: Shevek <libspf2@anarres.org>
  - Contributors: Magnus Holmgren, Julian Mehnle, Scott Kitterman
  - Contributors: Dan Kaminsky, Ben Chelf, Hannah Schroeter
- - Contributors: Martin Braine, Manish Raje
+ - Contributors: Martin Braine, Manish Raje, Stuart Gathman
  - Original author, 1.0 series: Wayne Schlitt <wayne@midwestcs.com>
 
  * @par License
