@@ -178,6 +178,11 @@ SPF_strrrtype(ns_type rr_type)
 /**
  * This is NOT a general-purpose realloc. It is used only for
  * text buffers. It will allocate at least 64 bytes of storage.
+ *
+ * This function is allowed to zero all the RAM returned, so it
+ * really isn't a realloc.
+ *
+ * Do not call this function from outside the library.
  */
 SPF_errcode_t
 SPF_realloc(char **bufp, size_t *buflenp, int buflen)
