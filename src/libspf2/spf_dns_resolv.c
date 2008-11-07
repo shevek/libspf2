@@ -232,7 +232,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 	ns_rr	rr;
 
 	int		ns_sect;
-	int		num_ns_sect = sizeof( ns_sects ) / sizeof( *ns_sects );
+	// int		num_ns_sect = sizeof( ns_sects ) / sizeof( *ns_sects );
 
 	char	name_buf[ NS_MAXDNAME ];
 
