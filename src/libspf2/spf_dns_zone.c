@@ -73,8 +73,8 @@
 typedef struct
 {
     SPF_dns_rr_t	**zone;
-    int				  num_zone;
-    int				  zone_buf_len;
+    int				  num_zone;		/* This one really is an int. */
+    int				  zone_buf_len;	/* This one really is an int. */
     SPF_dns_rr_t	 *nxdomain;
 } SPF_dns_zone_config_t;
 

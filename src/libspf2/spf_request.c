@@ -139,7 +139,7 @@ int
 SPF_request_set_env_from(SPF_request_t *sr, const char *from)
 {
 	char	*cp;
-	int		 len;
+	size_t	 len;
 
 	SPF_ASSERT_NOTNULL(from);
 	SPF_FREE(sr->env_from);

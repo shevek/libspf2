@@ -549,8 +549,8 @@ SPF_i_match_domain(SPF_server_t *spf_server,
 				const char *hostname, const char *domain)
 {
 	const char	*hp;
-	int			 hlen;
-	int			 dlen;
+	size_t		 hlen;
+	size_t		 dlen;
 
 	if (spf_server->debug)
 		SPF_debugf( "%s ?=? %s", hostname, domain );

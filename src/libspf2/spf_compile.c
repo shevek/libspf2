@@ -1188,7 +1188,7 @@ SPF_record_compile(SPF_server_t *spf_server,
 	SPF_errcode_t		 err;
 	
 	const char			*name_start;
-	int					 name_len;
+	size_t				 name_len;
 
 	const char			*val_start;
 	const char			*val_end;
