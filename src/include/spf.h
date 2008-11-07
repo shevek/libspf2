@@ -38,12 +38,14 @@
 /* ********************************************************************* */
 
 
-/* FYI only -- can't be changed without recompiling the library
+/**
+ * FYI only -- can't be changed without recompiling the library
  * Most error messages are under 80 characters and we don't want
- * bad/malicious input to cause huge error messages */
+ * bad/malicious input to cause huge error messages.
+ */
 #define SPF_C_ERR_MSG_SIZE		(2*80)
-#define SPF_SMTP_COMMENT_SIZE		(4*80)
-#define SPF_RECEIVED_SPF_SIZE		(6*80)
+#define SPF_SMTP_COMMENT_SIZE	(4*80)
+#define SPF_RECEIVED_SPF_SIZE	(6*80)
 #define SPF_SYSLOG_SIZE			(10*80)
 
 
@@ -51,13 +53,17 @@
 
 /* ********************************************************************* */
 
-/* FYI only -- defaults can't be changed without recompiling the library */
-#define SPF_DEFAULT_MAX_DNS_MECH 10	/* DoS limit on SPF mechanisms	*/
-#define SPF_DEFAULT_MAX_DNS_PTR	 10	/* DoS limit on PTR records	*/
-#define SPF_DEFAULT_MAX_DNS_MX	 10	/* DoS limit on MX records	*/
+/**
+ * FYI only -- can't be changed without recompiling the library
+ */
+#define SPF_DEFAULT_MAX_DNS_MECH 10	/**< DoS limit on SPF mechanisms.*/
+#define SPF_DEFAULT_MAX_DNS_PTR	 10	/**< DoS limit on PTR records.	*/
+#define SPF_DEFAULT_MAX_DNS_MX	 10	/**< DoS limit on MX records.	*/
 #define SPF_DEFAULT_SANITIZE	  1
 #define SPF_DEFAULT_WHITELIST	  "include:spf.trusted-forwarder.org"
 #define SPF_EXP_MOD_NAME	"exp-text"
+/** The default SPF explanation, if no other is provided in the
+ * SPF_server_t object. */
 #define SPF_DEFAULT_EXP		  "Please%_see%_http://www.openspf.org/Why?id=%{S}&ip=%{C}&receiver=%{R}"
 
 
@@ -73,8 +79,10 @@ const char *SPF_strresult( SPF_result_t result );
 /** SPF_strreason() translates the SPF reason number into a readable string */
 const char *SPF_strreason( SPF_reason_t reason );
 
-/* This returns the version information library.  Useful if the library
- * is a shared library and may differ from when the application was compiled.
+/**
+ * Returns the version information library. Useful if the library
+ * is a shared library and may differ from when the application
+ * was compiled.
  */
 void SPF_get_lib_version( int *major, int *minor, int *patch );
 
