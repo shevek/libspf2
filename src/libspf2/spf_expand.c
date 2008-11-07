@@ -111,7 +111,7 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 	int			num_found;
 	int			i;
 #ifdef COMPUTE
-	int			buflen;
+	size_t		buflen;
 	int			compute_length;
 	SPF_errcode_t	 err;
 
@@ -513,7 +513,7 @@ top:
 	if (compute_length) {
 		compute_length = 0;
 		/* Do something about (re-)allocating the buffer. */
-		err = SPF_realloc(bufp, buflenp, buflen);
+		err = SPF_recalloc(bufp, buflenp, buflen);
 		if (err != SPF_E_SUCCESS)
 			return err;
 		p = *bufp;
