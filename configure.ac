@@ -86,7 +86,7 @@ AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_CHECK_SIZEOF([int])
 AC_CHECK_HEADERS([limits.h sys/param.h syslog.h sys/time.h errno.h sys/types.h])
-AC_CHECK_HEADERS([fcntl.h malloc.h nmemory.h stddef.h inttypes.h stdlib.h string.h unistd.h stdarg.h])
+AC_CHECK_HEADERS([fcntl.h malloc.h nmemory.h stddef.h inttypes.h stdlib.h string.h strings.h unistd.h stdarg.h])
 AC_CHECK_HEADERS([pthread.h pwd.h grp.h libintl.h getopt.h])
 AC_CHECK_HEADERS([netdb.h netinet/in.h sys/socket.h arpa/inet.h arpa/nameser.h])
 AC_CHECK_HEADERS([resolv.h], [], [], [[
