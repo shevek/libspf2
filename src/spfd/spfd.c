@@ -353,6 +353,7 @@ fail:
 
 ok:
 	// response_print("Result: ", spf_response);
+	(void)response_print;
 
 	req->spf_response = spf_response;
 	req->spf_request = spf_request;
