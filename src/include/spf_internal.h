@@ -139,7 +139,13 @@ char *SPF_sanitize( SPF_server_t *spf_server, char *str );
 
 void SPF_print_sizeof(void);
 
-SPF_errcode_t SPF_realloc(char **bufp, size_t *buflenp, int buflen);
+/**
+ * A special purpose realloc for text buffers.
+ *
+ * It will allocate at least 64 bytes of storage, and memset the RAM
+ * to 0.
+ */
+SPF_errcode_t SPF_recalloc(char **bufp, size_t *buflenp, size_t buflen) __attribute__((warn_unused_result));
 
 
 /**

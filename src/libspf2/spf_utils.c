@@ -185,7 +185,7 @@ SPF_strrrtype(ns_type rr_type)
  * Do not call this function from outside the library.
  */
 SPF_errcode_t
-SPF_realloc(char **bufp, size_t *buflenp, int buflen)
+SPF_recalloc(char **bufp, size_t *buflenp, size_t buflen)
 {
 	char		*buf;
 

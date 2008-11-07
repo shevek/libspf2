@@ -283,7 +283,7 @@ SPF_record_stringify( SPF_record_t *spf_record, char **bufp, size_t *buflenp)
 		+ spf_record->mech_len * 4 + spf_record->mod_len * 4 /* data */
 		+ sizeof( "\0" );
 	
-	err = SPF_realloc(bufp, buflenp, len);
+	err = SPF_recalloc(bufp, buflenp, len);
 	if (err != SPF_E_SUCCESS)
 		return err;
 
