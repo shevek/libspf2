@@ -55,7 +55,6 @@
 #include "spf_record.h"
 
 
-#define COMPUTE
 // #define DEBUG
 
 static const char		client_ver_ipv4[] = "in-addr";
@@ -110,16 +109,9 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 
 	int			num_found;
 	int			i;
-#ifdef COMPUTE
 	size_t		buflen;
 	int			compute_length;
 	SPF_errcode_t	 err;
-
-	buflen = 1;	/* For the terminating '\0' */
-	compute_length = 1;
-	p = NULL;
-	p_end = NULL;
-#endif
 
 
 	/*
@@ -130,71 +122,17 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 	SPF_ASSERT_NOTNULL(bufp);
 	SPF_ASSERT_NOTNULL(buflenp);
 
+	buflen = 1;	/* For the terminating '\0' */
+	compute_length = 1;
+	p = NULL;
+	p_end = NULL;
+
 	/* data_end = SPF_mech_end_data( mech ); */ /* doesn't work for mods */
 	data_end = (SPF_data_t *)((char *)data + data_len);
 
-#ifndef COMPUTE
-	/*
-	 * make sure the return buffer is big enough
-	 *
-	 * find max length of all variables
-	 */
-
-	len = 0;
-	for (d = data; d < data_end; d = SPF_data_next(d)) {
-		switch (d->ds.parm_type) {
-		case PARM_CIDR:
-			break;
-
-		case PARM_STRING:
-			len += d->ds.len;
-			break;
-
-		case PARM_CLIENT_IP:
-			len += sizeof( ip6_rbuf );
-			break;
-
-		case PARM_CLIENT_IP_P:
-			len += sizeof( ip6_buf );
-			break;
-
-		default:
-			/* An interpolated variable. Might be any field from
-			 * the SPF_request_t */
-			if ( spf_request->max_var_len > 8 )
-				len += spf_request->max_var_len * 3; /* url encoding */
-			else
-				len += 8 * 3;
-			break;
-		}
-	}
-	len += sizeof('\0');		/* Strictly, ANSI says this is 1. */
-
-	if (*buflenp < len) {
-		char		*new_rec;
-		size_t		new_len;
-
-		/* allocate lots so we don't have to remalloc often */
-		new_len = len + 64;
-
-		new_rec = realloc(*bufp, new_len);
-		if (new_rec == NULL)
-			return SPF_E_NO_MEMORY;
-
-		*bufp = new_rec;
-		*buflenp = new_len;
-	}
-	memset(*bufp, '\0', *buflenp);		/* cheaper than NUL at each step */
-	p = *bufp;
-	p_end = *bufp + *buflenp;
-#endif
-
-
-#ifdef COMPUTE
 top:
 #ifdef DEBUG
 	fprintf(stderr, "Pass start compute_length=%d\n", compute_length);
-#endif
 #endif
 	/*
 	 * expand the data
@@ -207,12 +145,10 @@ top:
 			continue;
 
 		if (d->ds.parm_type == PARM_STRING) {
-#ifdef COMPUTE
 			if (compute_length) {
 				buflen += d->ds.len;
 				continue;
 			}
-#endif
 			/* This should NEVER happen now. */
 			if (p_end - (p + d->ds.len) <= 0)
 					SPF_error("Failed to allocate enough memory "
@@ -243,7 +179,6 @@ top:
 			break;
 
 		case PARM_CLIENT_IP:		/* SMTP client IP				*/
-#ifdef COMPUTE
 			if (compute_length) {
 				len = sizeof(ip6_buf);
 				if (d->dv.url_encode)
@@ -251,7 +186,6 @@ top:
 				buflen += len;
 				continue;
 			}
-#endif
 			if (spf_request->client_ver == AF_INET) {
 				p_err = inet_ntop(AF_INET, &spf_request->ipv4,
 								   ip4_buf, sizeof(ip4_buf));
@@ -275,7 +209,6 @@ top:
 			break;
 
 		case PARM_CLIENT_IP_P:		/* SMTP client IP (pretty)		*/
-#ifdef COMPUTE
 			if (compute_length) {
 				len = sizeof(ip6_buf);
 				if (d->dv.url_encode)
@@ -283,7 +216,6 @@ top:
 				buflen += len;
 				continue;
 			}
-#endif
 			if (spf_request->client_ver == AF_INET) {
 				p_err = inet_ntop(AF_INET, &spf_request->ipv4,
 								   ip4_buf, sizeof(ip4_buf));
@@ -297,14 +229,12 @@ top:
 			break;
 
 		case PARM_TIME:				/* time in UTC epoch secs		*/
-#ifdef COMPUTE
 			if (compute_length) {
 				len = sizeof(time_buf);
 				/* This never gets bigger using URL encoding. */
 				buflen += len;
 				continue;
 			}
-#endif
 			snprintf(time_buf, sizeof(time_buf), "%ld",
 					  (long)time(NULL));
 			var = time_buf;
@@ -343,14 +273,12 @@ top:
 			return SPF_E_UNINIT_VAR;
 
 		len = strlen(var);
-#ifdef COMPUTE
 		if (compute_length) {
 			if (d->dv.url_encode)
 				len *= 3;
 			buflen += len;
 			continue;
 		}
-#endif
 
 		/* Now we put 'var' through the munging procedure. */
 		munged_var = (char *)malloc(len + 1);
@@ -509,7 +437,6 @@ top:
 	fprintf(stderr, "Pass end compute_length=%d\n", compute_length);
 #endif
 
-#ifdef COMPUTE
 	if (compute_length) {
 		compute_length = 0;
 		/* Do something about (re-)allocating the buffer. */
@@ -520,7 +447,6 @@ top:
 		p_end = *bufp + *buflenp;
 		goto top;
 	}
-#endif
 
 	*p++ = '\0';
 

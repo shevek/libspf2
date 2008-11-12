@@ -48,9 +48,6 @@ struct SPF_request_struct {
 
 	/* I'm not sure whether this should be in here. */
 	const char		*cur_dom;		/* "current domain" of SPF spec */
-
-	/* This is used for computing allocated space in SPF_expand. */
-	size_t			 max_var_len;	/* Maximum strlen of above vars */
 };
 
 SPF_request_t	*SPF_request_new(SPF_server_t *spf_server);
