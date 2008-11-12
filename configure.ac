@@ -8,6 +8,8 @@ AM_INIT_AUTOMAKE(libspf2, $PACKAGE_VERSION)
 AC_CONFIG_SRCDIR([src/libspf2/spf_server.c])
 AM_CONFIG_HEADER(config.h)
 
+dnl AC_USE_SYSTEM_EXTENSIONS
+
 # remember the version info for later
 
 KV_MAJOR=`echo $PACKAGE_VERSION | sed 's/^\([[0-9]]*\)\.[[0-9]]*\.[[0-9]]*/\1/'`
