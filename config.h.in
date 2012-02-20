@@ -240,9 +240,6 @@
 /* Define to 1 if `vfork' works. */
 #undef HAVE_WORKING_VFORK
 
-/* Define to 1 if you have the `__ns_get16' function. */
-#undef HAVE___NS_GET16
-
 /* Define to 1 if you have the `__ns_initparse' function. */
 #undef HAVE___NS_INITPARSE
 
@@ -251,6 +248,10 @@
 
 /* Define to 1 if you have the `__ns_name_uncompress' function. */
 #undef HAVE___NS_NAME_UNCOMPRESS
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
 
 /* Name of package */
 #undef PACKAGE

@@ -274,7 +274,9 @@ AC_CHECK_FUNCS([strcasecmp strncasecmp strspn strtoul])
 AC_CHECK_FUNCS([gethostbyname inet_ntoa select strrchr strstr strtol])
 
 AC_REPLACE_FUNCS([getopt_long_only strncasecmp])
-AC_REPLACE_FUNCS([__ns_initparse __ns_name_uncompress __ns_get16 __ns_msg_getflag])
+AC_REPLACE_FUNCS([__ns_initparse __ns_name_uncompress __ns_msg_getflag])
+dnl Magnus Holmgren says this avoids linking a private function
+AC_LIBOBJ([__ns_get16])
 
 AC_CONFIG_FILES([Makefile
                  Doxyfile
