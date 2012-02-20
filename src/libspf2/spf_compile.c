@@ -778,7 +778,7 @@ SPF_c_parse_ip6(SPF_response_t *spf_response, SPF_mech_t *mech, char const *star
 	const char			*end;
 	const char			*p;
 
-	char				 buf[ INET_ADDRSTRLEN ];
+	char				 buf[ INET6_ADDRSTRLEN ];
 	size_t				 len;
 	int					 err;
 
