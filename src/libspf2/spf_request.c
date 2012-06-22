@@ -246,6 +246,7 @@ SPF_request_query_record(SPF_request_t *spf_request,
 	if (err != SPF_E_SUCCESS) {
 		if (spf_record)
 			SPF_record_free(spf_record);
+        SPF_i_done(spf_response, spf_response->result, spf_response->reason, spf_response->err);
 		return err;
 	}
 	/* Now, in theory, SPF_response_errors(spf_response) == 0 */
