@@ -383,6 +383,8 @@ retry:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): TRY_AGAIN", domain);
 			SPF_dns_rr_free(rr_txt);
+            spf_response->result = SPF_RESULT_TEMPERROR;
+            spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
 					"Temporary DNS failure for '%s'.", domain);
 			// break;
@@ -391,6 +393,8 @@ retry:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): NO_RECOERY", domain);
 			SPF_dns_rr_free(rr_txt);
+            spf_response->result = SPF_RESULT_PERMERROR;
+            spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
 					"Unrecoverable DNS failure for '%s'.", domain);
 			// break;
