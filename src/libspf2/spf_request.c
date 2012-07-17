@@ -364,6 +364,8 @@ SPF_request_query_rcptto(SPF_request_t *spf_request,
 	rcpt_to_dom = strchr(rcpt_to, '@');
 	if (rcpt_to_dom == NULL)
 		rcpt_to_dom = rcpt_to;
+    else
+        rcpt_to_dom++;
 	spf_request->cur_dom = rcpt_to_dom;
 
 	len = sizeof(SPF_VER_STR) + 64 + strlen(rcpt_to_dom);
