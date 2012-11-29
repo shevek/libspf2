@@ -8,7 +8,8 @@ else
     set -x
 
     aclocal -I config
+    libtoolize --force
     autoheader
-    automake --gnu --add-missing 
+    automake --gnu --add-missing
     autoconf
 fi
