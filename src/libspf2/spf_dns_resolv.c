@@ -239,6 +239,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 	size_t	rdlen;
 	const u_char	*rdata;
 
+
 #if HAVE_DECL_RES_NINIT
 	void				*res_spec;
 	struct __res_state	*res_state;
@@ -273,6 +274,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 		return NULL;	/* NULL always means OOM from DNS lookup. */
 	memset(responsebuf, 0, responselen);
 
+
 	/*
 	 * Retry the lookup until our response buffer is big enough.
 	 *
@@ -289,6 +291,30 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 	 * enough to receive a maximum UDP response from the server or parts of the answer
 	 * will be silently discarded. The default maximum UDP response size is 512 bytes.
 	 */
+#if HAVE_UNBOUND_H
+  /* query for webserver */
+  struct ub_result* result;
+  
+  int retval = ub_resolve(spf_dns_server->uctx, domain, 
+    rr_type /* TYPE A (IPv4 address) */, 
+    1 /* CLASS IN (internet) */, &result);
+  if(retval != 0) {
+    SPF_debugf("retval query failed: %s\n", ub_strerror(retval));
+    return SPF_dns_rr_new_init(spf_dns_server,
+            domain, rr_type, 0, SPF_h_errno);
+  }  
+  SPF_debugf("ubx result len %d", result->answer_len);
+  SPF_debugf("ubx domain %s", domain);
+  SPF_debugf("ubx type %d", rr_type);
+  if (result->answer_len > 0) {
+    memcpy(responsebuf, result->answer_packet, result->answer_len);
+    responselen = result->answer_len;
+  } else {
+    SPF_debugf("query failed: %s\n", ub_strerror(retval));
+    return SPF_dns_rr_new_init(spf_dns_server,
+            domain, rr_type, 0, SPF_h_errno);
+  }
+#else
 	for (;;) {
 		int	dns_len;
 
@@ -342,8 +368,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 			break;
 		}
 	}
-
-
+#endif
 
 	/*
 	 * initialize stuff
@@ -610,6 +635,10 @@ SPF_dns_resolv_free(SPF_dns_server_t *spf_dns_server)
 	res_close();
 #endif
 
+#ifdef HAVE_UNBOUND_H
+  ub_ctx_delete(spf_dns_server->uctx);
+#endif
+
 	free(spf_dns_server);
 }
 
@@ -618,6 +647,7 @@ SPF_dns_resolv_new(SPF_dns_server_t *layer_below,
 				const char *name, int debug)
 {
 	SPF_dns_server_t		*spf_dns_server;
+
 
 #if HAVE_DECL_RES_NINIT
 	pthread_once(&res_state_control, SPF_dns_resolv_init_key);
@@ -644,6 +674,14 @@ SPF_dns_resolv_new(SPF_dns_server_t *layer_below,
 	spf_dns_server->layer_below = layer_below;
 	spf_dns_server->name        = name;
 	spf_dns_server->debug       = debug;
+
+#ifdef HAVE_UNBOUND_H
+  spf_dns_server->uctx = ub_ctx_create();
+  if (!spf_dns_server->uctx)
+    SPF_error("Couldn't create unbound context");
+  else
+    SPF_debugf("ubx success");
+#endif
 
 	return spf_dns_server;
 }

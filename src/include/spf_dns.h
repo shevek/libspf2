@@ -63,6 +63,10 @@
  * 
  */
 
+#ifdef HAVE_UNBOUND_H
+#include <unbound.h>
+#endif
+
 
 /*
  * For those who don't have <arpa/nameserv.h>
@@ -152,6 +156,9 @@ struct SPF_dns_server_struct
     const char			*name;		/* name of the layer		*/
 	int					 debug;
     void				*hook;		/* server-specific data */
+#if HAVE_UNBOUND_H
+    struct ub_ctx* uctx;  /* unbound context shared across threads */
+#endif
 };
 
 
