@@ -67,7 +67,6 @@
 #include <unbound.h>
 #endif
 
-
 /*
  * For those who don't have <arpa/nameserv.h>
  */
@@ -136,6 +135,10 @@ typedef SPF_errcode_t (*SPF_dns_get_exp_t)( SPF_server_t *spf_server,
 typedef int (*SPF_dns_add_cache_t)( SPF_server_t *spf_server,
 				    SPF_dns_rr_t spfrr );
 
+#ifdef HAVE_UNBOUND_H
+typedef struct unbound_cb_data unbound_cb_data_t;
+#endif
+
 struct SPF_dns_server_struct
 {
 	/** The destructor for this SPF_dns_server_t. If this is NULL, then
@@ -158,9 +161,17 @@ struct SPF_dns_server_struct
     void				*hook;		/* server-specific data */
 #if HAVE_UNBOUND_H
     struct ub_ctx* uctx;  /* unbound context shared across threads */
+    double dns_timeout;   /* DNS timeout */
 #endif
 };
 
+#ifdef HAVE_UNBOUND_H
+struct unbound_cb_data {
+  u_char *responsebuf;
+  size_t responselen;
+  int err;
+};
+#endif
 
 void			 SPF_dns_free( SPF_dns_server_t *spf_dns_server );
 SPF_dns_rr_t	*SPF_dns_lookup( SPF_dns_server_t *spf_dns_server,

@@ -126,6 +126,11 @@ SPF_server_new_common_post(SPF_server_t *sp)
 			SPF_error("Response errors compiling default whitelist");
 		SPF_response_free(spf_response);
 	}
+
+#if HAVE_UNBOUND_H
+  // set the default dns timeout to be 5 seconds
+  SPF_server_set_dns_timeout(sp, 5.0);
+#endif
 }
 
 SPF_server_t *
@@ -230,6 +235,20 @@ SPF_server_set_sanitize(SPF_server_t *sp, int sanitize)
 	sp->sanitize = sanitize;
 	return SPF_E_SUCCESS;
 }
+
+#if HAVE_UNBOUND_H
+SPF_errcode_t
+SPF_server_set_dns_timeout(SPF_server_t *sp, double dns_timeout)
+{
+  sp->resolver->dns_timeout = dns_timeout;
+  if (sp->resolver->layer_below) {
+    SPF_debugf("Setting timeout for the server %d", (int)dns_timeout);
+    SPF_dns_server_t *resolver = sp->resolver->layer_below;
+	  resolver->dns_timeout = dns_timeout;
+  } 
+	return SPF_E_SUCCESS;
+}
+#endif
 
 SPF_errcode_t
 SPF_server_set_explanation(SPF_server_t *sp, const char *exp,
