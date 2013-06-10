@@ -210,7 +210,7 @@ top:
 
 		case PARM_CLIENT_IP_P:		/* SMTP client IP (pretty)		*/
 			if (compute_length) {
-				len = sizeof(ip6_buf);
+				len = sizeof(ip6_rbuf);
 				if (d->dv.url_encode)
 					len *= 3;
 				buflen += len;
