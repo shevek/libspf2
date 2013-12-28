@@ -179,7 +179,7 @@ SPF_dns_resolv_debug(SPF_dns_server_t *spf_dns_server, ns_rr rr,
 				SPF_debugf("MX: %d %s", prio, name_buf);
 			break;
 
-        case ns_t_spf:
+		case ns_t_spf:
 		case ns_t_txt:
 			if (rdlen < 1) {
 				SPF_debugf(ns_rr_type(rr) == ns_t_txt ? "TXT" : "SPF" ": rdlen too short: %lu", (unsigned long)rdlen);
@@ -511,7 +511,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 					cnt++;
 					break;
 
-                case ns_t_spf:
+				case ns_t_spf:
 				case ns_t_txt:
 					if (rdlen > 1) {
 						u_char *src, *dst;
