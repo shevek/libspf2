@@ -60,10 +60,10 @@ void SPF_debugv( const char *file, int line, const char *format, va_list ap ) __
 
 #if defined( __STDC_VERSION__ ) && __STDC_VERSION__ >= 199901L
 
-#define SPF_errorf(format, ... ) SPF_errorx( __FILE__, __LINE__, format, __VA_ARGS__ )
-#define SPF_warningf(format, ... ) SPF_warningx( __FILE__, __LINE__, format, __VA_ARGS__ )
-#define SPF_infof(format, ... ) SPF_infox( __FILE__, __LINE__, format, __VA_ARGS__ )
-#define SPF_debugf(format, ... ) SPF_debugx( __FILE__, __LINE__, format, __VA_ARGS__ )
+#define SPF_errorf(format, ... ) SPF_errorx( __FILE__, __LINE__, format, ##__VA_ARGS__ )
+#define SPF_warningf(format, ... ) SPF_warningx( __FILE__, __LINE__, format, ##__VA_ARGS__ )
+#define SPF_infof(format, ... ) SPF_infox( __FILE__, __LINE__, format, ##__VA_ARGS__ )
+#define SPF_debugf(format, ... ) SPF_debugx( __FILE__, __LINE__, format, ##__VA_ARGS__ )
 
 #elif defined( __GNUC__ )
 
