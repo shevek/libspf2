@@ -13,6 +13,9 @@ autom4te.cache
 *.la
 *.lo
 *.o
+*.rej
+*.orig
+*.patch
 
 *~
 *.swp
