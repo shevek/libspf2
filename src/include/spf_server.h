@@ -80,6 +80,10 @@ SPF_errcode_t	 SPF_server_set_rec_dom(SPF_server_t *sp,
 					const char *dom);
 SPF_errcode_t	 SPF_server_set_sanitize(SPF_server_t *sp,
 					int sanitize);
+#ifdef HAVE_UNBOUND_H
+SPF_errcode_t	 SPF_server_set_dns_timeout(SPF_server_t *sp,
+					double sanitize);
+#endif
 SPF_errcode_t	 SPF_server_set_explanation(SPF_server_t *sp,
 					const char *exp, SPF_response_t **spf_responsep);
 SPF_errcode_t	 SPF_server_set_localpolicy(SPF_server_t *sp,

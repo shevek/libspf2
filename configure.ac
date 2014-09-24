@@ -91,6 +91,7 @@ AC_CHECK_HEADERS([limits.h sys/param.h syslog.h sys/time.h errno.h sys/types.h])
 AC_CHECK_HEADERS([fcntl.h malloc.h nmemory.h stddef.h inttypes.h stdlib.h string.h strings.h unistd.h stdarg.h])
 AC_CHECK_HEADERS([pthread.h pwd.h grp.h libintl.h getopt.h])
 AC_CHECK_HEADERS([netdb.h netinet/in.h sys/socket.h arpa/inet.h arpa/nameser.h])
+AC_CHECK_HEADERS([unbound.h])
 AC_CHECK_HEADERS([resolv.h], [], [], [[
 	#if HAVE_SYS_TYPES_H
 	#  include <sys/types.h>
@@ -149,6 +150,7 @@ AC_CHECK_LIB(nsl, inet_pton)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(intl, gettext)
 AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(unbound, ub_ctx_create)
 
 
 # Checks for typedefs, structures, and compiler characteristics.
