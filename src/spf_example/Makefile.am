@@ -1,7 +1,7 @@
 # Makefile prototype
 
 AUTOMAKE_OPTIONS = foreign
-INCLUDES	= -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+AM_CPPFLAGS	= -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
 
 #LIBS = /usr/lib/libresolv.a
 
