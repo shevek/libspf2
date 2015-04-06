@@ -1,15 +1,10 @@
 #!/bin/sh
 
-if type -t autoreconf >/dev/null
-then
-    autoreconf -v
-else
-    set -e
-    set -x
+set -e
+set -x
 
-    aclocal -I config
-    libtoolize --force
-    autoheader
-    automake --gnu --add-missing
-    autoconf
-fi
+libtoolize --copy --install --force
+aclocal -I config --install --force
+autoheader
+automake --gnu --add-missing
+autoconf
