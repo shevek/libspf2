@@ -438,9 +438,10 @@ static const struct option longopts[] = {
 #endif
 	{ "onerequest",	no_argument,		NULL,	'o', },
 	{ "help",       no_argument,		NULL,	'h', },
+	{ 0, 0, 0, 0 },
 };
 
-static const char *shortopts = "d:t:p:f:x:y:m:u:g:h:";
+static const char *shortopts = "d:t:p:f:x:y:m:u:g:o:h:";
 
 void usage (void) {
 	fprintf(stdout,"Flags\n");
