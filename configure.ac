@@ -233,24 +233,6 @@ AC_CHECK_DECLS([res_ndestroy], [], [], [[
 	#endif
 	]])
 
-AC_CHECK_DECLS([ns_t_spf], [], [], [[
-	#ifdef HAVE_SYS_TYPES_H
-	# include <sys/types.h>
-	#endif
-	#ifdef HAVE_SYS_SOCKET_H
-	# include <sys/socket.h>		/* inet_ functions / structs */
-	#endif
-	#ifdef HAVE_NETINET_IN_H
-	# include <netinet/in.h>		/* inet_ functions / structs */
-	#endif
-	#ifdef HAVE_ARPA_NAMESER_H
-	#  include <arpa/nameser.h> /* DNS HEADER struct */
-	#endif
-	#ifdef HAVE_RESOLV_H
-	# include <resolv.h>
-	#endif
-	]])
-
 AC_CHECK_DECLS([ns_t_invalid], [], [], [[
 	#ifdef HAVE_SYS_TYPES_H
 	# include <sys/types.h>

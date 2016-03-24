@@ -85,10 +85,6 @@
 typedef int	ns_type;
 #endif
 
-#if ! HAVE_DECL_NS_T_SPF
-#define ns_t_spf	99
-#endif
-
 #if ! HAVE_DECL_NS_T_INVALID
 #define	ns_t_invalid	0
 #endif

@@ -169,7 +169,6 @@ SPF_strrrtype(ns_type rr_type)
 		case ns_t_invalid: return "BAD";
 		case ns_t_mx:      return "MX";
 		case ns_t_ptr:     return "PTR";
-		case ns_t_spf:     return "SPF";
 		case ns_t_txt:     return "TXT";
 		default:           return "??";
 	}
