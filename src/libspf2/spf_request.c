@@ -259,6 +259,7 @@ SPF_request_query_record(SPF_request_t *spf_request,
 	err = SPF_record_interpret(spf_record,
 					spf_request, spf_response, 0);
 	SPF_record_free(spf_record);
+	spf_response->spf_record_exp = NULL;
 
 	return err;
 }
