@@ -67,14 +67,14 @@ __attribute__((warn_unused_result))
 static SPF_errcode_t
 SPF_server_set_rec_dom_ghbn(SPF_server_t *sp)
 {
-	sp->rec_dom = malloc(HOST_NAME_MAX);
+	sp->rec_dom = malloc(HOST_NAME_MAX+1);
 	if (! sp->rec_dom)
 		return SPF_E_NO_MEMORY;
 #ifdef _WIN32
 	gethostnameFQDN(sp->rec_dom, HOST_NAME_MAX);
 	return 0;	/* XXX FIXME? */
 #else
-	if (gethostname(sp->rec_dom, HOST_NAME_MAX) < 0)
+	if (gethostname(sp->rec_dom, HOST_NAME_MAX+1) < 0)
 		/* XXX Error using strerror. */
 		return SPF_E_INTERNAL_ERROR;
 #endif
