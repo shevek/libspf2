@@ -94,10 +94,6 @@ SPF_dns_debug_post(SPF_dns_server_t *spf_dns_server, SPF_dns_rr_t *spfrr)
 					SPF_debugf("    - TXT: %s", spfrr->rr[i]->txt);
 					break;
 
-				case ns_t_spf:
-					SPF_debugf("    - SPF: %s", spfrr->rr[i]->txt);
-					break;
-
 				case ns_t_aaaa:
 					SPF_debugf("    - AAAA: %s",
 							inet_ntop(AF_INET6, &(spfrr->rr[i]->aaaa),

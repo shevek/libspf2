@@ -345,9 +345,7 @@ SPF_server_get_record(SPF_server_t *spf_server,
 		return resolver->get_spf(spf_server, spf_request,
 						spf_response, spf_recordp);
 
-	/* I am VERY, VERY sorry about the gotos. Shevek. */
-	rr_type = ns_t_spf;
-retry:
+	rr_type = ns_t_txt;
 	rr_txt = SPF_dns_lookup(resolver, domain, rr_type, TRUE);
 
 	switch (rr_txt->herrno) {
@@ -355,10 +353,6 @@ retry:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): HOST_NOT_FOUND", domain);
 			SPF_dns_rr_free(rr_txt);
-			if (rr_type == ns_t_spf) {
-				rr_type = ns_t_txt;
-				goto retry;
-			}
 			spf_response->result = SPF_RESULT_NONE;
 			spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
@@ -369,10 +363,6 @@ retry:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): NO_DATA", domain);
 			SPF_dns_rr_free(rr_txt);
-			if (rr_type == ns_t_spf) {
-				rr_type = ns_t_txt;
-				goto retry;
-			}
 			spf_response->result = SPF_RESULT_NONE;
 			spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
@@ -383,10 +373,6 @@ retry:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): TRY_AGAIN", domain);
 			SPF_dns_rr_free(rr_txt);
-			if (rr_type == ns_t_spf) {
-				rr_type = ns_t_txt;
-				goto retry;
-			}
 			spf_response->result = SPF_RESULT_TEMPERROR;
 			spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
@@ -397,10 +383,6 @@ retry:
 			if (spf_server->debug > 0)
 				SPF_debugf("get_record(%s): NO_RECOVERY", domain);
 			SPF_dns_rr_free(rr_txt);
-			if (rr_type == ns_t_spf) {
-				rr_type = ns_t_txt;
-				goto retry;
-			}
 			spf_response->result = SPF_RESULT_PERMERROR;
 			spf_response->reason = SPF_REASON_FAILURE;
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
@@ -417,10 +399,6 @@ retry:
 				SPF_debugf("get_record(%s): UNKNOWN_ERROR", domain);
 			herrno = rr_txt->herrno;	// Avoid use-after-free
 			SPF_dns_rr_free(rr_txt);
-			if (rr_type == ns_t_spf) {
-				rr_type = ns_t_txt;
-				goto retry;
-			}
 			return SPF_response_add_error(spf_response, SPF_E_DNS_ERROR,
 					"Unknown DNS failure for '%s': %d.",
 					domain, herrno);
@@ -429,10 +407,6 @@ retry:
 
 	if (rr_txt->num_rr == 0) {
 		SPF_dns_rr_free(rr_txt);
-		if (rr_type == ns_t_spf) {
-			rr_type = ns_t_txt;
-			goto retry;
-		}
 		return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
 				"No TXT records returned from DNS lookup for '%s'",
 				domain);
@@ -463,10 +437,6 @@ retry:
 
 	if (num_found == 0) {
 		SPF_dns_rr_free(rr_txt);
-		if (rr_type == ns_t_spf) {
-			rr_type = ns_t_txt;
-			goto retry;
-		}
 		spf_response->result = SPF_RESULT_NONE;
 		spf_response->reason = SPF_REASON_FAILURE;
 		return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,

@@ -278,7 +278,6 @@ SPF_dns_zone_add_str(SPF_dns_server_t *spf_dns_server,
 			break;
 
 		case ns_t_txt:
-		case ns_t_spf:
 			SPF_RR_TRY_REALLOC(spfrr, cnt, strlen( data ) + 1);
 			strcpy( spfrr->rr[cnt]->txt, data );
 			break;
