@@ -361,8 +361,9 @@ retry:
 			}
 			spf_response->result = SPF_RESULT_NONE;
 			spf_response->reason = SPF_REASON_FAILURE;
-			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
-					"Host '%s' not found.", domain);
+			return SPF_i_done(spf_response, SPF_RESULT_NONE, SPF_REASON_FAILURE,
+					SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
+						"Host '%s' not found.", domain));
 			// break;
 
 		case NO_DATA:
@@ -375,8 +376,9 @@ retry:
 			}
 			spf_response->result = SPF_RESULT_NONE;
 			spf_response->reason = SPF_REASON_FAILURE;
-			return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
-					"No DNS data for '%s'.", domain);
+			return SPF_i_done(spf_response, SPF_RESULT_NONE, SPF_REASON_FAILURE,
+					SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
+						"No DNS data for '%s'.", domain));
 			// break;
 
 		case TRY_AGAIN:
@@ -469,17 +471,18 @@ retry:
 		}
 		spf_response->result = SPF_RESULT_NONE;
 		spf_response->reason = SPF_REASON_FAILURE;
-		return SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
-				"No SPF records for '%s'", domain);
+		return SPF_i_done(spf_response, SPF_RESULT_NONE, SPF_REASON_FAILURE,
+				SPF_response_add_error(spf_response, SPF_E_NOT_SPF,
+					"No SPF records for '%s'", domain));
 	}
 	if (num_found > 1) {
 		SPF_dns_rr_free(rr_txt);
 		// rfc4408 requires permerror here.
-		/* XXX This could be refactored with SPF_i_done. */
 		spf_response->result = SPF_RESULT_PERMERROR;
 		spf_response->reason = SPF_REASON_FAILURE;
-		return SPF_response_add_error(spf_response, SPF_E_MULTIPLE_RECORDS,
-				"Multiple SPF records for '%s'", domain);
+		return SPF_i_done(spf_response, SPF_RESULT_PERMERROR, SPF_REASON_FAILURE,
+				SPF_response_add_error(spf_response, SPF_E_MULTIPLE_RECORDS,
+					"Multiple SPF records for '%s'", domain));
 	}
 
 	/* try to compile the SPF record */
