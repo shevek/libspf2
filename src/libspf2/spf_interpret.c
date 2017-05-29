@@ -333,7 +333,7 @@ SPF_i_set_received_spf(SPF_response_t *spf_response)
 
 		/* add in the optional envelope-from keyword */
 		if ( spf_request->env_from != NULL ) {
-			p += snprintf( p, p_end - p, " envelope-from=%s;", spf_request->env_from );
+			p += snprintf( p, p_end - p, " envelope-from=\"%s\";", spf_request->env_from );
 			if ( p_end - p <= 0 ) break;
 		}
 		
