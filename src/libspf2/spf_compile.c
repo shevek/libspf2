@@ -1411,7 +1411,7 @@ SPF_record_compile(SPF_server_t *spf_server,
 			err = SPF_c_mech_add(spf_server,
 							spf_record, spf_response,
 							mechtype, prefix, &val_start);
-			if (err == SPF_E_NO_MEMORY)
+			if (err == SPF_E_NO_MEMORY || err == SPF_E_BIG_MECH)
 				return err;
 			/* XXX Else do nothing. Continue for the next error. */
 			/* We shouldn't have to worry about the child function
@@ -1452,7 +1452,7 @@ SPF_record_compile(SPF_server_t *spf_server,
 			err = SPF_c_mod_add(spf_server,
 							spf_record, spf_response,
 							name_start, name_len, &val_start);
-			if (err == SPF_E_NO_MEMORY)
+			if (err == SPF_E_NO_MEMORY || err == SPF_E_BIG_MOD)
 				return err;
 			/* XXX Else do nothing. Continue for the next error. */
 			p = val_end;
