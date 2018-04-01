@@ -383,6 +383,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 
 
 	/* FIXME  the error handling from here on is suspect at best */
+	spfrr->num_rr = 0;
 	for (ns_sect = 0; ns_sect < num_ns_sect; ns_sect++) {
 		/* We pass this point if:
 		 * - We are the 'answer' section.
@@ -397,7 +398,6 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 		if (spf_dns_server->debug > 1)
 			SPF_debugf("%s:  %d", ns_sects[ns_sect].name, nrec);
 
-		spfrr->num_rr = 0;
 		cnt = 0;
 		for (i = 0; i < nrec; i++) {
 			err = ns_parserr(&ns_handle, ns_sects[ns_sect].number, i, &rr);
@@ -592,7 +592,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 			}
 		}
 
-		spfrr->num_rr = cnt;
+		spfrr->num_rr += cnt;
 	}
 
 	if (spfrr->num_rr == 0)
