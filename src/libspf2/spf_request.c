@@ -34,6 +34,8 @@
 #include "spf_request.h"
 #include "spf_internal.h"
 
+#include <idn2.h>
+
 #define SPF_FREE(x) \
 		do { if (x) free(x); (x) = NULL; } while(0)
 
@@ -113,17 +115,40 @@ SPF_request_set_ipv6_str(SPF_request_t *sr, const char *astr)
 	return SPF_request_set_ipv6(sr, addr);
 }
 
+/* is a string an EAI address with UTF-8 ? */
+static int
+   is_eai(const char *dom)
+{
+	char *s = (char *)dom;
+
+	while(*s)
+		if(*s++ & 0x80) return 1;
+	return 0;
+}
+
 SPF_errcode_t
 SPF_request_set_helo_dom(SPF_request_t *sr, const char *dom)
 {
 	SPF_ASSERT_NOTNULL(dom);
 	SPF_FREE(sr->helo_dom);
-	sr->helo_dom = strdup(dom);
+	if(is_eai(dom)) {		/* turn U-labels in helo into A-labels */
+		int i;
+		char *adom;
+
+		i = idn2_to_ascii_8z(dom, &adom, 0);
+		if(i == IDN2_OK) {
+			sr->helo_dom = adom;
+		} else {
+			sr->helo_dom = 0;
+			return SPF_E_INVALID_CHAR;
+		}
+	} else
+		sr->helo_dom = strdup(dom);
 	if (! sr->helo_dom)
 		return SPF_E_NO_MEMORY;
 	/* set cur_dom and env_from? */
 	if (sr->env_from == NULL)
-		return SPF_request_set_env_from(sr, dom);
+		return SPF_request_set_env_from(sr, sr->helo_dom);
 	return SPF_E_SUCCESS;
 }
 
@@ -162,7 +187,20 @@ SPF_request_set_env_from(SPF_request_t *sr, const char *from)
 		}
 		strncpy(sr->env_from_lp, from, len);
 		sr->env_from_lp[len] = '\0';
-		sr->env_from_dp = strdup(cp + 1);
+		if(is_eai(cp+1)) {
+			int i;
+			char *adom;
+
+			i = idn2_to_ascii_8z(cp+1, &adom, 0);
+			if(i == IDN2_OK) {
+				sr->env_from_dp = adom;
+			} else {
+				SPF_FREE(sr->env_from);
+				SPF_FREE(sr->env_from_lp);
+				return SPF_E_INVALID_CHAR;
+			}
+		} else
+			sr->env_from_dp = strdup(cp + 1);
 		if (!sr->env_from_dp) {
 			SPF_FREE(sr->env_from);
 			SPF_FREE(sr->env_from_lp);
@@ -171,6 +209,16 @@ SPF_request_set_env_from(SPF_request_t *sr, const char *from)
 	}
 	else {
 		if (cp == from) from++; /* "@domain.example" */
+		if(is_eai(from)) {
+			int i;
+			char *adom;
+
+			i = idn2_to_ascii_8z(cp+1, &adom, 0);
+			if(i == IDN2_OK) {
+				from = adom;
+			} else
+				return SPF_E_INVALID_CHAR;
+		}
 		len = sizeof("postmaster@") + strlen(from);
 		sr->env_from = malloc(len + 1);	/* sizeof("") == 1? */
 		if (! sr->env_from)
@@ -346,6 +394,7 @@ SPF_request_query_rcptto(SPF_request_t *spf_request,
 	SPF_errcode_t	 err;
 	const char		*rcpt_to_dom;
 	char			*record;
+	char			*eai_dom = NULL;
 	size_t			 len;
 
 	SPF_ASSERT_NOTNULL(spf_request);
@@ -366,7 +415,16 @@ SPF_request_query_rcptto(SPF_request_t *spf_request,
 		rcpt_to_dom = rcpt_to;
 	else
 		rcpt_to_dom++;
-	spf_request->cur_dom = rcpt_to_dom;
+	if(is_eai(rcpt_to_dom)) {
+		int i;
+
+		i = idn2_to_ascii_8z(rcpt_to_dom, &eai_dom, 0);
+		if(i == IDN2_OK) {
+			spf_request->cur_dom = eai_dom;
+		} else
+			return SPF_E_INVALID_CHAR;
+	} else
+		spf_request->cur_dom = rcpt_to_dom;
 
 	len = sizeof(SPF_VER_STR) + 64 + strlen(rcpt_to_dom);
 	record = malloc(len);
@@ -377,6 +435,7 @@ SPF_request_query_rcptto(SPF_request_t *spf_request,
 					*spf_responsep, &spf_record,
 					record);
 	free(record);
+	if(eai_dom) free(eai_dom);
 	return SPF_request_query_record(spf_request, *spf_responsep,
 					spf_record, err);
 }
