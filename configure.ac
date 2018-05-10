@@ -150,7 +150,8 @@ AC_CHECK_LIB(nsl, inet_pton)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(intl, gettext)
 AC_CHECK_LIB(pthread, pthread_create)
-
+AC_CHECK_LIB(idn2, idn2_to_ascii_8z)
+LIBS="$LIBS -lidn2"
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
