@@ -455,7 +455,7 @@ SPF_c_parse_var(SPF_response_t *spf_response, SPF_data_var_t *data,
 			/* Magic numbers for x/Nc in gdb. */					\
 			data->ds.__unused0 = 0xba; data->ds.__unused1 = 0xbe;	\
 			dst = SPF_data_str( data );								\
-			ds_avail = _avail;										\
+			ds_avail = _avail - sizeof(SPF_data_t);					\
 			ds_len = 0;												\
 		} while(0)
 
