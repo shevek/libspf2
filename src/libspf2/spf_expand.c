@@ -398,10 +398,7 @@ top:
 						break;
 
 					default:
-						/* No point doing snprintf with a const '4'
-						 * because we know we're going to get 4
-						 * characters anyway. */
-						sprintf( p_write, "%%%02x", *p_read );
+						snprintf( p_write, 4, "%%%02x", (unsigned char) *p_read );
 						p_write += 3;
 						p_read++;
 						break;
