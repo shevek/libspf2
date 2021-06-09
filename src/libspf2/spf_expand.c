@@ -86,7 +86,7 @@ SPF_record_expand_data(SPF_server_t *spf_server,
 {
 	SPF_data_t	*d, *data_end;
 
-	size_t		 len;
+	size_t		 len, label_len;
 	const char	*p_err;	// XXX Check this value, when returned.
 	char		*p, *p_end;
 	const char	*p_read;
@@ -300,9 +300,9 @@ top:
 				if ( SPF_delim_valid(d, *p_read) ) {
 					/* Subtract 1 because p_read points to delim, and
 					 * p_read_end points to the following delim. */
-					len = p_read_end - p_read - 1;
-					memcpy( p_write, p_read + 1, len );
-					p_write += len;
+					label_len = p_read_end - p_read - 1;
+					memcpy( p_write, p_read + 1, label_len );
+					p_write += label_len;
 					*p_write++ = '.';
 
 					p_read_end = p_read;
@@ -314,9 +314,9 @@ top:
 			 * string. p_read_end might also point there if the string
 			 * starts with a delimiter. */
 			if (p_read_end >= p_read) {
-				len = p_read_end - p_read - 1;
-				memcpy( p_write, p_read + 1, len );
-				p_write += len;
+				label_len = p_read_end - p_read - 1;
+				memcpy( p_write, p_read + 1, label_len );
+				p_write += label_len;
 				*p_write++ = '.';
 			}
 
