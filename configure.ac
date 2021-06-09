@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([libspf2], [1.2.10], [libspf2@anarres.org])
+AC_INIT([libspf2], [1.2.11], [libspf2@anarres.org])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/libspf2/spf_server.c])
