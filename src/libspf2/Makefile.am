@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/include -I$(top_srcdir)/src
+AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
 
 lib_LTLIBRARIES	= libspf2.la
 
