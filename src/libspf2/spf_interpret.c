@@ -380,7 +380,7 @@ SPF_i_set_received_spf(SPF_response_t *spf_response)
  * This must be called with EITHER
  * spf_response->spf_record_exp != NULL
  *   OR
- * result in { SPF_RESULT_PASS SPF_RESULT_INVALID
+ * result in { SPF_RESULT_NONE SPF_RESULT_PASS SPF_RESULT_INVALID
  *		SPF_RESULT_TEMPERROR SPF_RESULT_PERMERROR }
  * or the library will abort when it tries to generate an explanation.
  */
