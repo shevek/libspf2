@@ -604,7 +604,7 @@ SPF_c_parse_macro(SPF_server_t *spf_server,
 
 		default:
 			if (spf_server->debug > 3)
-				SPF_debugf("Adding illegal %%-follower '%c' at %d",
+				SPF_debugf("Adding illegal %%-follower '%c' at %zu",
 				src[idx], idx);
 			/* SPF spec says to treat it as a literal, not
 			 * SPF_E_INVALID_ESC */
