@@ -327,7 +327,7 @@ SPF_dns_cache_rr_fixup(SPF_dns_cache_config_t *spfhook,
 		char	*new_domain;
 		size_t	 new_len = strlen(domain) + 1;
 
-		if (cached_rr->domain_buf_len < new_len) {
+		if (cached_rr->domain == NULL || cached_rr->domain_buf_len < new_len) {
 			new_domain = realloc(cached_rr->domain, new_len);
 			if (new_domain == NULL)
 				return SPF_E_NO_MEMORY;
