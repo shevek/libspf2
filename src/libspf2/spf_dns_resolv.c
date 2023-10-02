@@ -268,7 +268,7 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 	}
 #endif
 
-	responselen = 2048;
+	responselen = 65536;
 	responsebuf = (u_char *)malloc(responselen);
 	if (! responsebuf)
 		return NULL;	/* NULL always means OOM from DNS lookup. */
@@ -319,23 +319,8 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 							domain, rr_type, 0, SPF_h_errno);
 		}
 		else if (dns_len > responselen) {
-			void	*tmp;
-			/* We managed a lookup but our buffer was too small. */
-			responselen = dns_len + (dns_len >> 1);
-#if 0
-			/* Sanity-trap - we should never hit this. */
-			if (responselen > 1048576) {	/* One megabyte. */
-				free(responsebuf);
-				return SPF_dns_rr_new_init(spf_dns_server,
-								domain, rr_type, 0, SPF_h_errno);
-			}
-#endif
-			tmp = realloc(responsebuf, responselen);
-			if (!tmp) {
-				free(responsebuf);
-				return NULL;
-			}
-			responsebuf = tmp;
+			free(responsebuf);
+			return NULL;
 		}
 		else {
 			/* We managed a lookup, and our buffer was large enough. */
