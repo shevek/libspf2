@@ -354,7 +354,13 @@ top:
 					break;
 				p_write--;
 			}
-			p_write++;		/* Move to just after the '.' */
+			/* Move to just after the '.', but only if we have found at least
+			 * one '.' in the string. For a string without any delimiter
+			 * inside there is no '.' to remove, otherwise we would remove a
+			 * character from the payload */
+			if (num_found != 0) {
+				p_write++;
+			}
 			/* This moves the '\0' as well. */
 			len = p_read_end - p_write;
 			memmove(munged_var, p_write, len + 1);
