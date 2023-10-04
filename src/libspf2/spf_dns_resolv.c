@@ -386,10 +386,9 @@ SPF_dns_resolv_lookup(SPF_dns_server_t *spf_dns_server,
 	for (ns_sect = 0; ns_sect < num_ns_sect; ns_sect++) {
 		/* We pass this point if:
 		 * - We are the 'answer' section.
-		 * - We are debugging.
 		 * Otherwise, we continue to the next section.
 		 */
-		if (ns_sects[ns_sect].number != ns_s_an && spf_dns_server->debug <= 1)
+		if (ns_sects[ns_sect].number != ns_s_an)
 			continue;
 
 		nrec = ns_msg_count(ns_handle, ns_sects[ns_sect].number);
