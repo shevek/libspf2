@@ -62,7 +62,7 @@ SPF_server_get_default_explanation(SPF_server_t *spf_server,
 	}
 	else {
 		size_t	len = sizeof(SPF_LAME_EXP) + 1;
-		if (*buflenp < len) {
+		if (*bufp == NULL || *buflenp < len) {
 			char	*tmp = realloc(*bufp, len);
 			if (tmp == NULL)
 				return SPF_E_NO_MEMORY;
