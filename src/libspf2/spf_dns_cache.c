@@ -342,7 +342,7 @@ SPF_dns_cache_rr_fixup(SPF_dns_cache_config_t *spfhook,
 		cached_rr->ttl = spfhook->min_ttl;
 
     if ( cached_rr->ttl < spfhook->txt_ttl
-			&& cached_rr->rr_type == ns_t_txt || cached_rr->rr_type == ns_t_spf )
+			&& (cached_rr->rr_type == ns_t_txt || cached_rr->rr_type == ns_t_spf) )
 		cached_rr->ttl = spfhook->txt_ttl;
 
     if ( cached_rr->ttl < spfhook->err_ttl
