@@ -1202,6 +1202,10 @@ SPF_record_compile(SPF_server_t *spf_server,
 	const char			*p;
 	int					 i;
 
+	const SPF_mechtype_t*redirect_mechtype = NULL;
+	int					 redirect_prefix;
+	const char			*redirect_val_start;
+
 
 	/*
 	 * make sure we were passed valid data to work with
@@ -1386,8 +1390,6 @@ SPF_record_compile(SPF_server_t *spf_server,
 				continue;
 			}
 #endif
-			/* FIXME  the redirect mechanism needs to be moved to
-			 * the very end */
 			else if ( STREQ_SIZEOF_N(name_start, "redirect", name_len) )
 				mechtype = SPF_mechtype_find(MECH_REDIRECT);
 			else
@@ -1407,16 +1409,26 @@ SPF_record_compile(SPF_server_t *spf_server,
 								"a recognised mechanism");
 			}
 
-			if (spf_server->debug)
-				SPF_debugf("Adding mechanism type %d",
-								(int)mechtype->mech_type);
-
 			val_start = p;
-			err = SPF_c_mech_add(spf_server,
-							spf_record, spf_response,
-							mechtype, prefix, &val_start);
-			if (err == SPF_E_NO_MEMORY)
-				return err;
+			if (mechtype->mech_type == MECH_REDIRECT) {
+				/* Syntactically "redirect" modifier can appear anywhere in the
+				 * record. But it must be taken into account only if all other
+				 * mechanisms failed to match. So we postpone its adding. */
+				if (redirect_mechtype == NULL) {
+					redirect_mechtype = mechtype;
+					redirect_prefix = prefix;
+					redirect_val_start = val_start;
+				}
+			}
+			else {
+				if (spf_server->debug)
+					SPF_debugf("Adding mechanism type %d",
+									(int)mechtype->mech_type);
+				err = SPF_c_mech_add(spf_server, spf_record, spf_response,
+								mechtype, prefix, &val_start);
+				if (err == SPF_E_NO_MEMORY)
+					return err;
+			}
 			/* XXX Else do nothing. Continue for the next error. */
 			/* We shouldn't have to worry about the child function
 			 * updating the pointer. So we just use our 'well known'
@@ -1472,6 +1484,17 @@ SPF_record_compile(SPF_server_t *spf_server,
 		}
 	}
 	
+	/* If there was a "redirect" modifier add it to the end. */
+	if (redirect_mechtype) {
+		if (spf_server->debug)
+				SPF_debugf("Adding mechanism type %d",
+								(int)redirect_mechtype->mech_type);
+		err = SPF_c_mech_add(spf_server, spf_record, spf_response,
+						redirect_mechtype, redirect_prefix,
+						&redirect_val_start);
+		if (err == SPF_E_NO_MEMORY)
+			return err;
+	}
 
 	/*
 	 * check for common mistakes
