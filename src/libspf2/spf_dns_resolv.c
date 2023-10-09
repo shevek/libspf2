@@ -608,7 +608,7 @@ SPF_dns_resolv_free(SPF_dns_server_t *spf_dns_server)
 {
 	SPF_ASSERT_NOTNULL(spf_dns_server);
 
-#if ! HAVE_DECL_RES_NINIT
+#if HAVE_DECL_RES_CLOSE
 	res_close();
 #endif
 
