@@ -1,0 +1,5 @@
+<area shape="rect" href="$structSPF__server__struct.html" title="SPF_server_struct" alt="" coords="345,199,481,225">
+<area shape="rect" href="$structSPF__mech__t.html" title="SPF_mech_t" alt="" coords="436,7,535,33">
+<area shape="rect" href="$structSPF__dns__server__struct.html" title="SPF_dns_server_struct" alt="" coords="5,103,171,129">
+<area shape="rect" href="$structSPF__macro__struct.html" title="SPF_macro_struct" alt="" coords="293,103,429,129">
+<area shape="rect" href="$structSPF__mod__t.html" title="SPF_mod_t" alt="" coords="559,7,652,33">

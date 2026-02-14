@@ -1,0 +1,12 @@
+<area shape="rect" href="$spf__dns_8c.html" title="src/libspf2/spf_dns.c" alt="" coords="5,84,155,110">
+<area shape="rect" href="$spf__dns__cache_8c.html" title="src/libspf2/spf_dns_cache.c" alt="" coords="179,84,373,110">
+<area shape="rect" href="$spf__dns__null_8c.html" title="src/libspf2/spf_dns_null.c" alt="" coords="397,84,576,110">
+<area shape="rect" href="$spf__dns__resolv_8c.html" title="A DNS resolver which uses libresolv/libbind to query a DNS server." alt="" coords="600,84,792,110">
+<area shape="rect" href="$spf__dns__rr_8c.html" title="src/libspf2/spf_dns_rr.c" alt="" coords="816,84,981,110">
+<area shape="rect" href="$spf__dns__test_8c.html" title="src/libspf2/spf_dns_test.c" alt="" coords="1005,84,1187,110">
+<area shape="rect" href="$spf__dns__zone_8c.html" title="src/libspf2/spf_dns_zone.c" alt="" coords="1211,84,1397,110">
+<area shape="rect" href="$spf__get__exp_8c.html" title="src/libspf2/spf_get_exp.c" alt="" coords="1421,84,1597,110">
+<area shape="rect" href="$spf__get__spf_8c.html" title="src/libspf2/spf_get_spf.c" alt="" coords="1621,84,1795,110">
+<area shape="rect" href="$spf__interpret_8c.html" title="src/libspf2/spf_interpret.c" alt="" coords="1819,84,2000,110">
+<area shape="rect" href="$spf__server_8c.html" title="src/libspf2/spf_server.c" alt="" coords="2024,84,2189,110">
+<area shape="rect" href="$spftest_8c.html" title="src/spftest/spftest.c" alt="" coords="2213,84,2360,110">

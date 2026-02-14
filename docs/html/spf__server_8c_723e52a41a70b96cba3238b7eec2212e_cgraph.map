@@ -1,0 +1,6 @@
+<area shape="rect" href="$spf__dns__cache_8h.html#c742ee179a4f7c53b1aad2a1b9da0122" title="SPF_dns_cache_new" alt="" coords="179,5,331,32">
+<area shape="rect" href="$spf__dns__resolv_8h.html#cff7cbdf16c55af0b30f6f0f935dc31f" title="SPF_dns_resolv_new" alt="" coords="179,56,331,83">
+<area shape="rect" href="$spf__dns__zone_8h.html#d6c289cbab3ad88b9f12cfb051b4ed5a" title="SPF_dns_zone_new" alt="" coords="183,107,327,133">
+<area shape="rect" href="$spf__dns__rr_8h.html#22d16e14b39910af524669e4ddb731f0" title="SPF_dns_rr_new_init" alt="" coords="380,107,529,133">
+<area shape="rect" href="$spf__dns__rr_8h.html#3e716a9332e139ea9f3f21e9c875b2e7" title="SPF_dns_rr_free" alt="" coords="580,81,703,108">
+<area shape="rect" href="$spf__dns__rr_8h.html#5bdefbae7a3574a872b2cb27a9b6c945" title="SPF_dns_rr_new" alt="" coords="580,132,703,159">

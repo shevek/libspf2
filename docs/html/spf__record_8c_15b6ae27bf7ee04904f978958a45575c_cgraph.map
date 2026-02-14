@@ -1,0 +1,9 @@
+<area shape="rect" href="$spf__record_8h.html#412a278b1b5d50b870b5cef0f8af5a8e" title="SPF_record_expand_data" alt="" coords="253,56,437,83">
+<area shape="rect" href="$spf__internal_8h.html#5a9aa018d67a096b58d5e6b89b742deb" title="SPF_realloc" alt="" coords="543,5,636,32">
+<area shape="rect" href="$spf__request_8h.html#fe9950135a21fe9fdf966793203581c1" title="SPF_request_get_client_dom" alt="" coords="487,56,692,83">
+<area shape="rect" href="$spf__request_8h.html#483ce022b0af636a4554d22d0622b890" title="SPF_request_get_rec_dom" alt="" coords="493,107,685,133">
+<area shape="rect" href="$spf__dns_8h.html#b0d6c1e2b2736016e96afe15f6f59be7" title="SPF_dns_get_client_dom" alt="" coords="743,56,921,83">
+<area shape="rect" href="$spf__dns_8h.html#fbe67bad14229383d7b56fbfb0ff4748" title="SPF_dns_lookup" alt="" coords="1159,31,1281,57">
+<area shape="rect" href="$spf__dns_8h.html#330c23a8c88a9c3dd9d8db3527831bf9" title="SPF_dns_rlookup" alt="" coords="976,31,1104,57">
+<area shape="rect" href="$spf__dns_8h.html#163068595d2b1070dd124124fa3cd931" title="SPF_dns_rlookup6" alt="" coords="972,81,1108,108">
+<area shape="rect" href="$spf__dns__rr_8h.html#3e716a9332e139ea9f3f21e9c875b2e7" title="SPF_dns_rr_free" alt="" coords="979,132,1101,159">

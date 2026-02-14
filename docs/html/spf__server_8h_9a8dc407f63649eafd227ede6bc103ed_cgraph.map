@@ -1,0 +1,13 @@
+<area shape="rect" href="$spf__dns_8h.html#fbe67bad14229383d7b56fbfb0ff4748" title="SPF_dns_lookup" alt="" coords="236,81,359,108">
+<area shape="rect" href="$spf__dns__rr_8h.html#3e716a9332e139ea9f3f21e9c875b2e7" title="SPF_dns_rr_free" alt="" coords="236,132,359,158">
+<area shape="rect" href="$spf__record_8h.html#b2d1a6a0420741ad6c0e0014682c8ffd" title="SPF_record_compile" alt="" coords="223,233,372,260">
+<area shape="rect" href="$spf__response_8h.html#78f83694c854d612a2b55572cc4f6622" title="SPF_response_add_error" alt="" coords="435,5,613,32">
+<area shape="rect" href="$strncasecmp_8c.html#12c9dcd2801be00cd50ca3f2c00bdf52" title="strncasecmp" alt="" coords="472,461,576,488">
+<area shape="rect" href="$spf__response_8h.html#e1f815031d5d04988ec16cbd73ba1aa7" title="SPF_error_code" alt="" coords="464,56,584,82">
+<area shape="rect" href="$spf__response_8h.html#cd89fbc40af74f47f36b776c11457d65" title="SPF_error_errorp" alt="" coords="460,106,588,133">
+<area shape="rect" href="$spf__record_8h.html#b1772bbfae9aa41e65bc636e5a78056d" title="SPF_record_new" alt="" coords="461,157,587,184">
+<area shape="rect" href="$spf__response_8h.html#5fc0db921257e3e76790424541d37ce2" title="SPF_response_add_error_ptr" alt="" coords="421,208,627,234">
+<area shape="rect" href="$spf__response_8h.html#3b804e2a9c4d50472f9ce0ea9ffa5b4d" title="SPF_response_add_warn_ptr" alt="" coords="423,258,625,285">
+<area shape="rect" href="$spf__response_8h.html#f53630dbc7f862eb8b50dcfbbcde8427" title="SPF_response_errors" alt="" coords="447,309,601,336">
+<area shape="rect" href="$spf__response_8h.html#64134529bfd6f39a2f53b2f72ae9efce" title="SPF_response_message" alt="" coords="436,360,612,386">
+<area shape="rect" href="$spf__response_8h.html#b2f30c1dfe333ea7a39c763d9b601da4" title="SPF_response_messages" alt="" coords="432,410,616,437">

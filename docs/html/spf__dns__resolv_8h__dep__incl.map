@@ -1,0 +1,4 @@
+<area shape="rect" href="$spf__dns__resolv_8c.html" title="A DNS resolver which uses libresolv/libbind to query a DNS server." alt="" coords="5,84,197,110">
+<area shape="rect" href="$spf__server_8c.html" title="src/libspf2/spf_server.c" alt="" coords="221,84,387,110">
+<area shape="rect" href="$spfd_8c.html" title="src/spfd/spfd.c" alt="" coords="411,84,523,110">
+<area shape="rect" href="$spfquery_8c.html" title="src/spfquery/spfquery.c" alt="" coords="547,84,715,110">

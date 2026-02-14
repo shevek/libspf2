@@ -1,0 +1,36 @@
+<area shape="rect" href="$spf__record_8h.html" title="src/include/spf_record.h" alt="" coords="2597,84,2768,110">
+<area shape="rect" href="$spf_8h.html" title="src/include/spf.h" alt="" coords="2795,393,2917,420">
+<area shape="rect" href="$spf__compile_8c.html" title="src/libspf2/spf_compile.c" alt="" coords="5,470,181,497">
+<area shape="rect" href="$spf__response_8c.html" title="src/libspf2/spf_response.c" alt="" coords="5077,470,5261,497">
+<area shape="rect" href="$spf__server_8c.html" title="src/libspf2/spf_server.c" alt="" coords="4888,470,5053,497">
+<area shape="rect" href="$spf__server_8h.html" title="src/include/spf_server.h" alt="" coords="2849,161,3020,188">
+<area shape="rect" href="$spf__expand_8c.html" title="Expansion routine for SPF macros." alt="" coords="205,470,379,497">
+<area shape="rect" href="$spf__record_8c.html" title="src/libspf2/spf_record.c" alt="" coords="603,470,771,497">
+<area shape="rect" href="$spf__internal_8h.html" title="src/include/spf_internal.h" alt="" coords="2592,393,2771,420">
+<area shape="rect" href="$spf__interpret_8c.html" title="src/libspf2/spf_interpret.c" alt="" coords="3979,470,4160,497">
+<area shape="rect" href="$spf__request_8h.html" title="src/include/spf_request.h" alt="" coords="2719,238,2897,265">
+<area shape="rect" href="$spf__dns_8c.html" title="src/libspf2/spf_dns.c" alt="" coords="2979,470,3128,497">
+<area shape="rect" href="$spf__dns__cache_8c.html" title="src/libspf2/spf_dns_cache.c" alt="" coords="3152,470,3347,497">
+<area shape="rect" href="$spf__dns__null_8c.html" title="src/libspf2/spf_dns_null.c" alt="" coords="3776,470,3955,497">
+<area shape="rect" href="$spf__dns__resolv_8c.html" title="A DNS resolver which uses libresolv/libbind to query a DNS server." alt="" coords="3560,470,3752,497">
+<area shape="rect" href="$spf__dns__rr_8c.html" title="src/libspf2/spf_dns_rr.c" alt="" coords="3371,470,3536,497">
+<area shape="rect" href="$spf__dns__test_8c.html" title="src/libspf2/spf_dns_test.c" alt="" coords="4184,470,4365,497">
+<area shape="rect" href="$spf__dns__zone_8c.html" title="src/libspf2/spf_dns_zone.c" alt="" coords="963,470,1149,497">
+<area shape="rect" href="$spf__get__exp_8c.html" title="src/libspf2/spf_get_exp.c" alt="" coords="2581,470,2757,497">
+<area shape="rect" href="$spf__get__spf_8c.html" title="src/libspf2/spf_get_spf.c" alt="" coords="2781,470,2955,497">
+<area shape="rect" href="$spf__id2str_8c.html" title="src/libspf2/spf_id2str.c" alt="" coords="1747,470,1907,497">
+<area shape="rect" href="$spf__log_8c.html" title="src/libspf2/spf_log.c" alt="" coords="795,470,939,497">
+<area shape="rect" href="$spf__log__default_8c.html" title="src/libspf2/spf_log_default.c" alt="" coords="1173,470,1368,497">
+<area shape="rect" href="$spf__log__stdio_8c.html" title="src/libspf2/spf_log_stdio.c" alt="" coords="2373,470,2557,497">
+<area shape="rect" href="$spf__print_8c.html" title="src/libspf2/spf_print.c" alt="" coords="1392,470,1547,497">
+<area shape="rect" href="$spf__request_8c.html" title="src/libspf2/spf_request.c" alt="" coords="403,470,579,497">
+<area shape="rect" href="$spf__strerror_8c.html" title="src/libspf2/spf_strerror.c" alt="" coords="1931,470,2104,497">
+<area shape="rect" href="$spf__utils_8c.html" title="src/libspf2/spf_utils.c" alt="" coords="1571,470,1723,497">
+<area shape="rect" href="$spf__example_8c.html" title="src/spf_example/spf_example.c" alt="" coords="2128,470,2349,497">
+<area shape="rect" href="$spfd_8c.html" title="src/spfd/spfd.c" alt="" coords="4752,470,4864,497">
+<area shape="rect" href="$spfquery_8c.html" title="src/spfquery/spfquery.c" alt="" coords="4389,470,4557,497">
+<area shape="rect" href="$spftest_8c.html" title="src/spftest/spftest.c" alt="" coords="4581,470,4728,497">
+<area shape="rect" href="$spf__dns_8h.html" title="src/include/spf_dns.h" alt="" coords="3365,316,3520,342">
+<area shape="rect" href="$spf__dns__rr_8h.html" title="src/include/spf_dns_rr.h" alt="" coords="3357,393,3528,420">
+<area shape="rect" href="$spf__dns__internal_8h.html" title="src/include/spf_dns_internal.h" alt="" coords="3552,393,3760,420">
+<area shape="rect" href="$spf__dns__test_8h.html" title="A testing layer for DNS." alt="" coords="4380,393,4567,420">
