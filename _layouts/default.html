@@ -1,0 +1,122 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/sinorca-grey.css" title="Grey boxes stylesheet" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/color-scheme.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/code.css" />
+
+    <title>libspf2 - SPF Library - {{ page.title }}</title>
+  </head>
+
+
+
+
+
+
+
+
+  <body>
+    <div id="top"></div>
+
+    <!-- ###### Header ###### -->
+
+    <div id="upperMenuBar">
+{% comment %}
+      <div class="LHS">
+        <a href="./index.html">Online shop</a>|
+        <a href="./index.html">Registration</a>
+      </div>
+      <div class="RHS">
+        <a href="./index.html">Press Center</a>|
+        <a href="./index.html">Partners</a>|
+        <a href="./index.html">Company</a>|
+        <a href="./index.html">Contacts</a>|
+        <a href="./index.html">Worldwide</a>
+      </div>
+{% endcomment %}
+    </div>
+
+    <div id="header">libspf2 - SPF Library - {{ page.title }}</div>
+
+{% comment %}
+    <form id="headerSearch" action="./index.html" method="get">
+      <div>
+        <input type="text" class="text" value="Search..." />
+      
+        <!-- ###### Dynamic text box version:
+        <input class="text" type="text" value="Search..."
+               onFocus="if (this.value == 'Search...') this.value=''; else this.select();"
+               onBlur="if (this.value == '') this.value='Search...';" />
+             ###### -->
+
+        <input type="submit" class="submit" value="GO" />
+      </div>
+    </form>
+{% endcomment %}
+
+    <div id="lowerMenuBar">
+      <a href="http://www.libspf2.net/" class="highlight">SPF</a>|
+      <a href="http://www.libsrs2.net/">SRS</a>
+    </div>
+
+    <!-- ###### Side Boxes ###### -->
+
+    <div class="sideMenuBox">
+      <div>Navigation</div>
+      <a href="/index.html">&rsaquo; Home</a>
+      <a href="https://www.libsrs2.net/status.html">&rsaquo; Status</a>
+      <a href="/download.html">&rsaquo; Download</a>
+      <a href="/docs/html/index.html">&rsaquo; Documentation</a>
+      <a href="/support.html">&rsaquo; Support</a>
+      {%comment%}
+	  <a href="https://www.libsrs2.net/faq.html">&rsaquo; FAQ</a>
+	  {%endcomment%}
+    </div>
+
+{% comment %}
+    <div class="sideMenuBox lighterBG">
+      <div>Navigate this page</div>
+      <a href="#welcome">&rsaquo; Welcome</a>
+      <a href="#alt_css">&rsaquo; Alternative CSS</a>
+      <a href="#features">&rsaquo; Features</a>
+      <a href="#final_notes">&rsaquo; Final notes</a>
+    </div>
+{% endcomment %}
+
+    <div class="sideTextBox">
+      <div>Validation</div>
+      <span>Validate the <a href="http://validator.w3.org/check/referer">XHTML</a> and
+            <a href="http://jigsaw.w3.org/css-validator/check/referer">CSS</a> of this page.</span>
+    </div>
+
+    <!-- ###### Body Text ###### -->
+
+    <div id="bodyText">
+
+{{ content }}
+
+    </div>
+    
+    <!-- ###### Footer ###### -->
+
+    <div id="footer">
+      <div>
+        <span class="footerLHS">
+          E-mail:&nbsp;<a href="mailto:webmaster@libspf2.net">webmaster@libspf2.net</a>
+        </span>
+        <a href="/support.html" class="footerLHS">Contact information</a>
+      </div>
+
+      <div>
+        Copyright &copy; 2004, Wayne Schlitt, Shevek.
+        Copyright &copy; 2005-2026, Shevek.
+	   <br />
+	   Web design "Sinorca" from <a href="http://www.oswd.org/">OSWD</a>.
+      </div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,148 @@
+<%method title>
+<& PARENT:title, %ARGS &> - News
+</%method>
+
+<h1>Version 0.4</h1>
+
+  <p>
+    The major highlights of this release are:
+  </p>
+
+  <ul>
+    <li>
+        IPv6 bug fixes.  I think IPv6 may actually be pretty
+        functional now.  Thanks to David Woodhouse &lt;dwmw2
+        &lt;at&gt; infradead.org&gt; for the help with this.
+    </li>
+    <li>
+        libspf-alt has now been fairly heavily tested for being
+        thread-safe.  It turns out that it was actually the BIND resolver
+        library that was the biggest problem.  BIND4 is not thread safe, but
+        libspf-alt now uses the res_ninit() and res_nquery() functions so
+        that it is thread-safe on BIND8.  (I'm pretty sure the BIND9 usage
+        was always thread-safe.)
+      <br />
+        Thanks to Emmanuel Dreyfus &lt;manu &lt;at&gt; netbsd.org&gt;
+    </li>
+    <li>
+        Libspf-alt now has a SPF_result_helo() function to explicitly test
+        the HELO string, even if the MAIL FROM is not &lt;&gt;.
+    </li>
+    <li>
+        Libspf-alt now has a SPF_result_2mx() function to support domains
+        that have secondary MXes.  This is equivalent to the
+        Mail::SPF::Query result2 functionality.
+    </li>
+    <li>
+        The libspf-alt configure script now has a --bind-with=DIR option to
+        let people use a different version of the bind than the default
+        installed with the system.  This functionality was added by Emmanuel
+        Dreyfus &lt;manu &lt;at&gt; netbsd.org&gt;
+    </li>
+    <li>
+        There is now support for sending the error/warning/debug information
+        to syslong instead of stderr/stdout
+    </li>
+    <li>
+        There is now more documentation on the API.
+    </li>
+    <li>
+        There have been quite a few API changes with this release.  I hate
+        doing this, but I'm trying to get both a clean, stable, and
+        functional API ready for the v1.0 release.  I tried hard to think
+        ahead when I created the initial API, but hindsight beats foresight
+        every time.
+      <br />
+        Fortunately, most of the API changes are things that are either
+        pretty trival, or are things that are mostly used internally and few
+        if any applications have taken advantage of them.
+    </li>
+    <li>
+        There are now a couple of simple example programs included with the
+        distribution that should make it easier to figure out how to use the
+        libspf-alt API.
+    </li>
+    <li>
+        The code has been cleaned up enough so that it now compiles cleanly
+        with the gcc options "-W -Wall -Wmissing-prototypes
+        -Wwrite-strings".  On many systems it also compiles cleanly with
+        -ansi/-std=c89/-std=c99, but there are too many problems with
+        include file incompatibilities to distribute that way.
+      <br />
+        These are basically the same flags that BIND9 uses.
+    </li>
+    <li>
+        More DoS checks and limits have been added.
+    </li>
+  </ul>
+
+<h1>Version 0.3</h1>
+
+	<p>
+Version 0.3 is mostly a bug-fix release.
+The major highlights of this release are:
+	</p>
+
+<ul>
+<li>Most of the work was directed toward the new SPF test system and
+	making libspf-alt pass as many of the tests as practical.</li>
+<li>Quite a bit of documentation was added to the include files.  While
+	still far from production quality documentation, you should no
+	longer have to dig through lots of source code in order to figure
+	out what is going on.</li>
+<li>IPv6 is not supported, making libspf-alt the first SPF
+	implementation to do so.  Testing, however, has been limited.</li>
+<li>A new 'zone' DNS layer has been created.  This allows you to create
+	internal 'zone files' that will override or create fallbacks for
+	other domains that don't currently publish SPF records.  Unlike the
+	perl M:S:Q 1.996 override/fallback options, the libspf-alt 'zone'
+	DNS layer can also create SPF explanation records or any other DNS
+	entry that you find useful.</li>
+<li>The zone DNS layer can also be used for things like marking sections
+	of the rDNS tree as not resolvable, thus instantly returning
+	the results, instead of waiting for all those name servers
+	to timeout.</li>
+<li>The caching DNS layer has been made more useful in several ways.
+  <ul>
+	<li>The cache can now support more than 64k entries.</li>
+	<li>The cache now has a small reclaim-list to reduce the cost
+		of hash collisions.</li>
+	<li>You can now set minimum Time To Live (TTL) values:
+	  <dl>
+		<dt>min_ttl</dt>
+		<dd>The absolute minimum TTL value in all cases.</dd>
+		<dt>err_ttl</dt>
+		<dd>The minimum TTL value to use when there is a DNS error.</dd>
+		<dt>txt_ttl</dt>
+		<dd>
+		  The minimum TTL value to use when a TXT query is done.
+			In the case of SPF, these are the SPF records and the
+	explanation records.  This TTL value is used even when
+		no record is found, so domains that haven't set up SPF
+	records won't be constantly queried.</dd>
+		
+		<dt>rdns_ttl</dt>
+		<dd>The minimum TTL value to use when looking up information
+		  in the reverse DNS tree.</dd>
+	  </dl>
+	</li>
+  </ul>
+</li>
+</ul>
+
+<h1>Version 0.2</h1>
+  <p>
+    Version 0.2 is mostly a cleanup release.  The major change is that
+    libspf-alt now uses autoconf/configure to make it more portable.  It
+    now compiles and passes its self-checks on Debian Linux (testing),
+    FreeBSD 4.3 and SunOS 5.8.  The source code has been rearranged, it is
+    now in a directory tree rather than everything in one big directory.
+    The six different test suites that I've been using for testing can now
+    be automatically run by using the "make check" command.
+  </p>
+  <p>
+    The GNU autoconf/automake/libtools system (configure) gives a nice
+    standardized system for things like "make install" and "make
+    uninstall", but boy does it add bulk!  The configure script alone is
+    over 750k!  Still, I think using these tools is well worth it.
+  </p>

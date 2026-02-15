@@ -1,0 +1,606 @@
+<%method title>
+<& PARENT:title, %ARGS &> - API Documentation
+</%method>
+
+<h1>Introduction</h1>
+
+	<p>
+This documentation covers version 1.0.3 of libspf2. It does not yet
+cover all public functions; however, it contains more than enough
+information to effectively use this library. Read the header files for
+more information. Please submit corrections or requests for missing
+information to <a href="mailto:libspf2 [ta] rt.anarres.org">libspf2
+[ta] rt.anarres.org</a>.
+	</p>
+
+<h1>Recipes</h1>
+
+To init the library:
+
+<ol>
+<li>Create a handle to the SPF library.
+	(<& .linkto, target => 'SPF_create_config' &>)
+	</li>
+<li>(optional) Set the debug level in the handle.</li>
+<li>Set the local hostname in the handle.
+	<& .linkto, target => 'SPF_set_rec_dom' &>
+	</li>
+<li>Compile and set the local policy.
+	(<& .linkto, target => 'SPF_init_c_results' &>,
+	<& .linkto, target => 'SPF_compile_local_policy' &>,
+	<& .linkto, target => 'SPF_set_local_policy' &>)
+	</li>
+<li>Compile and set the default explanation.
+	(<& .linkto, target => 'SPF_init_c_results' &>,
+	<& .linkto, target => 'SPF_compile_exp' &>,
+	<& .linkto, target => 'SPF_set_exp' &>)
+	</li>
+<li>Create a noncaching resolver.
+	(<& .linkto, target => 'SPF_dns_create_config_resolv' &>)
+	</li>
+<li>Create a caching resolver which uses the non-caching resolver.
+	(<& .linkto, target => 'SPF_dns_create_config_cache' &>)
+	</li>
+</ol>
+
+To perform a test:
+
+<ol>
+<li>Set the client address in the handle.
+	(<& .linkto, target => 'SPF_set_ipv4' &>,
+	<& .linkto, target => 'SPF_set_ipv4_str' &>,
+	<& .linkto, target => 'SPF_set_ipv6' &>,
+	<& .linkto, target => 'SPF_set_ipv6_str' &>)
+	</li>
+<li>Set the helo domain in the handle.
+	(<& .linkto, target => 'SPF_set_helo_dom' &>)
+	</li>
+<li>Set the mail from address in the handle.
+	(<& .linkto, target => 'SPF_set_env_from' &>)
+	</li>
+<li>Query the handle for a result.
+	(<& .linkto, target => 'SPF_result' &>)
+	</li>
+<li>Now the handle and resolvers may be reused.</li>
+</ol>
+
+To clean up:
+
+<ol>
+<li>Free the caching resolver.
+	(<& .linkto, target => 'SPF_dns_destroy_config_cache' &>)
+	</li>
+<li>Free the noncaching resolver.
+	(<& .linkto, target => 'SPF_dns_destroy_config_resolv' &>)
+	</li>
+<li>Free the local policy and explanation.
+	(<& .linkto, target => 'SPF_free_c_results' &>)
+	</li>
+<li>Free the SPF library handle.
+	(<& .linkto, target => 'SPF_destroy_config' &>)
+	</li>
+<li>Call <& .linkto, target => 'SPF_destroy_default_config' &></li>
+</ol>
+
+Notes on threads:
+
+<ul>
+<li>A handle (library or DNS) may be used by only one thread at
+a time.</li>
+<li>A handle may be used by only one request at a time.</li>
+<li>Do not repeatedly create and destroy resolver handles. glibc-2.3
+has a memory leak in res_*() which will lose approximately 64 bytes
+each time. Keep a pool.</li>
+</ul>
+
+
+<h1>Headers</h2>
+
+<&| .hdr, file => 'spf2/spf.h' &>
+The main spf2 header file must be included.
+</&>
+
+<&| .hdr, file => 'spf2/spf_dns_resolv.h' &>
+Include this for definitions relating to the basic SPF resolver.
+</&>
+
+<&| .hdr, file => 'spf2/spf_dns_cache.h' &>
+Include this for definitions relating to the caching SPF resolver.
+</&>
+
+<h1>Types</h1>
+
+<&| .type, type => 'SPF_err_t' &>
+An error code: an integer. See 'Error Codes' below.
+</&>
+
+<&| .type, type => 'SPF_config_t' &>
+A handle to an instantiation of the SPF library.
+</&>
+
+<&| .type, type => 'SPF_dns_config_t' &>
+A handle to an SPF DNS resolver.
+</&>
+
+<&| .type, type => 'SPF_c_results_t' &>
+A struct which holds the output from the SPF bytecode compiler.
+</&>
+
+<&| .type, type => 'SPF_output_t' &>
+A response from the SPF engine. This is a struct containing the
+following fields:
+<ul>
+<li><code>result</code>:
+	One of SPF_RESULT_PASS, SPF_RESULT_FAIL, SPF_RESULT_SOFTFAIL,
+	SPF_RESULT_NEUTRAL, SPF_RESULT_UNKNOWN, SPF_RESULT_ERROR,
+	SPF_RESULT_NONE.</li>
+<li><code>received_spf</code>:
+	A header to be inserted into the checked mail.</li>
+<li><code>smtp_comment</code>:
+	An SMTP error message XXX(?)</li>
+<li><code>err</code>:
+	The error message from the SPF library (justifying a failure?)</li>
+</ul>
+</&>
+
+<h1>Functions</h1>
+
+<&| .func,
+	type	=> 'SPF_config_t',
+	name	=> 'SPF_create_config',
+	args	=> [],
+	return	=> [
+		'(SPF_config_t)0'	=> 'If construction of the handle fails.',
+		'(an opaque handle)'
+			=> 'If construction of the handle succeeds.',
+				]
+		&>
+Construct a new handle for accessing the SPF library.
+</&>
+
+<&| .func,
+	type	=> 'SPF_config_t',
+	name	=> 'SPF_dup_config',
+	args	=> [ 'SPF_config_t handle' ],
+	return	=> [
+		'(SPF_config_t)0'	=> 'If construction of the handle fails.',
+		'(an opaque handle)'
+			=> 'If construction of the handle succeeds.',
+				]
+		&>
+Duplicate a handle for accessing the SPF library.
+</&>
+
+<&| .func,
+	type	=> 'void',
+	name	=> 'SPF_destroy_config',
+	args	=> [ 'SPF_config_t handle' ],
+		&>
+Destroy a handle for accessing the SPF library.
+</&>
+
+<&| .func,
+	type	=> 'void',
+	name	=> 'SPF_set_debug',
+	args	=> [ 'SPF_config_t handle', 'int debug' ],
+		&>
+Set the debugging level for an SPF handle. The SPF library allows
+a certain amount of debugging output to be generated for help in
+determining why things succeeded or failed. Currently, only the
+following debug levels are implemented:
+<ul>
+<li>0: Be completely silent, no debugging information will be
+	generated.</li>
+<li>1: Moderate amount of debugging information.</li>
+<li>2: Include some detailed information about the DNS lookups. Usually
+	this is not needed.</li>
+</ul>
+
+</&>
+
+<&| .func,
+	type	=> 'SPF_dns_config_t',
+	name	=> 'SPF_dns_create_config_resolv',
+	args	=> [ 'SPF_dns_config_t layer_below',
+					'int debug' ],
+		&>
+Create a handle for accessing a non-caching DNS resolver. The value
+passed for layer_below will be 0.
+</&>
+
+<&| .func,
+	type	=> 'void',
+	name	=> 'SPF_dns_destroy_config_resolv',
+	args	=> [ 'SPF_dns_config_t handle', ],
+		&>
+Destroy a handle for accessing a non-caching DNS resolver.
+</&>
+
+<&| .func,
+	type	=> 'SPF_dns_config_t',
+	name	=> 'SPF_dns_create_config_cache',
+	args	=> [ 'SPF_dns_config_t layer_below',
+					'int debug' ],
+		&>
+Create a handle for accessing a caching DNS resolver. The value passed
+for layer_below will be a handle to a non-caching DNS resolver created
+using <code>SPF_dns_create_config_resolv</code>.
+</&>
+
+<&| .func,
+	type	=> 'void',
+	name	=> 'SPF_dns_destroy_config_cache',
+	args	=> [ 'SPF_dns_config_t handle', ],
+		&>
+Destroy a handle for accessing a caching DNS resolver.
+</&>
+
+<&| .func,
+	type	=> 'void',
+	name	=> 'SPF_init_c_results',
+	args	=> [ 'SPF_c_results_t *data' ],
+		&>
+Initialize the given compiler results structure so that it may receive
+the output of a compilation. This must be freed when it is no longer
+to be used.
+</&>
+
+<&| .func,
+	type	=> 'void',
+	name	=> 'SPF_free_c_results',
+	args	=> [ 'SPF_c_results_t *data' ],
+		&>
+Frees the bytecode contained in the SPF_c_results_t structure.
+</&>
+
+<&| .func,
+	type	=> 'SPF_err_t',
+	name	=> 'SPF_compile_local_policy',
+	args	=> [ 'SPF_config_t handle',
+				'const char *spf_record',
+				'int use_default_whitelist',
+				'SPF_c_results_t *c_results' ],
+		&>
+Several of the SPF specifications support a "local policy" option.
+This is both very important, and not particularly obvious how it
+works.
+	</p><p>
+
+Email may come from many sources, sometimes these sources are not
+direct, and not all of these indirect sources correctly rewrite the
+envelope-from to specify the new domain that is resending the
+email. This can happen on incorrectly configured mailing lists, or
+from people who have set up unix-like .forward files.
+	</p><p>
+
+Often, you want to accept these emails, even if they would
+technically fail the SPF check. So, you can set up a "local
+policy" that lists these sources of known-ok emails. If a local
+policy is set, it will allow you to whitelist these sources. There
+is a default globally maintained whitelist of known trusted email
+forwarders that is generally a good idea to use.
+	</p><p>
+
+SPF checks that pass due to local policies will be noted in the
+messages generated from SPF_result(). As such, it is best if the
+local policy option is check only right before the SPF check is
+sure to fail. SPF records that say that a domain never sends email
+should not do any checking of the local policy.
+	</p><p>
+
+The exact spot in the evaluation of the SPF record was defined in a
+message sent to the SPF-devel mailing list. It said in part:
+	</p><p>
+
+<pre>
+	Philip Gladstone says:
+	Message-ID: <400B56AB.30702@gladstonefamily.net>
+	Date: Sun, 18 Jan 2004 23:01:47 -0500
+
+	I think that the localpolicy should only be inserted if the
+	final mechanism is '-all', and it should be inserted after
+	the last mechanism which is not '-'.
+
+	Thus for the case of 'v=spf1 +a +mx -all', this would be
+	interpreted as 'v=spf1 +a +mx +localpolicy -all'. Whereas
+	'v=spf1 -all' would remain the same (no non-'-'
+	mechanism). 'v=spf1 +a +mx -exists:%stuff -all' would
+	become 'v=spf1 +a +mx +localpolicy -exists:%stuff -all'.
+	This local policy string can be any string with macro variables
+	included. It is first byte compiled, and then the result can be
+	set in the configuration.
+</pre>
+
+</&>
+
+<&| .func,
+	type	=> 'void',
+	name	=> 'SPF_set_local_policy',
+	args	=> [ 'SPF_config_t handle',
+				'SPF_c_results_t c_results' ],
+		&>
+</&>
+
+<&| .func,
+	type	=> 'SPF_err_t',
+	name	=> 'SPF_compile_exp',
+	args	=> [ 'SPF_config_t handle',
+				'const char *exp',
+				'SPF_c_results_t *c_results' ],
+		&>
+When the SPF check fails, an "explanation" string is generated for
+use by the MTA during the 4xx or 5xx reject code.
+	</p><p>
+
+This explanation string can be any string with macro variables
+included. It is first byte compiled, and then the result can be
+set in the configuration. If an SPF record does not use the "exp="
+modifier to specify a more appropriate explanation string, this
+default explanation string will be used.
+</&>
+
+<&| .func,
+	type	=> 'int',
+	name	=> 'SPF_set_exp',
+	args	=> [ 'SPF_config_t handle',
+				'SPF_c_results_t c_results' ],
+		&>
+Set the explanation string for the given SPF handle.
+</&>
+
+<&| .func,
+	type	=> 'int',
+	name	=> 'SPF_set_rec_dom',
+	args	=> [ 'SPF_config_t handle',
+				'const char *receiving_hostname' ],
+		&>
+Set the local hostname. Part of the Received-SPF: email header requires
+the domain name of the receiving MTA.
+</&>
+
+<&| .func,
+	type	=> 'int',
+	name	=> 'SPF_set_ipv4',
+	args	=> [ 'SPF_config_t handle',
+				'struct in_addr ipv4' ],
+		&>
+Set the IPv4 address of the SMTP client.
+</&>
+
+<&| .func,
+	type	=> 'int',
+	name	=> 'SPF_set_ipv4_str',
+	args	=> [ 'SPF_config_t handle',
+				'const char *ipv4_address' ],
+		&>
+Set the IPv4 address of the SMTP client.
+</&>
+
+<&| .func,
+	type	=> 'int',
+	name	=> 'SPF_set_ipv6',
+	args	=> [ 'SPF_config_t handle',
+				'struct in6_addr ipv6' ],
+		&>
+Set the IPv6 address of the SMTP client.
+</&>
+
+<&| .func,
+	type	=> 'int',
+	name	=> 'SPF_set_ipv6_str',
+	args	=> [ 'SPF_config_t handle',
+				'const char *ipv6_address' ],
+		&>
+Set the IPv6 address of the SMTP client.
+</&>
+
+<&| .func,
+	type	=> 'int',
+	name	=> 'SPF_set_helo_dom',
+	args	=> [ 'SPF_config_t handle', 'char *helohost' ],
+		&>
+Set the helo address of the SMTP client.
+	</p><p>
+
+SPF needs both an IP address and a domain name to do its checking.
+The IP address is set by one of the above routines, but the domain
+name is not so simple.
+	</p><p>
+
+The domain name is normally obtained from the envelope-from (SMTP
+MAIL FROM: command), but if that is null (MAIL FROM:<>), then the
+HELO domain is used (SMTP HELO or EHLO commands).
+	</p><p>
+
+If there is no local part to the envelope-from email address, the
+name "postmaster" is used instead. This is the case when the HELO
+domain has to be used, but it might be able to happen with the
+envelope-from also, depending on how the MTA works.
+	</p><p>
+
+Whatever the source of the domain name, the SPF spec defines this
+as the "current domain". Normally, you wouldn't set this directly,
+you would call the SPF_set_helo_dom() and SPF_set_env_from()
+routines. However, when an SPF record is being evaluated, the
+current domain is changed when an include or redirect mechanism is
+executed.
+</&>
+
+<&| .func,
+	type	=> 'int',
+	name	=> 'SPF_set_env_from',
+	args	=> [ 'SPF_config_t handle', 'char *from' ],
+		&>
+Set the 'MAIL FROM' address from the SMTP client.
+</&>
+
+<&| .func,
+	type	=> 'SPF_output_t',
+	name	=> 'SPF_result',
+	args	=> [ 'SPF_config_t handle', 'SPF_dns_config_t resolver' ],
+		&>
+Perform an SPF query based on the parameters specified in the handle,
+and return a result. The SPF_result() function does most of the real,
+important work.
+	</p><p>
+
+SPF_result() checks the IP address and the envelope-from (or HELO
+domain) as was configured using the spfcid variable and sees if it
+is valid.  It returns all the info that the caller will need to use
+the SPF check results.  See the description of the structure
+SPF_output_t for details about the return value of SPF_result() and
+how they should be used.
+	</p><p>
+
+It may use the DNS configuration to fetch additional information.
+	</p><p>
+
+Actually, SPF_result() is just an easy-to-use wrapper around
+SPF_get_spf(), SPF_eval_id() and SPF_result_comments().
+</&>
+
+<&| .func,
+	type	=> 'SPF_output_t',
+	name	=> 'SPF_result_2mx',
+	args	=> [ 'SPF_config_t handle', 'SPF_dns_config_t resolver' ],
+		&>
+SPF_result_2mx() does everything that SPF_result() does, but it first
+checks to see if the sending system is a recognized MX
+secondary for the email recipient. If so, then it returns "pass"
+and does not perform the SPF query. Note that the sending
+system may be a MX secondary for some (but not all) of the
+recipients for a multi-recipient message, which is why
+SPF_result_2mx may be called many times with the final result being
+obtained from SPF_result_2mx_msg().
+	</p><p>
+
+In effect, SPF_result_2mx() adds the mechanism "mx:<rcpt-to domain>" to
+the beginning of the SPF record for the mail from domain.
+	</p><p>
+
+If you do not know what a secondary MX is, you probably don't have
+one.  Use the SPF_result() function instead.
+</&>
+
+<h1>Error codes</h1>
+
+<dl>
+<dt><code><b>SPF_E_SUCCESS</b></code></dt>
+	<dd>No errors</dd>
+<dt><code><b>SPF_E_NO_MEMORY</b></code></dt>
+	<dd>Out of memory</dd>
+<dt><code><b>SPF_E_NOT_SPF</b></code></dt>
+	<dd>Could not find a valid SPF record</dd>
+<dt><code><b>SPF_E_SYNTAX</b></code></dt>
+	<dd>Syntax error</dd>
+<dt><code><b>SPF_E_MOD_W_PREF</b></code></dt>
+	<dd>Modifiers can not have prefixes</dd>
+<dt><code><b>SPF_E_INVALID_CHAR</b></code></dt>
+	<dd>Invalid character found</dd>
+<dt><code><b>SPF_E_UNKNOWN_MECH</b></code></dt>
+	<dd>Unknown mechanism found</dd>
+<dt><code><b>SPF_E_INVALID_OPT</b></code></dt>
+	<dd>Invalid option found</dd>
+<dt><code><b>SPF_E_INVALID_CIDR</b></code></dt>
+	<dd>Invalid CIDR length</dd>
+<dt><code><b>SPF_E_MISSING_OPT</b></code></dt>
+	<dd>Required option is missing</dd>
+<dt><code><b>SPF_E_INTERNAL_ERROR</b></code></dt>
+	<dd>Internal programming error</dd>
+<dt><code><b>SPF_E_INVALID_ESC</b></code></dt>
+	<dd>Invalid %-escape character</dd>
+<dt><code><b>SPF_E_INVALID_VAR</b></code></dt>
+	<dd>Invalid macro variable</dd>
+<dt><code><b>SPF_E_BIG_SUBDOM</b></code></dt>
+	<dd>Subdomain truncation depth too large</dd>
+<dt><code><b>SPF_E_INVALID_DELIM</b></code></dt>
+	<dd>Invalid delimiter character</dd>
+<dt><code><b>SPF_E_BIG_STRING</b></code></dt>
+	<dd>Option string too long</dd>
+<dt><code><b>SPF_E_BIG_MECH</b></code></dt>
+	<dd>Too many mechanisms</dd>
+<dt><code><b>SPF_E_BIG_MOD</b></code></dt>
+	<dd>Too many modifiers</dd>
+<dt><code><b>SPF_E_BIG_DNS</b></code></dt>
+	<dd>Mechanisms used too many DNS lookups</dd>
+<dt><code><b>SPF_E_INVALID_IP4</b></code></dt>
+	<dd>Invalid IPv4 address literal</dd>
+<dt><code><b>SPF_E_INVALID_IP6</b></code></dt>
+	<dd>Invalid IPv6 address literal</dd>
+<dt><code><b>SPF_E_INVALID_PREFIX</b></code></dt>
+	<dd>Invalid mechanism prefix</dd>
+<dt><code><b>SPF_E_RESULT_UNKNOWN</b></code></dt>
+	<dd>SPF result is \"unknown\"</dd>
+<dt><code><b>SPF_E_UNINIT_VAR</b></code></dt>
+	<dd>Uninitialized variable</dd>
+<dt><code><b>SPF_E_MOD_NOT_FOUND</b></code></dt>
+	<dd>Modifier not found</dd>
+<dt><code><b>SPF_E_NOT_CONFIG</b></code></dt>
+	<dd>Not configured</dd>
+<dt><code><b>SPF_E_DNS_ERROR</b></code></dt>
+	<dd>DNS lookup failure</dd>
+<dt><code><b>SPF_E_BAD_HOST_IP</b></code></dt>
+	<dd>Invalid hostname (possibly an IP address?)</dd>
+<dt><code><b>SPF_E_BAD_HOST_TLD</b></code></dt>
+	<dd>Hostname has a missing or invalid TLD</dd>
+<dt><code><b>SPF_E_MECH_AFTER_ALL</b></code></dt>
+	<dd>Mechanisms found after the "all:" mechanism will be ignored</dd>
+</dl>
+
+
+
+
+
+<%def .func>
+<a name="<% $ARGS{name} |h %>"></a>
+<&| .core, %ARGS,
+	code	=> "$ARGS{type} $ARGS{name}(" .
+					join(", ", @{$ARGS{args}}) . ")",
+		&><p><% $m->content %></p>
+% if ($ARGS{return}) {
+%	my @rets = @{ $ARGS{return} };
+%	if (@rets) {
+<p>Return values:</p>
+<ul>
+%		while (@rets) {
+%			my $val = shift @rets;
+%			my $exp = shift @rets;
+<li><code><% $val %></code>: <% $exp %></li>
+%		}
+</ul>
+%	}
+% }
+</&>
+</%def>
+
+<%def .type>
+<a name="<% $ARGS{type} |h %>"></a>
+<&| .core, %ARGS,
+	code	=> "$ARGS{type}",
+		&><p><% $m->content %></p></&>
+</%def>
+
+<%def .hdr>
+<&| .core, %ARGS,
+	code => "#include &lt;$ARGS{file}&gt;"
+		&><p><% $m->content %></p></&>
+</%def>
+
+<%def .code>
+<&| .core, %ARGS &><% $m->content %></&>
+</%def>
+
+<%def .core>
+<code>
+<b><% $ARGS{code} %></b>
+</code>
+<dl>
+	<dd>
+		<% $m->content %>
+	</dd>
+</dl>
+</%def>
+
+<%def .linkto><a
+	href="#<% $ARGS{target} %>"><% $m->content %><%
+		$ARGS{target} %></a></%def>

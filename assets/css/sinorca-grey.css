@@ -1,0 +1,282 @@
+/******************************************************************
+ * TITLE: Grey Boxes Stylesheet for Sinorca                       * 
+ * URI  : http://www.oswd.org/design/???/sinorca/sinorca-grey.css *
+ * MODIF: 2003-01-13 1237 +0800                                   *
+ ******************************************************************/
+
+
+/* ###### Body Text ###### */
+
+body {
+  background-color: #f0f0f0;
+  font-family: verdana, tahoma, helvetica, arial, sans-serif;
+  font-size: 82%;
+  margin: 0;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+}
+
+h1, h2, h3 {
+  color: white;
+  background-color: #dc6744;
+  padding-left: 1ex;
+  padding-right: 1ex;
+}
+
+h1 {
+  font-weight: bold;
+  font-size: 100%;
+  padding-top: 0.5ex;
+  padding-bottom: 0.5ex;
+  margin-top: 3ex;
+}
+
+img {
+  border: none;
+}
+
+q {
+  font-family: tahoma, verdana, helvetica, arial, sans-serif;
+  text-align: left;
+  width: 9em;
+  margin: 0 1em 1ex 1em;
+  padding: 0.5ex 0.5ex 0.5ex 1ex;
+  border-style: solid;
+  border-width: 1px;
+  float: right;
+}
+
+acronym {
+  border-bottom-style: dotted;
+  border-bottom-width: 1px;
+  cursor: help;
+}
+
+code {
+  font-family: "lucida console", "courier new", courier, monospace;
+}
+
+dt {
+  font-weight: bold;
+  padding-left: 1ex;
+  padding-right: 1ex;
+}
+
+dd {
+  padding-left: 1ex;
+  padding-right: 1ex;
+  padding-bottom: 1.5em;
+}
+
+#bodyText {
+  background-color: white;
+  text-align: justify;
+  line-height: 1.5em;
+  margin: 0 0 0 15.5em;
+  padding: 5mm 5mm 2mm 5mm;
+  border-left: 1px solid #999999;
+}
+
+#bodyText p {
+  padding-left: 1ex;
+  padding-right: 1ex;
+  padding-bottom: 2ex;
+}
+
+#bodyText a {
+  text-decoration: none;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+#bodyText a:hover {
+  border-bottom: none;
+}
+
+#bodyText .topOfPage {
+  color: white;
+  font-weight: bold;
+  font-variant: small-caps;
+  border: 0;
+  padding: 0.25ex 1ex;
+  float: right;
+}
+
+#bodyText [class~="topOfPage"] {
+  padding: 1.5ex 1ex;
+}
+
+.smallCaps {
+  font-variant: small-caps;
+}
+
+
+/* ###### Header ###### */
+
+#upperMenuBar {
+  height: 2.1em;
+}
+
+#upperMenuBar a {
+  font-size: 90%;
+  text-decoration: none;
+  padding-left: 0.8ex;
+  padding-right: 1.6ex;
+}
+
+#upperMenuBar a:hover {
+  text-decoration: underline;
+}
+
+.LHS {
+  position: absolute;
+  left: 1.7mm;
+  top: 1ex;
+}
+
+.RHS {
+  position: absolute;
+  right: 0.6mm;
+  top: 0.9ex;
+}
+
+#header {
+  font-size: 335%;
+  height: 1.45em;
+  padding-left: 4mm;
+}
+
+#headerSearch {
+  position: absolute;
+  right: 2mm;
+  top: 3.6em;
+}
+
+#headerSearch .text {
+  font-family: "lucida console", "courier new", courier, monospace;
+  font-size: 97%;
+  font-size-adjust: 0.55;
+  width: 9em;
+  height: 2ex;
+  padding: 1mm;
+  border-style: solid;
+  border-width: 1px;
+}
+
+#headerSearch [class~="text"] {  /* This rule only rendered by CSS2-fully compliant browsers */
+  height: 3.75ex;
+}
+
+#headerSearch .submit {
+  font-size: 100%;
+  font-weight: bold;
+  border-style: solid;
+  border-width: 1px;
+  cursor: pointer;
+  position: relative;
+  top: -0.25ex;
+}
+
+#lowerMenuBar {
+  height: 1.55em;
+  padding-left: 1.3mm;
+  padding-top: 1ex;
+}
+
+#lowerMenuBar a {
+  font-weight: bold;
+  text-decoration: none;
+  padding-left: 0.75ex;
+  padding-right: 1.5ex;
+}  
+
+#lowerMenuBar a:hover {
+  text-decoration: underline;
+}
+
+#upperMenuBar .highlight, #lowerMenuBar .highlight {
+  /* See: color-scheme.css */
+}
+
+
+/* ###### Side Boxes ###### */
+
+.sideMenuBox, .sideTextBox {
+  background-color: #f0f0f0;
+  width: 15.5em;
+  border-bottom: 1px solid #999999;
+  padding-top: 1em;
+  padding-bottom: 1em;
+  float: left;
+  clear: left;
+}
+
+.sideMenuBox div, .sideTextBox div {
+  font-weight: bold;
+  padding-left: 2.5mm;
+  padding-bottom: 1ex;
+}
+
+.sideMenuBox a {
+  text-decoration: none;
+  display: block;
+  padding: 1.5ex 1ex 1.5ex 5mm;
+}
+
+.sideMenuBox a:hover {
+  /* See: color-scheme.css */
+}
+
+.sideMenuBox .thisPage {
+  display: block;
+  padding: 1.2ex 1ex 1.2ex 5mm;
+}
+
+.sideTextBox span {
+  line-height: 1.5em;
+  display: block;
+  padding: 0 1ex 0 5mm;
+}
+
+.sideTextBox a {
+  text-decoration: none;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+.sideTextBox a:hover {
+  border-bottom: none;
+}
+
+.lighterBG {
+  background-color: white;
+}
+
+
+/* ###### Footer ###### */
+
+#footer {
+  font-size: 90%;
+  padding: 1.9ex 2.6mm 2.4ex 2.6mm;
+  clear: left;
+}
+
+#footer div {
+  text-align: right;
+  line-height: 1.45em;
+}
+
+#footer a {
+  text-decoration: none;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+#footer a:hover {
+  border-bottom: none;
+}
+
+.footerLHS {
+  float: left;
+  clear: left;
+}

@@ -1,0 +1,17 @@
+/******************************************************************
+ * TITLE: Code formatting for libsrs2                             *
+ * Overrides for bits of sinorca which I don't like.              *
+ ******************************************************************/
+
+code, tt, pre {
+  font-family: "lucida console", "courier new", courier, monospace;
+  font-size: 100%;
+}
+
+dd {
+	padding-bottom: 0.2em;
+}
+
+#bodyText p {
+  padding-bottom: 0.5ex;
+}
